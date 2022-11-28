@@ -1,13 +1,4 @@
 
-
-
-
-
-
-
-from re import L
-
-
 class table(object):
     """ Node in symbol table.
     """
