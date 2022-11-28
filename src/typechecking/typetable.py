@@ -125,6 +125,23 @@ class typetable(object):
 
     #! ======== PER TYPE OPS =====
 
+    def exponent(self, _right):
+        """ Only numbers can be raised.
+
+            Returns
+            -------
+            operation 
+        """
+        if  typetable.are_numbers(self, _right):
+            #! cast as int op
+            if typetable.are_integers(self, _right): return operation.INT_OP
+            
+            #! cast as float op
+            return operation.FLOAT_OP
+
+        #! end
+        return operation.BAD_OP
+
     def multiply(self, _right):
         """ Only numbers can be multiplied.
 

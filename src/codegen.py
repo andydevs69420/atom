@@ -109,10 +109,11 @@ class generator(object):
         _lhs = self.tstack.popp()
         _rhs = self.tstack.popp()
 
-        _operation = None
+        #! default
+        _operation = operation.BAD_OP
 
-        if  _op == "^":
-            _operation = _lhs.minus(_rhs)
+        if  _op == "^^":
+            _operation = _lhs.exponent(_rhs)
 
             #! opcode
             match _operation:
@@ -124,14 +125,6 @@ class generator(object):
 
         elif _op == "/" or _op == "%":
             _operation = _lhs.divide(_rhs)
-
-            #! opcode
-            match _operation:
-                case operation.INT_OP  :
-                    emit_opcode(self, intadd)
-
-                case operation.FLOAT_OP:
-                    emit_opcode(self, fltadd)
 
         elif _op == "+":
             _operation = _lhs.plus(_rhs)
