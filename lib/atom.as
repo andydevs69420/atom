@@ -1,6 +1,6 @@
 #! comment
 #! another comment!
 
-2 + true;
+2 - 2;
 
 import [nah];

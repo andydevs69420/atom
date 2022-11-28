@@ -67,44 +67,94 @@ class typetable(object):
     @staticmethod
     def is_number(_type):
         #! short
-        return typetable.is_float(_type) or typetable.is_integer(_type)
+        return  typetable.is_float(_type) or \
+                typetable.is_integer(_type)
     
     @staticmethod
     def is_integer(_type):
-        for _each_type in _type.totype():
-            if  _each_type == object_names.INT:
-                return True
-        #! end
-        return False
-    
+        return bool(object_names.INT in \
+            _type.totype())
+          
     @staticmethod
     def is_float(_type):
-        for _each_type in _type.totype():
-            if  _each_type == object_names.FLOAT:
-                return True
-        #! end
-        return False
+        return bool(object_names.FLOAT in \
+            _type.totype())
     
     @staticmethod
     def is_string(_type):
-        for _each_type in _type.totype():
-            if  _each_type == object_names.STR:
-                return True
-        #! end
-        return False
+        return bool(object_names.STR in \
+            _type.totype())
+    
+    @staticmethod
+    def is_bool(_type):
+        return bool(object_names.BOOL in \
+            _type.totype())
+    
+    @staticmethod
+    def is_null(_type):
+        return bool(object_names.NULL in \
+            _type.totype())
 
     #! ========= PLURAL =========
 
     @staticmethod
     def are_numbers(_left, _right):
-        return typetable.is_number(_left) and typetable.is_number(_right)
+        return  typetable.is_number(_left ) and \
+                typetable.is_number(_right)
+    
+    @staticmethod
+    def are_integers(_left, _right):
+        return  typetable.is_integer(_left ) and \
+                typetable.is_integer(_right)
+    
+    @staticmethod
+    def are_floats(_left, _right):
+        return  typetable.is_float(_left ) and \
+                typetable.is_float(_right)
     
     @staticmethod
     def are_strings(_left, _right):
-        return typetable.is_number(_left) and typetable.is_number(_right)
+        return  typetable.is_number(_left ) and \
+                typetable.is_number(_right)
+    
+    @staticmethod
+    def are_booleans(_left, _right):
+        return  typetable.is_bool(_left ) and \
+                typetable.is_bool(_right)
 
 
     #! ======== PER TYPE OPS =====
+
+    def multiply(self, _right):
+        """ Only numbers can be multiplied.
+
+            Returns
+            -------
+            operation 
+        """
+        if  typetable.are_numbers(self, _right):
+            #! cast as int op
+            if typetable.are_integers(self, _right): return operation.INT_OP
+            
+            #! cast as float op
+            return operation.FLOAT_OP
+
+        #! end
+        return operation.BAD_OP
+    
+    def divide(self, _right):
+        """ Only numbers can be divided.
+
+            Returns
+            -------
+            operation 
+        """
+        if  typetable.are_numbers(self, _right):
+            #! cast as float op
+            return operation.FLOAT_OP
+
+        #! end
+        return operation.BAD_OP
 
     def plus(self, _right):
         """ Only numbers(float, int) and string can be added.
@@ -114,10 +164,33 @@ class typetable(object):
             operation 
         """
         if  typetable.are_numbers(self, _right):
-            return 
+            #! cast as int op
+            if typetable.are_integers(self, _right): return operation.INT_OP
+            
+            #! cast as float op
+            return operation.FLOAT_OP
 
         elif typetable.are_strings(self, _right):
+            #! string concat
             return operation.STR_OP
         
+        #! end
+        return operation.BAD_OP
+    
+
+    def minus(self, _right):
+        """ Only numbers can be subtracted.
+
+            Returns
+            -------
+            operation 
+        """
+        if  typetable.are_numbers(self, _right):
+            #! cast as int op
+            if typetable.are_integers(self, _right): return operation.INT_OP
+            
+            #! cast as float op
+            return operation.FLOAT_OP
+
         #! end
         return operation.BAD_OP

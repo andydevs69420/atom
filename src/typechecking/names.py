@@ -1,10 +1,11 @@
 
 class object_names:
-    INT   = "int"
-    FLOAT = "float"
-    STR   = "str"
-    BOOL  = "bool"
-    NULL  = "null"
-    ARRAY = "array"
-    MAP   = "map"
+    INT    = "int"
+    FLOAT  = "float"
+    STR    = "str"
+    BOOL   = "bool"
+    NULL   = "null"
+    ARRAY  = "array"
+    MAP    = "map"
+    OBJECT = "object"
 

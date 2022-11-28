@@ -1,2 +1,2 @@
 from .names import object_names
-from .typetable import typetable
+from .typetable import (operation, typetable)

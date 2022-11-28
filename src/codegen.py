@@ -5,21 +5,22 @@ from readf import read_file
 from parser import parser
 
 from symboltable import symboltable
-from typechecking import (object_names, typetable)
+from typechecking import (object_names, typetable, operation)
 
+from error import (error_category, error)
 
 from aopcode import *
 
 def push_ttable(_cls, _type, _intern0=None, _intern1=None):
-    _type = typetable()
-    _type.types.append(_type)
+    _typetb = typetable()
+    _typetb.types.append(_type)
 
     #! internal
-    _type.internal0 = _intern0
-    _type.internal1 = _intern1
+    _typetb.internal0 = _intern0
+    _typetb.internal1 = _intern1
 
     #! push type
-    _cls.tstack.push(_type)
+    _cls.tstack.push(_typetb)
 
 
 def emit_opcode(_cls, _opcode, *_args):
@@ -108,17 +109,67 @@ class generator(object):
         _lhs = self.tstack.popp()
         _rhs = self.tstack.popp()
 
-        if  _op == "+":
+        _operation = None
+
+        if  _op == "^":
+            _operation = _lhs.minus(_rhs)
 
             #! opcode
-            emit_opcode(self, intadd)
+            match _operation:
+                case operation.INT_OP  :
+                    emit_opcode(self, intadd)
+
+                case operation.FLOAT_OP:
+                    emit_opcode(self, fltadd)
+
+        elif _op == "/" or _op == "%":
+            _operation = _lhs.divide(_rhs)
+
+            #! opcode
+            match _operation:
+                case operation.INT_OP  :
+                    emit_opcode(self, intadd)
+
+                case operation.FLOAT_OP:
+                    emit_opcode(self, fltadd)
+
+        elif _op == "+":
+            _operation = _lhs.plus(_rhs)
+
+            #! opcode
+            match _operation:
+                case operation.INT_OP  :
+                    emit_opcode(self, intadd)
+
+                case operation.FLOAT_OP:
+                    emit_opcode(self, fltadd)
+                
+                case _:
+                    emit_opcode(self, concat)
+        
+        elif _op == "-":
+            _operation = _lhs.minus(_rhs)
+
+            #! opcode
+            match _operation:
+                case operation.INT_OP  :
+                    emit_opcode(self, intadd)
+
+                case operation.FLOAT_OP:
+                    emit_opcode(self, fltadd)
+
+        if  _operation == operation.BAD_OP:
+            error.raise_tracked(
+                error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.locs)
+
 
 
     def ast_expr_stmnt(self, _node):
         #! statement
         self.visit(_node.get(0))
 
-        
+        #! opcode
+        emit_opcode(self, pop_top)
 
     def ast_source(self, _node):
         for _each_node in _node.get(0):

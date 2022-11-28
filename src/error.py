@@ -8,6 +8,7 @@ class error_category(Enum):
     FileNotFound = 0x01
     LexicalError = 0x02
     ParseError   = 0x03
+    CompileError = 0x04
 
 class error:
 
