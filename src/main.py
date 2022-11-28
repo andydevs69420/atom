@@ -1,6 +1,8 @@
+""" Do not use match statement inorder for other
+    implementation to work eg: pypy.
+"""
 
 from sys import argv
-
 from astate import state
 from codegen import codegen
 

@@ -1,7 +1,4 @@
 
-
-
-
 class object_names:
     INT   = "int"
     FLOAT = "float"

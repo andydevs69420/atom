@@ -4,8 +4,9 @@ from stack import stack
 from readf import read_file
 from parser import parser
 
-from symboltable import (symboltable, typetable)
-from aobjects import object_names
+from symboltable import symboltable
+from typechecking import (object_names, typetable)
+
 
 from aopcode import *
 
