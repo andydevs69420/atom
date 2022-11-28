@@ -53,6 +53,12 @@ class lexer(object):
             (_c == 0x20)
         )
     
+    def c_is_newline(self):
+        return ord(self.current.clook) == 0x0a
+    
+    def c_is_com_start(self):
+        return ord(self.current.clook) == 0x23
+    
     def c_is_idn_start(self):
         _c = ord(self.current.clook)
         return (
@@ -86,6 +92,27 @@ class lexer(object):
         return (_c == 0x22 or _c == 0x27)
 
     #! ============= BUILDER =============
+
+    def comment(self):
+        _token = atoken(token_type.COMMENT, self.current.cline, self.current.ccolm)
+        _token.value = self.current.clook
+
+        self.forward()
+
+        if  self.current.clook != '!':
+            _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
+            error.raise_tracked(
+                error_category.LexicalError, "invalid comment initializer \"%s\". Did you mean \"#!\"??" % _token.value, _loc
+            )
+        
+        self.forward()
+
+        while self.hasNext() and not self.c_is_newline():
+            self.forward()
+        
+        #! end
+        return
+
 
     def token_0(self):
         """ IDENTIFIER token.
@@ -297,9 +324,129 @@ class lexer(object):
         #! end
         return _token
 
+    def token_3(self):
+        """ SYMBOL token.
+
+            Returns
+            -------
+            atoken
+        """
+        _token = atoken(token_type.SYMBOL, self.current.cline, self.current.ccolm)
+        _token.value = ""
+
+        if   self.current.clook == '~':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == '=':
+                _token.value += self.nextchr()
+
+        elif self.current.clook == '^':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == '^':
+                _token.value += self.nextchr()
+
+            if   self.current.clook == '=':
+                _token.value += self.nextchr()
+        
+        elif self.current.clook == '*':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == '*' or\
+                 self.current.clook == '=':
+                _token.value += self.nextchr()
+        
+        elif self.current.clook == '/' or\
+             self.current.clook == '%' or\
+             self.current.clook == '+' or\
+             self.current.clook == '-':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == '=':
+                _token.value += self.nextchr()
+        
+        elif self.current.clook == '<':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == '<':
+                _token.value += self.nextchr()
+            
+            if   self.current.clook == '=':
+                _token.value += self.nextchr()
+        
+        elif self.current.clook == '>':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == '>':
+                _token.value += self.nextchr()
+            
+            if   self.current.clook == '=':
+                _token.value += self.nextchr()
+        
+        elif self.current.clook == '=' or\
+             self.current.clook == '!':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == '=':
+                _token.value += self.nextchr()
+
+        elif self.current.clook == '&':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == '&' or\
+                 self.current.clook == '=':
+                _token.value += self.nextchr()
+        
+        elif self.current.clook == '|':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == '|' or\
+                 self.current.clook == '=':
+                _token.value += self.nextchr()
+
+        elif self.current.clook == '(' or\
+             self.current.clook == ')' or\
+             self.current.clook == '[' or\
+             self.current.clook == ']' or\
+             self.current.clook == '{' or\
+             self.current.clook == '}' or\
+             self.current.clook == '.' or\
+             self.current.clook == '!' or\
+             self.current.clook == ':' or\
+             self.current.clook == ';' or\
+             self.current.clook == ',':
+            _token.value += self.nextchr()
+        
+        else:
+            _token.value += self.nextchr()
+            _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
+            error.raise_tracked(
+                error_category.LexicalError, "unknown symbol %s remove this symbol." % repr(_token.value), _loc
+            )
+
+        #! end
+        return _token
+    
+    def token_4(self):
+        """ EOF token.
+
+            Returns
+            -------
+            atoken
+        """
+        #! JOB: pop current files from stack
+        self.state.files.popp()
+
+        _token = atoken(token_type.EOF, self.current.cline, self.current.ccolm)
+        _token.value = "eof"
+
+        #! end
+        return _token
 
     def getNext(self):
-        assert not self.state.files.isempty(), "no input!"
+        if  self.state.files.isempty():
+            #! eof
+            return self.token_4()
 
         self.current = self.state.files.peek()
 
@@ -307,6 +454,9 @@ class lexer(object):
 
             if   self.c_is_ignorable():
                 self.forward()
+            
+            elif self.c_is_com_start():
+                self.comment()
 
             elif self.c_is_idn_start():
                 return self.token_0()
@@ -316,9 +466,11 @@ class lexer(object):
             
             elif self.c_is_str_start():
                 return self.token_2()
+            else:
+                return self.token_3()
         
         #! eof
-        return
+        return self.token_4()
     
 
     def nextchr(self):
@@ -328,7 +480,7 @@ class lexer(object):
         return _old
 
     def forward(self):
-        if  ord(self.current.clook) == 0x0a:
+        if  self.c_is_newline():
             self.current.safe_line = self.current.cline
             self.current.safe_colm = self.current.ccolm
 

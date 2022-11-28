@@ -2,6 +2,7 @@ from enum import Enum
 from builtins import repr
 
 class token_type(Enum):
+    COMMENT    = 0x00
     IDENTIFIER = 0x01
     INTEGER    = 0x02
     FLOAT      = 0x03
@@ -29,7 +30,7 @@ class atoken(object):
         _line_end = _line_start if _line_end < _line_start else _line_end
 
         _lines = _code.split("\n")
-        _paddN = 2
+        _paddN = 3
 
         _stx = 0 if ((_line_start - 1) - _paddN) < 0 else ((_line_start - 1) - _paddN)
         _end = (len(_lines) - 1) if (_line_end + _paddN) > len(_lines) else (_line_end + _paddN)
