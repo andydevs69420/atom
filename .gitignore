@@ -3,3 +3,6 @@ src/__pycache__/**
 
 src/ast/__pycache__/
 src/ast/__pycache__/**
+
+src/typechecking/__pycache__/
+src/typechecking/__pycache__/**
