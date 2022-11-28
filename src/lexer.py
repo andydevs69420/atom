@@ -2,7 +2,7 @@
 from sys import argv, path as syspath
 from os import path as ospath
 
-from builtins import (open, len, ord)
+from builtins import (open, len, ord, repr, int , str, float)
 
 from error import (error_category, error)
 from atoken import (token_type, atoken)
@@ -33,8 +33,7 @@ class lexer(object):
                     _file.close()
                     return
 
-                except IOError as e:
-                    print(e)
+                except IOError:
                     error.raise_untracked(error_category.IOError, "file is not readable \"%s\"." % _file_path)
             #! end
         
@@ -93,7 +92,7 @@ class lexer(object):
 
             Returns
             -------
-            token
+            atoken
         """
         _token = atoken(token_type.IDENTIFIER, self.current.cline, self.current.ccolm)
         _token.value  = ""
@@ -136,7 +135,7 @@ class lexer(object):
 
             Returns
             -------
-            token
+            atoken
         """
         _token = atoken(token_type.INTEGER, self.current.cline, self.current.ccolm)
         _token.value  = ""
@@ -145,26 +144,67 @@ class lexer(object):
         if  _token.value == '0':
             _token.value += self.nextchr()
 
-            if   _token.value in ('x', 'X'):
+            if   _token.value in ('0x', '0X'):
                  _token.value += self.nextchr ()
                  _token.value += self.hex_part()
 
-            elif _token.value in ('o', 'O'):
+            elif _token.value in ('0o', '0O'):
                  _token.value += self.nextchr ()
                  _token.value += self.oct_part()
             
-            elif _token.value in ('b', 'B'):
+            elif _token.value in ('0b', '0B'):
                  _token.value += self.nextchr ()
                  _token.value += self.bin_part()
                 
             if  len(_token.value) == 2:
-                return ...
+                _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
+                error.raise_tracked(
+                    error_category.LexicalError, "improper formed literal \"%s\"." % _token.value, _loc
+                )
+            
+            if  len(_token.value) >= 3: # > 2
+                #! convert
+                _token.value = str(int(_token.value))
+
+                #! end
+                return _token
         
         #! continue
-        if  self.current.clook == '.':
+        if   self.current.clook == '.':
+            _token.ttype =  token_type.FLOAT
             _token.value += self.nextchr ()
 
+            if  not self.c_is_num_start():
+                _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
+                error.raise_tracked(
+                    error_category.LexicalError, "invalid float value \"%s\"." % _token.value, _loc
+                )
             
+            #! append next [0-9]+
+            _token.value += self.num_part()
+
+            #! convert
+            _token.value = str(float(_token.value))
+        
+        if   self.current.clook in ('e', 'E'):
+            _token.ttype =  token_type.FLOAT
+            _token.value += self.nextchr ()
+
+            #! allow sign if truncation,
+            if   self.current.clook in ('+', '-'):
+                _token.value += self.nextchr ()
+
+            if  not self.c_is_num_start():
+                _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
+                error.raise_tracked(
+                    error_category.LexicalError, "invalid float value while truncation\"%s\"." % _token.value, _loc
+                )
+            
+            #! append next [0-9]+
+            _token.value += self.num_part()
+            
+            #! convert
+            _token.value = str(float(_token.value))
 
         #! end
         return _token
@@ -200,6 +240,63 @@ class lexer(object):
 
         #! end
         return _bin
+    
+    def token_2(self):
+        """ STRING token.
+
+            Returns
+            -------
+            atoken
+        """
+        _token = atoken(token_type.STRING, self.current.cline, self.current.ccolm)
+        _token.value  = ""
+
+        _o, _c = self.current.clook, None
+        self.forward()
+
+        _c = self.current.clook
+
+        while self.hasNext() and not (_o == _c):
+
+            if  ord(self.current.clook) == 0x0a:
+                break
+            
+            if  ord(self.current.clook) == 0x5c:
+                self.forward()
+
+                if   self.current.clook == 'b':
+                    _token.value += '\b'
+                elif self.current.clook == 't':
+                    _token.value += '\t'
+                elif self.current.clook == 'n':
+                    _token.value += '\n'
+                elif self.current.clook == 'r':
+                    _token.value += '\r'
+                elif self.current.clook == "'":
+                    _token.value += '\''
+                elif self.current.clook == '"':
+                    _token.value += '\"'
+                else:
+                    _token.value += "\\" + self.current.clook
+
+            else:
+                _token.value += self.current.clook
+            
+            self.forward()
+            _c = self.current.clook
+        
+        if  _o != _c:
+            _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
+            error.raise_tracked(
+                error_category.LexicalError, "string is not properly terminated %s." % repr(_token.value), _loc
+            )
+
+        else:
+            self.forward()
+        
+        #! end
+        return _token
+
 
     def getNext(self):
         assert not self.state.files.isempty(), "no input!"
@@ -216,6 +313,9 @@ class lexer(object):
 
             elif self.c_is_num_start():
                 return self.token_1()
+            
+            elif self.c_is_str_start():
+                return self.token_2()
         
         #! eof
         return

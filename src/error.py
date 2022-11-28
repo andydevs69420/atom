@@ -14,3 +14,8 @@ class error:
     def raise_untracked(_category, _message):
         print("[%s] %s" % (_category.name, _message), file=stderr)
         exit(0x01)
+    
+    @staticmethod
+    def raise_tracked(_category, _message, _location):
+        print("[%s] %s \n%s" % (_category.name, _message, _location), file=stderr)
+        exit(0x01)
