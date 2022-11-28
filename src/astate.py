@@ -1,5 +1,5 @@
 
-from sys import argv, path as syspath
+from sys import argv
 from os import path as ospath
 
 from stack import stack

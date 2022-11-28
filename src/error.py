@@ -5,8 +5,9 @@ from sys import (stderr, exit)
 class error_category(Enum):
 
     IOError      = 0x00
-    LexicalError = 0x01
-    ParseError   = 0x02
+    FileNotFound = 0x01
+    LexicalError = 0x02
+    ParseError   = 0x03
 
 class error:
 

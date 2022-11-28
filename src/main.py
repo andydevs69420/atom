@@ -1,15 +1,18 @@
 
-from sys import argv, path as syspath
-from os import path as ospath
+from sys import argv
 
 from astate import state
-from lexer import lexer
+from parser import parser
+
+
+from readf import read_file
 
 def main():
     _state = state()
-    x = lexer(_state)
-    x.read_input(argv[1])
-    print(x.getNext())
+    read_file(_state, argv[1])
+
+    _p = parser(_state)
+    _p.parse()
     #! end
 
 main()

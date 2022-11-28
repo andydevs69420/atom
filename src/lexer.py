@@ -1,8 +1,4 @@
 
-from sys import argv, path as syspath
-from os import path as ospath
-
-from builtins import (open, len, ord, repr, int , str, float)
 
 from error import (error_category, error)
 from atoken import (token_type, atoken)
@@ -12,37 +8,9 @@ class lexer(object):
     """
 
     def __init__(self, _state):
-        self.state             = _state
-        self.current:lex_input = None
-    
-    def read_input(self, _file_path):
-        for _dir in self.state.paths:
-            _loc = ospath.abspath(ospath.join(_dir, _file_path))
+        self.__state = _state
+        self.current = self.__state.files.popp()
 
-            if  ospath.exists(_loc) and ospath.isfile(_loc):
-                try:
-                    #! prevent duplicate
-                    if  ospath.basename(_loc) in self.state.names:
-                        return
-
-                    #! read
-                    _file = open(_loc, "r")
-                    self.state.files.generic_push(lex_input(_loc, _file.read()))
-
-                    #! close stream
-                    _file.close()
-
-                    #! reg
-                    self.state.names.append(ospath.basename(_loc))
-
-                    return
-
-                except IOError:
-                    error.raise_untracked(error_category.IOError, "file is not readable \"%s\"." % _file_path)
-            #! end
-        
-        #! finalize
-        error.raise_untracked(error_category.IOError, "file not found \"%s\" (No such file or dir)." % _file_path)
 
     #! ============= CHECKER =============
 
@@ -438,9 +406,6 @@ class lexer(object):
             -------
             atoken
         """
-        #! JOB: pop current files from stack
-        self.state.files.popp()
-
         _token = atoken(token_type.EOF, self.current.cline, self.current.ccolm)
         _token.value = "eof"
 
@@ -448,12 +413,6 @@ class lexer(object):
         return _token
 
     def getNext(self):
-        if  self.state.files.isempty():
-            #! eof
-            return self.token_4()
-
-        self.current = self.state.files.peek()
-
         while self.hasNext():
 
             if   self.c_is_ignorable():
@@ -470,6 +429,7 @@ class lexer(object):
             
             elif self.c_is_str_start():
                 return self.token_2()
+
             else:
                 return self.token_3()
         
@@ -499,20 +459,4 @@ class lexer(object):
 
     def hasNext(self):
         return self.current.index < len(self.current.fcode)
-
-
-class lex_input(object):
-    """ Input for lexical analysis.
-    """
-
-    def __init__(self, _file, _code):
-        self.fpath = _file
-        self.fcode = _code
-        self.clook = '\0' if len(self.fcode) <= 0 else self.fcode[0]
-        self.index = 0
-        self.cline = 1
-        self.ccolm = 1
-        self.safe_line = 1
-        self.safe_colm = 1
-
 #! END LEXER
