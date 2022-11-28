@@ -51,7 +51,14 @@ class symboltable(table):
     
     def endscope(self):
         _current = self.earlier()
+
+        #! ensure other
+        if _current == self: return
+
+        #! unlink
         _current.head.tail = None
+
+        #! end
         return _current
 
 
