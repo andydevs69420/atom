@@ -7,7 +7,8 @@ class operation(Enum):
     INT_OP   = 0x01
     FLOAT_OP = 0x02
     STR_OP   = 0x03
-    BAD_OP   = 0x04
+    BOOL_OP  = 0x04
+    BAD_OP   = 0x05
 
 
 class typetable(object):
@@ -172,6 +173,23 @@ class typetable(object):
 
         #! end
         return operation.BAD_OP
+    
+    def modulo(self, _right):
+        """ Only numbers can be divided.
+
+            Returns
+            -------
+            operation 
+        """
+        if  typetable.are_numbers(self, _right):
+            #! cast as int op
+            if typetable.are_integers(self, _right): return operation.INT_OP
+            
+            #! cast as float op
+            return operation.FLOAT_OP
+
+        #! end
+        return operation.BAD_OP
 
     def plus(self, _right):
         """ Only numbers(float, int) and string can be added.
@@ -208,6 +226,33 @@ class typetable(object):
             
             #! cast as float op
             return operation.FLOAT_OP
+
+        #! end
+        return operation.BAD_OP
+    
+    def shift(self, _right):
+        """ Only integer is allowed to use bitwise shift.
+
+            Returns
+            -------
+            operation 
+        """
+        if  typetable.are_integers(self, _right): 
+            return operation.INT_OP
+
+        #! end
+        return operation.BAD_OP
+    
+    def relational(self, _right):
+        """ Only numbers(int|float) are allowed.
+
+            Returns
+            -------
+            operation 
+        """
+        if  typetable.are_numbers(self, _right):
+            #! cast as int op
+            return operation.BOOL_OP
 
         #! end
         return operation.BAD_OP

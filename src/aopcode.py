@@ -6,9 +6,28 @@ sload  = 2
 bload  = 3
 constn = 4
 
-#! plus
-intadd = 5
-fltadd = 6
-concat = 7
+#! multiply
+intmul = 5
+fltmul = 6
 
-pop_top = 100
+#! divide
+quotient  = 7
+
+intrem = 8
+fltrem = 9
+
+#! plus
+intadd = 10
+fltadd = 11
+concat = 12
+
+#! minus
+intsub = 13
+fltsub = 14
+
+#! shift
+lshift = 15
+rshift = 16
+
+pop_top = 17
+

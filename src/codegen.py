@@ -102,6 +102,10 @@ class generator(object):
 
 
     def ast_binary_op(self, _node):
+        """
+             $0    $1   $2
+            _lhs  _op  _rhs
+        """
         _op = _node.get(1)
         self.visit(_node.get(2)) # rhs
         self.visit(_node.get(0)) # lhs
@@ -118,13 +122,63 @@ class generator(object):
             #! opcode
             match _operation:
                 case operation.INT_OP  :
+                    #! emit int type
+                    push_ttable(self, object_names.INT)
+
                     emit_opcode(self, intadd)
 
                 case operation.FLOAT_OP:
+                    #! emit float type
+                    push_ttable(self, object_names.FLOAT)
+
                     emit_opcode(self, fltadd)
 
-        elif _op == "/" or _op == "%":
+        elif _op == "*":
+            _operation = _lhs.multiply(_rhs)
+
+            #! emit float type
+            push_ttable(self, object_names.FLOAT)
+
+           #! opcode
+            match _operation:
+                case operation.INT_OP  :
+                    #! emit int type
+                    push_ttable(self, object_names.INT)
+
+                    emit_opcode(self, intmul)
+
+                case operation.FLOAT_OP:
+                    #! emit float type
+                    push_ttable(self, object_names.FLOAT)
+
+                    emit_opcode(self, fltmul)
+
+        elif _op == "/":
             _operation = _lhs.divide(_rhs)
+
+            #! emit float type
+            push_ttable(self, object_names.FLOAT)
+
+            #! opcode
+            emit_opcode(self, quotient )
+            
+        
+        elif _op == "%":
+            _operation = _lhs.modulo(_rhs)
+
+            #! opcode
+            match _operation:
+                case operation.INT_OP  :
+                    #! emit int type
+                    push_ttable(self, object_names.INT)
+
+                    emit_opcode(self, intrem)
+
+                case operation.FLOAT_OP:
+                    #! emit float type
+                    push_ttable(self, object_names.FLOAT)
+
+                    emit_opcode(self, fltrem)
 
         elif _op == "+":
             _operation = _lhs.plus(_rhs)
@@ -132,12 +186,21 @@ class generator(object):
             #! opcode
             match _operation:
                 case operation.INT_OP  :
+                    #! emit int type
+                    push_ttable(self, object_names.INT)
+
                     emit_opcode(self, intadd)
 
                 case operation.FLOAT_OP:
+                    #! emit float type
+                    push_ttable(self, object_names.FLOAT)
+
                     emit_opcode(self, fltadd)
                 
                 case _:
+                    #! emit str type
+                    push_ttable(self, object_names.STR)
+
                     emit_opcode(self, concat)
         
         elif _op == "-":
@@ -146,10 +209,35 @@ class generator(object):
             #! opcode
             match _operation:
                 case operation.INT_OP  :
-                    emit_opcode(self, intadd)
+                    #! emit int type
+                    push_ttable(self, object_names.INT)
+
+                    emit_opcode(self, intsub)
 
                 case operation.FLOAT_OP:
-                    emit_opcode(self, fltadd)
+                    #! emit float type
+                    push_ttable(self, object_names.FLOAT)
+                    
+                    emit_opcode(self, fltsub)
+        
+        elif _op == "<<" or _op == ">>":
+            _operation = _lhs.shift(_rhs)
+
+            #! emit int type
+            push_ttable(self, object_names.INT)
+
+            #! opcode
+            if  _op == "<<":
+                emit_opcode(self, lshift)
+            else:
+                emit_opcode(self, rshift)
+        
+        elif _op == "<"  or \
+             _op == "<=" or \
+             _op == ">"  or \
+             _op == ">=":
+            _operation = _lhs.relational(_rhs)
+
 
         if  _operation == operation.BAD_OP:
             error.raise_tracked(
