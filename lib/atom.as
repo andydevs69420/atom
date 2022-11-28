@@ -6,9 +6,3 @@ import [nah];
 
 
 
-class Dog {
-
-
-    print
-
-}

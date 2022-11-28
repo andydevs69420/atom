@@ -3,6 +3,7 @@ from enum import Enum
 
 class ast_type(Enum):
     IMPORT = 1
+    SOURCE = 42
 
 
 

@@ -12,8 +12,8 @@ class parser(object):
     """
 
     def __init__(self, _state):
-        self.state     = _state
-        self.lexer     = lexer(self.state)
+        self.__state   = _state
+        self.lexer     = lexer(self.__state)
         self.lookahead = self.lexer.getNext()
         self.previous  = self.lexer
     
@@ -113,7 +113,7 @@ class parser(object):
 
         if  not self.check_both(_ttype, _value):
             error.raise_tracked(
-                error_category.ParseError, "unexpected stoken \"%s\". Did you mean \"%s\"??" % (self.lookahead.value, _value), self.c_location())
+                error_category.ParseError, "unexpected token \"%s\". Did you mean \"%s\"??" % (self.lookahead.value, _value), self.c_location())
             #! end
         
         #! next
@@ -130,6 +130,18 @@ class parser(object):
             -------
             str
         """
+        _idn = self.lookahead
+
+        #! forward
+        self.expect_t(token_type.IDENTIFIER)
+
+        #! check if keyword
+        if  keywords.is_keyword(_idn.value):
+            error.raise_tracked(
+                error_category.ParseError, "unexpected keyword \"%s\"." % _idn.value, self.d_location(_idn))
+
+        #! end
+        return _idn.value
 
     def list_idn(self):
         """ List of identifiers.
@@ -138,6 +150,21 @@ class parser(object):
             -------
             tuple
         """
+        _start = self.lookahead
+        _lists = []
+        _lists.append(self.raw_iden())
+
+        while self.check_both(token_type.SYMBOL, ","):
+            self.expect_t(token_type.SYMBOL)
+
+            if  not self.check_t(token_type.IDENTIFIER):
+                error.raise_tracked(
+                    error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
+
+            _lists.append(self.raw_iden())
+
+        #! end
+        return tuple(_lists)
 
     def stmnt_g1(self):
         """ COMPOUND statement.
@@ -155,7 +182,7 @@ class parser(object):
             -------
             ast
         """
-        if  self.check_both(token_type.IDENTIFIER, "import"):
+        if  self.check_both(token_type.IDENTIFIER, keywords.IMPORT):
             return self.stmnt_s0()
 
         raise Exception("Nah!")
@@ -189,11 +216,18 @@ class parser(object):
 
         return stmnt_ast(
             ast_type.IMPORT, self.d_location(_start), _imports)
-    
-    def hasNext(self):
-        return not self.check_t(token_type.EOF)
-    
-    def parse(self):
+        
+    def stmnt_g3(self):
+        """ SOURCE file.
+
+            Syntax
+            ------
+            stmnt_g1* EOF
+
+            Returns
+            -------
+            ast
+        """
         _stmnt = []
 
         while self.hasNext():
@@ -207,6 +241,15 @@ class parser(object):
         
         #! eof
         self.expect_t(token_type.EOF)
+
+        return stmnt_ast(
+            ast_type.SOURCE, "", _stmnt)
+    
+    def hasNext(self):
+        return not self.check_t(token_type.EOF)
+    
+    def parse(self):
+        return self.stmnt_g3()
         
 
         

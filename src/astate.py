@@ -20,4 +20,3 @@ class state(object):
         ]
         self.names = []
         self.files = stack(str)
-        print(self.paths)
