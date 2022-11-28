@@ -68,7 +68,7 @@ class lexer(object):
         return (
             (_c >= 0x061 and _c <= 0x7a) or
             (_c >= 0x041 and _c <= 0x5a) or 
-            (_c == 0x5f) or self.current.clook.isidentifier()
+            (_c == 0x5f) or self.current.clook.isidentifier() # or simply use "isidentifier"
         )
     
     def c_is_num_start(self):
