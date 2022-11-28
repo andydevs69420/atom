@@ -1,7 +1,10 @@
 
 
 class keywords:
-    
+
+    TRUE   = "true"
+    FALSE  = "false"
+    NULL   = "null"
     IMPORT = "import"
 
 

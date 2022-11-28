@@ -2,8 +2,15 @@ from enum import Enum
 
 
 class ast_type(Enum):
-    IMPORT = 1
-    SOURCE = 42
+    INT        = 1
+    FLOAT      = 2
+    STR        = 3
+    BOOL       = 4
+    NULL       = 5
+    BINARY_OP  = 6
+    IMPORT     = 123
+    EXPR_STMNT = 41
+    SOURCE     = 42
 
 
 
@@ -14,6 +21,8 @@ class aAst(object):
     def __init__(self, _type, _loc):
         self.type = _type
         self.locs = _loc
+    
+    def get(self, _index): raise NotImplementedError("prototype")
 
 
 class stmnt_ast(aAst):
@@ -36,6 +45,9 @@ class stmnt_ast(aAst):
 
         #! init prop
         self.statements = tuple(_arg)
+    
+    def get(self, _index):
+        return self.statements[_index]
 
 
 class expr_ast(aAst):
@@ -59,3 +71,5 @@ class expr_ast(aAst):
         #! init prop
         self.expression = tuple(_arg)
 
+    def get(self, _index):
+        return self.expression[_index]

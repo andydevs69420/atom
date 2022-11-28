@@ -165,6 +165,141 @@ class parser(object):
 
         #! end
         return tuple(_lists)
+    
+    def expr_g1(self):
+        """ ATOM
+
+            Rule
+            ----
+            atom := <terminal: int>
+                    | <terminal: float>
+                    | <terminal: str>
+                    | <terminal: bool>
+                    | <terminal: null>
+                    | <terminal: ref>
+                    ;
+        """
+        if  self.check_t(token_type.INTEGER):
+            return self.expr_0()
+        if  self.check_t(token_type.FLOAT  ):
+            return self.expr_1()
+        if  self.check_t(token_type.STRING ):
+            return self.expr_2()
+        if  self.check_both(token_type.IDENTIFIER, keywords.TRUE ) or\
+            self.check_both(token_type.IDENTIFIER, keywords.FALSE):
+            return self.expr_3()
+        if  self.check_both(token_type.IDENTIFIER, keywords.NULL ):
+            return self.expr_4()
+    
+    def expr_0(self):
+        """ INT expr.
+
+            Returns
+            -------
+            ast
+        """
+        _int = self.lookahead
+
+        #! int
+        self.expect_t(token_type.INTEGER)
+
+        #! end
+        return expr_ast(
+            ast_type.INT, "", _int.value)
+
+    def expr_1(self):
+        """ FLOAT expr.
+
+            Returns
+            -------
+            ast
+        """
+        _flt = self.lookahead
+
+        #! float
+        self.expect_t(token_type.FLOAT)
+
+        #! end
+        return expr_ast(
+            ast_type.FLOAT, "", _flt.value)
+    
+    def expr_2(self):
+        """ STR expr.
+
+            Returns
+            -------
+            ast
+        """
+        _str = self.lookahead
+
+        #! string
+        self.expect_t(token_type.STRING)
+
+        #! end
+        return expr_ast(
+            ast_type.STR, "", _str.value)
+
+    def expr_3(self):
+        """ BOOL expr.
+
+            Returns
+            -------
+            ast
+        """
+        _bool = self.lookahead
+
+        #! bool
+        self.expect_t(token_type.IDENTIFIER)
+
+        #! end
+        return expr_ast(
+            ast_type.BOOL, "", _bool.value)
+    
+    def expr_4(self):
+        """ NULL expr.
+
+            Returns
+            -------
+            ast
+        """
+        _null = self.lookahead
+
+        #! null
+        self.expect_t(token_type.IDENTIFIER)
+
+        #! end
+        return expr_ast(
+            ast_type.NULL, "", _null.value)
+
+    def expr_N(self):
+        """ ADDETIVE expression.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _node  = self.expr_g1()
+
+        if not _node: return _node
+
+        while self.check_both(token_type.SYMBOL, "+") or\
+              self.check_both(token_type.SYMBOL, "-"):
+            
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.expr_g1()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+            
+            _node = expr_ast(
+                ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
+        
+        #! end
+        return _node
+                
 
     def stmnt_g1(self):
         """ COMPOUND statement.
@@ -185,7 +320,8 @@ class parser(object):
         if  self.check_both(token_type.IDENTIFIER, keywords.IMPORT):
             return self.stmnt_s0()
 
-        raise Exception("Nah!")
+        #! end
+        return self.stmnt_sN()
 
     def stmnt_s0(self):
         """ IMPORT statement.
@@ -216,6 +352,28 @@ class parser(object):
 
         return stmnt_ast(
             ast_type.IMPORT, self.d_location(_start), _imports)
+    
+
+    def stmnt_sN(self):
+        """ EXPRESSION_STATEMENT statement.
+
+            Syntax
+            ------
+            nullable_expr ';'
+
+            Returns
+            -------
+            ast
+        """
+        _node = self.expr_N()
+        if not _node: return _node
+
+        # ';'
+        self.expect_both(token_type.SYMBOL, ";")
+        
+        #! end
+        return stmnt_ast(
+            ast_type.EXPR_STMNT, "", _node)
         
     def stmnt_g3(self):
         """ SOURCE file.
