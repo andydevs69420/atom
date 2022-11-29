@@ -18,9 +18,14 @@ class ast_type(Enum):
     UNARY_UNPACK = 15
     BINARY_OP    = 16
     SHORTC_OP    = 17
-    IMPORT       = 18
-    EXPR_STMNT   = 19
-    SOURCE       = 20
+    SIMPLE_ASS   = 18
+    AUGMENT_ASS  = 19
+    IMPORT       = 20
+    VAR_SMTNT    = 21
+    LET_SMTNT    = 21
+    CONST_SMTNT  = 23
+    EXPR_STMNT   = 24
+    SOURCE       = 25
 
 
 

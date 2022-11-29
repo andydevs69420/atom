@@ -6,6 +6,9 @@ class keywords:
     FALSE  = "false"
     NULL   = "null"
     IMPORT = "import"
+    CONST  = "const"
+    VAR    = "var"
+    LET    = "let"
 
 
     @staticmethod

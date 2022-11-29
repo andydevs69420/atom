@@ -4,15 +4,7 @@
 
 import [nah];
 
+typedef helloworld int[void];
 
-2 && "asdasd";
+(int) (2+2);
 
-2 >> 100 + 2;
-
-
-{1 : 23};
-
-[1,2,3];
-
-
-(int - 2) (2+2);

@@ -251,6 +251,47 @@ class parser(object):
         #! end
         return (_key, _val)
     
+    def list_declaire(self):
+        """ List of declairation.
+
+            Returns
+            -------
+            tuple
+        """
+        _start = self.lookahead
+        _list  = []
+        _list.append(self.declaire())
+
+        while self.check_both(token_type.SYMBOL, ","):
+            #! ','
+            self.expect_t(token_type.SYMBOL)
+
+            #! check
+            if  not self.check_t(token_type.IDENTIFIER):
+                error.raise_tracked(error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
+
+            #! next
+            _list.append(self.declaire())
+
+        #! end
+        return tuple(_list)
+
+    def declaire(self):
+        #! var name
+        _var = self.raw_iden()
+
+        if  not self.check_both(token_type.SYMBOL, "="):
+            return (_var, None)
+
+        #! '='
+        self.expect_both(token_type.SYMBOL, "=")
+
+        #! value
+        _val = self.non_nullable_expr()
+
+        return (_var, _val)
+
+    
     def atom(self):
         """ ATOM
 
@@ -262,7 +303,10 @@ class parser(object):
                     | <terminal: bool>
                     | <terminal: null>
                     | <terminal: ref>
-                    | other_type
+                    | array_expr
+                    | map_expr
+                    | '(' non_nullable_expr ')' ;
+                    | ε
                     ;
         """
         if  self.check_t(token_type.INTEGER):
@@ -788,9 +832,71 @@ class parser(object):
         #! end
         return _node
     
+    def simple_assignment(self):
+        """ SIMPLE ASSIGNMENT expression.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _node  = self.short_circuiting()
+
+        while self.check_both(token_type.SYMBOL, "="):
+            
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.bitwise()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+            
+            _node = expr_ast(
+                ast_type.SIMPLE_ASS, self.d_location(_start), _node, _opt, _rhs)
+
+        #! end
+        return _node
+    
+    def augmented_assignment(self):
+        """ AUGMENTED ASSIGNMENT expression.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _node  = self.simple_assignment()
+
+        while self.check_both(token_type.SYMBOL, "~=" ) or\
+              self.check_both(token_type.SYMBOL, "^^=") or\
+              self.check_both(token_type.SYMBOL, "*=" ) or\
+              self.check_both(token_type.SYMBOL, "/=" ) or\
+              self.check_both(token_type.SYMBOL, "%=" ) or\
+              self.check_both(token_type.SYMBOL, "+=" ) or\
+              self.check_both(token_type.SYMBOL, "-=" ) or\
+              self.check_both(token_type.SYMBOL, "<<=") or\
+              self.check_both(token_type.SYMBOL, ">>=") or\
+              self.check_both(token_type.SYMBOL, "&=" ) or\
+              self.check_both(token_type.SYMBOL, "|=" ) or\
+              self.check_both(token_type.SYMBOL, "^=" ):
+            
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.simple_assignment()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+            
+            _node = expr_ast(
+                ast_type.AUGMENTED_ASS, self.d_location(_start), _node, _opt, _rhs)
+
+        #! end
+        return _node
 
     def nullable_expr(self):
-        return self.short_circuiting()
+        return self.simple_assignment()
     
     def non_nullable_expr(self):
         _node = self.nullable_expr()
@@ -851,6 +957,56 @@ class parser(object):
         return stmnt_ast(
             ast_type.IMPORT, "...", _imports)
     
+    def var_stmnt(self):
+        #! "var"
+        self.expect_both(token_type.IDENTIFIER, keywords.VAR)
+        
+        _start = self.lookahead
+
+        _declaire = self.list_declaire()
+
+        _ended = self.d_location(_start)
+
+        #! ';'
+        self.expect_both(token_type.SYMBOL, ";")
+
+        #! end
+        return stmnt_ast(
+            ast_type.VAR_STMNT, _ended, _declaire)
+
+    def let_stmnt(self):
+        #! "let"
+        self.expect_both(token_type.IDENTIFIER, keywords.LET)
+        
+        _start = self.lookahead
+
+        _declaire = self.list_declaire()
+
+        _ended = self.d_location(_start)
+
+        #! ';'
+        self.expect_both(token_type.SYMBOL, ";")
+
+        #! end
+        return stmnt_ast(
+            ast_type.LET_STMNT, _ended, _declaire)
+    
+    def const_stmnt(self):
+        #! "const"
+        self.expect_both(token_type.IDENTIFIER, keywords.CONST)
+        
+        _start = self.lookahead
+
+        _declaire = self.list_declaire()
+
+        _ended = self.d_location(_start)
+
+        #! ';'
+        self.expect_both(token_type.SYMBOL, ";")
+
+        #! end
+        return stmnt_ast(
+            ast_type.CONST_STMNT, _ended, _declaire)
 
     def expr_stmnt(self):
         """ EXPRESSION_STATEMENT statement.
