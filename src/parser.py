@@ -925,6 +925,12 @@ class parser(object):
         """
         if  self.check_both(token_type.IDENTIFIER, keywords.IMPORT):
             return self.import_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.VAR):
+            return self.var_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.LET):
+            return self.let_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.CONST):
+            return self.const_stmnt()
 
         #! end
         return self.expr_stmnt()
