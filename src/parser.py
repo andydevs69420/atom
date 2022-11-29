@@ -152,15 +152,18 @@ class parser(object):
         """
         _start = self.lookahead
         _lists = []
+
         _lists.append(self.raw_iden())
 
         while self.check_both(token_type.SYMBOL, ","):
+            #! ','
             self.expect_t(token_type.SYMBOL)
 
+            #! check
             if  not self.check_t(token_type.IDENTIFIER):
-                error.raise_tracked(
-                    error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
-
+                error.raise_tracked(error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
+            
+            #! append
             _lists.append(self.raw_iden())
 
         #! end
@@ -184,13 +187,17 @@ class parser(object):
         _lists.append(_exprN)
 
         while self.check_both(token_type.SYMBOL, ","):
+            #! ','
             self.expect_t(token_type.SYMBOL)
 
+            #! next
             _exprN = self.nullable_expr()
-            if  not _exprN:
-                error.raise_tracked(
-                    error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
 
+            #! check
+            if  not _exprN:
+                error.raise_tracked(error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
+
+            #! append
             _lists.append(_exprN)
 
         #! end
@@ -214,13 +221,17 @@ class parser(object):
         _lists.append(_exprN)
 
         while self.check_both(token_type.SYMBOL, ","):
+            #! ','
             self.expect_t(token_type.SYMBOL)
-            
-            _exprN = self.key_value_pair()
-            if  not _exprN:
-                error.raise_tracked(
-                    error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
 
+            #! next
+            _exprN = self.key_value_pair()
+
+            #! check
+            if  not _exprN:
+                error.raise_tracked(error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
+
+            #! append
             _lists.append(_exprN)
 
         #! end
