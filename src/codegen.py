@@ -11,6 +11,11 @@ from error import (error_category, error)
 
 from aopcode import *
 
+
+
+
+TARGET =...
+
 def push_ttable(_cls, _type, _intern0=None, _intern1=None):
     _typetb = typetable()
     _typetb.types.append(_type)
@@ -23,10 +28,12 @@ def push_ttable(_cls, _type, _intern0=None, _intern1=None):
     _cls.tstack.push(_typetb)
 
 
+def get_byteoff(_cls):
+    return len(_cls.bcodes) * 2
+
 def emit_opcode(_cls, _opcode, *_args):
-    ...
-
-
+    _cls.bcodes.append([get_byteoff(_cls), _opcode, *_args])
+    return _cls.bcodes[-1]
 
 class generator(object):
     """ Base code generator for atom.
@@ -36,6 +43,7 @@ class generator(object):
         self.locals = 0
         self.symtbl = symboltable()
         self.tstack = stack(typetable)
+        self.bcodes = []
 
     #! =========== VISITOR ===========
     
@@ -303,7 +311,26 @@ class generator(object):
                 error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.locs)
 
     def ast_shortc_op(self, _node):
-        ...
+        """
+             $0    $1   $2
+            _lhs  _op  _rhs
+        """
+        #! lhs
+        self.visit(_node.get(0))
+
+        #! jump to last control if false
+        _target =\
+        emit_opcode(self, jump_if_false, TARGET)
+
+        #! pop lhs
+        emit_opcode(self, pop_top)
+
+        #! rhs
+        self.visit(_node.get(2))
+
+        #! jump here
+        _target[2] = get_byteoff(self)
+
 
     def ast_expr_stmnt(self, _node):
         #! statement
@@ -330,16 +357,24 @@ class codegen(generator):
         self.gparser = parser(self.__state)
     
     def ast_import(self, _node):
-        for _each_import in _node.statements[0]:
+        for _each_import in _node.get(0)[::-1]:
 
             #! read file first
             read_file(self.__state, _each_import + ".as")
 
-            print(_each_import)
-        
-        #! ast
+            #! parse
+            _parse = parser(self.__state)
+            
+            for _each_node in _parse.raw_parse():
+                #! visit each node
+                self.visit(_each_node)
+        #! end
 
     
     def generate(self):
-        return self.visit(self.gparser.parse())
+        self.visit(self.gparser.parse())
+
+        for x in self.bcodes:
+            print(x)
+        return self.bcodes
 

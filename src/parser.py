@@ -613,6 +613,21 @@ class parser(object):
     def hasNext(self):
         return not self.check_t(token_type.EOF)
     
+    def raw_parse(self):
+        _stmnt = []
+
+        while self.hasNext():
+            _node = self.compound_stmnt()
+
+            #! check if epsilon
+            if  not _node: break
+
+            #! child node
+            _stmnt.append(_node)
+
+        #! end
+        return tuple(_stmnt)
+
     def parse(self):
         return self.source()
         
