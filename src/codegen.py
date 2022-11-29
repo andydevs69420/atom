@@ -263,14 +263,33 @@ class generator(object):
             push_ttable(self, object_names.BOOL)
 
             #! opcode
-            if  _lhs.is_integer(_lhs) and _rhs.is_integer(_rhs):
+            if  _lhs.is_integer(_lhs) and \
+                _rhs.is_integer(_rhs):
                 emit_opcode(self, equal_i)
 
-            elif _lhs.is_float(_lhs) and _rhs.is_float(_rhs):
+            elif _lhs.is_float(_lhs) and \
+                _rhs.is_float(_rhs):
                 emit_opcode(self, equal_f)
             
-            elif _lhs.is_string(_lhs) and _rhs.is_string(_rhs):
+            elif _lhs.is_string(_lhs) and \
+                _rhs.is_string(_rhs):
                 emit_opcode(self, equal_s)
+            
+            elif _lhs.is_bool(_lhs) and \
+                _rhs.is_bool(_rhs):
+                emit_opcode(self, equal_b)
+            
+            elif _lhs.is_null(_lhs) and \
+                _rhs.is_null(_rhs):
+                emit_opcode(self, equal_n)
+            
+            else:
+                emit_opcode(self, addressof)
+            
+
+            if  _op == "!=":
+                #! negate
+                emit_opcode(self, unary_lnot)
 
 
 

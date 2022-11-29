@@ -6,6 +6,10 @@ sload  = 2
 bload  = 3
 constn = 4
 
+#! 
+unary_bnot = 5
+unary_lnot = 5
+
 #! multiply
 intmul = 5
 fltmul = 6
