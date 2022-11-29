@@ -1,54 +1,66 @@
 
+
+"""
+    #TODO: replace values with integers.
+"""
+
 #! const
-iload  = 0
-fload  = 1
-sload  = 2
-bload  = 3
-constn = 4
+iload  = "iload"
+fload  = "fload"
+sload  = "sload"
+bload  = "bload"
+constn = "constn"
 
 #! unary
-bit_not = 5
-log_not = 5
+bit_not = "bit_not"
+log_not = "log_not"
+intpos  = "intpos"
+fltpos  = "fltpos"
+intneg  = "intneg"
+fltneg  = "fltneg"
 
 #! multiply
-intmul = 5
-fltmul = 6
+intmul = "intmul"
+fltmul = "fltmul"
 
 #! divide
-quotient  = 7
+quotient  = "quotient"
 
-intrem = 8
-fltrem = 9
+intrem = "intrem"
+fltrem = "fltrem"
 
 #! plus
-intadd = 10
-fltadd = 11
-concat = 12
+intadd = "intadd"
+fltadd = "fltadd"
+concat = "concat"
 
 #! minus
-intsub = 13
-fltsub = 14
+intsub = "intsub"
+fltsub = "fltsub"
 
 #! shift
-lshift = 15
-rshift = 16
+lshift = "lshift"
+rshift = "rshift"
 
 #! compare
-comlt  = 17
-comlte = 18
-comgt  = 19
-comgte = 20
+comlt  = "comlt"
+comlte = "comlte"
+comgt  = "comgt"
+comgte = "comgte"
 
 #! equal
-equal_i = 21
-equal_f = 23
-equal_s = 24
-equal_b = 25
-equal_n = 26
-addressof = 27
+equal_i = "equal_i"
+equal_f = "equal_f"
+equal_s = "equal_s"
+equal_b = "equal_b"
+equal_n = "equal_n"
+addressof = "addressof"
 
-pop_top = 28
 
-jump_if_false = 29
-jump_if_true = 30
+store_name = "store_name"
+
+pop_top = "pop_top"
+
+jump_if_false = "jump_if_false"
+jump_if_true = "jump_if_true"
 

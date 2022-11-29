@@ -4,7 +4,11 @@
 
 import [nah];
 
-typedef helloworld int[void];
 
-(int) (2+2);
+
+
+
+const x = (2 && 2) + 2;
+var xz  = 2;
+
 

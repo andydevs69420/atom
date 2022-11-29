@@ -6,6 +6,7 @@ from error import (error_category, error)
 from ast import (ast_type, stmnt_ast, expr_ast)
 
 from syskey import (keywords)
+from context import context
 
 class parser(object):
     """ Parser for atom.
@@ -16,7 +17,21 @@ class parser(object):
         self.lexer     = lexer(self.__state)
         self.lookahead = self.lexer.getNext()
         self.previous  = self.lexer
+        self.context   = []
     
+    #! =========== CONTEXT  ===========
+    def enter(self, _ctx):
+        self.context.append(_ctx)
+    
+    def leave(self, _ctx):
+        assert (self.context.pop() == _ctx), "invalid context was popped!"
+    
+    def under(self, _ctx, _immediate):
+        if  _immediate:
+            return self.context[-1] == _ctx
+        
+        #! end
+        return _ctx in self.context
 
     #! =========== HELPERS  ===========
 
@@ -946,6 +961,8 @@ class parser(object):
             -------
             ast
         """
+        _start = self.lookahead
+
         #! "import"
         self.expect_both(token_type.IDENTIFIER, keywords.IMPORT)
 
@@ -956,6 +973,9 @@ class parser(object):
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
+
+        if  not self.under(context.GLOBAL, True):
+            error.raise_tracked(error_category.SematicError, "cannot declaire imports here!", self.d_location(_start))
 
         #! ';'
         self.expect_both(token_type.SYMBOL, ";")
@@ -989,6 +1009,9 @@ class parser(object):
         _declaire = self.list_declaire()
 
         _ended = self.d_location(_start)
+
+        if  not self.under(context.LOCAL, True):
+            error.raise_tracked(error_category.SematicError, "cannot use \"let\" to declaire variables here!", _ended)
 
         #! ';'
         self.expect_both(token_type.SYMBOL, ";")
@@ -1046,7 +1069,19 @@ class parser(object):
             -------
             ast
         """
+        _stmnt = self.raw_parse()
+
+        return stmnt_ast(
+            ast_type.SOURCE, "...", _stmnt)
+    
+    def hasNext(self):
+        return not self.check_t(token_type.EOF)
+    
+    def raw_parse(self):
         _stmnt = []
+
+        #! enter ctx
+        self.enter(context.GLOBAL)
 
         while self.hasNext():
             _node = self.compound_stmnt()
@@ -1059,24 +1094,9 @@ class parser(object):
         
         #! eof
         self.expect_t(token_type.EOF)
-
-        return stmnt_ast(
-            ast_type.SOURCE, "...", _stmnt)
-    
-    def hasNext(self):
-        return not self.check_t(token_type.EOF)
-    
-    def raw_parse(self):
-        _stmnt = []
-
-        while self.hasNext():
-            _node = self.compound_stmnt()
-
-            #! check if epsilon
-            if  not _node: break
-
-            #! child node
-            _stmnt.append(_node)
+        
+        #! leave ctx
+        self.leave(context.GLOBAL)
 
         #! end
         return tuple(_stmnt)

@@ -120,6 +120,55 @@ class typetable(object):
 
     #! ======== PER-TYPE OPS =====
 
+    def bit_not(self):
+        """ Only integer.
+        """
+        if  typetable.is_integer(self):
+            return operation.INT_OP
+        
+        #! end
+        return operation.BAD_OP
+
+    def log_not(self):
+        """ Logical not is always available for any datatype.
+        """
+        #! end
+        return operation.BOOL_OP
+
+    def positive(self):
+        """ Arithmetic negation (+).
+
+            Returns
+            -------
+            operation 
+        """
+        if  typetable.is_number(self):
+            #! cast as int op
+            if typetable.is_integer(self): return operation.INT_OP
+            
+            #! cast as float op
+            return operation.FLOAT_OP
+
+        #! end
+        return operation.BAD_OP
+    
+    def negative(self):
+        """ Arithmetic negation (-).
+
+            Returns
+            -------
+            operation 
+        """
+        if  typetable.is_number(self):
+            #! cast as int op
+            if typetable.is_integer(self): return operation.INT_OP
+            
+            #! cast as float op
+            return operation.FLOAT_OP
+
+        #! end
+        return operation.BAD_OP
+
     def exponent(self, _right):
         """ Only numbers can be raised.
 

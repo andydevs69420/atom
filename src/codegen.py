@@ -12,6 +12,8 @@ from aopcode import *
 TARGET = ...
 MAX_NESTING_LEVEL = 255
 
+
+
 def push_ttable(_cls, _type, _intern0=None, _intern1=None):
     _typetb = typetable()
     _typetb.types.append(_type)
@@ -31,16 +33,18 @@ def emit_opcode(_cls, _opcode, *_args):
     _cls.bcodes.append([get_byteoff(_cls), _opcode, *_args])
     return _cls.bcodes[-1]
 
+
 class generator(object):
     """ Base code generator for atom.
     """
 
     def __init__(self):
-        self.locals = 0
+        self.offset = 0
         self.symtbl = symboltable()
         self.tstack = stack(typetable)
         self.bcodes = []
         self.nstlvl = 0
+        
 
     #! =========== VISITOR ===========
     
@@ -52,7 +56,6 @@ class generator(object):
         return _visitor(_node)
     
     def error(self, _node):
-        print(_node.locs)
         raise AttributeError("unimplemented node no# %d a.k.a %s!!!" % (_node.type.value, _node.type.name))
     
     #! =========== AST TREE ==========
@@ -114,8 +117,7 @@ class generator(object):
         """
         self.nstlvl += 1
         if  self.nstlvl >= MAX_NESTING_LEVEL:
-            error.raise_tracked(
-                error_category.CompileError, "max nesting level for expression reached.", _node.locs)
+            error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
 
         _op = _node.get(0)
         self.visit(_node.get(1)) # rhs
@@ -125,6 +127,68 @@ class generator(object):
         #! default
         _operation = operation.BAD_OP
 
+        if  _op == "~":
+            #! op result
+            _operation = _rhs.bit_not()
+
+            #! emit int type
+            push_ttable(self, type_names.INT)
+
+            #! opcode
+            emit_opcode(self, bit_not)
+        
+        elif _op == "!":
+            #! op result
+            _operation = _rhs.log_not()
+
+            #! emit int type
+            push_ttable(self, type_names.BOOL)
+
+            #! opcode
+            emit_opcode(self, log_not)
+
+        elif _op == "+":
+            #! op result
+            _operation = _rhs.positive()
+
+            match _operation:
+                case operation.INT_OP:
+                    #! emit int type
+                    push_ttable(self, type_names.INT)
+
+                    #! opcode
+                    emit_opcode(self, intpos)
+                
+                case operation.FLOAT_OP:
+                    #! emit int type
+                    push_ttable(self, type_names.FLOAT)
+
+                    #! opcode
+                    emit_opcode(self, fltpos)
+
+        
+        elif _op == "-":
+            #! op result
+            _operation = _rhs.negative()
+
+            #! opcode
+            match _operation:
+                case operation.INT_OP:
+                    #! emit int type
+                    push_ttable(self, type_names.INT)
+
+                    #! opcode
+                    emit_opcode(self, intneg)
+                
+                case operation.FLOAT_OP:
+                    #! emit int type
+                    push_ttable(self, type_names.FLOAT)
+
+                    #! opcode
+                    emit_opcode(self, fltneg)
+
+        if  _operation == operation.BAD_OP:
+            error.raise_tracked(error_category.CompileError, "invalid operation %s %s." % (_op, _rhs.repr()), _node.site)
 
         self.nstlvl -= 1
         #! end
@@ -136,8 +200,7 @@ class generator(object):
         """
         self.nstlvl += 1
         if  self.nstlvl >= MAX_NESTING_LEVEL:
-            error.raise_tracked(
-                error_category.CompileError, "max nesting level for expression reached.", _node.locs)
+            error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
 
         _op = _node.get(1)
         self.visit(_node.get(2)) # rhs
@@ -332,8 +395,7 @@ class generator(object):
                 emit_opcode(self, log_not)
 
         if  _operation == operation.BAD_OP:
-            error.raise_tracked(
-                error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.locs)
+            error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.site)
 
         self.nstlvl -= 1
         #! end
@@ -345,8 +407,7 @@ class generator(object):
         """
         self.nstlvl += 1
         if  self.nstlvl >= MAX_NESTING_LEVEL:
-            error.raise_tracked(
-                error_category.CompileError, "max nesting level for expression reached.", _node.locs)
+            error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
 
         _target = ...
 
@@ -370,9 +431,93 @@ class generator(object):
         #! jump here
         _target[2] = get_byteoff(self)
 
+        #! rhs
+        self.tstack.popp() 
+        #! lhs
+        self.tstack.popp()
+
+        #! emit as any
+        push_ttable(self, type_names.ANY)
+
         self.nstlvl -= 1
         #! end
 
+    
+    def ast_var_stmnt(self, _node):
+        for _variable in _node.get(0):
+            
+            if  not _variable[1]:
+                #! null
+                push_ttable(self, type_names.NULL)
+
+            else:
+                self.visit(_variable[1])
+            
+            #! datatype
+            _vtype = self.tstack.popp()
+
+            if  self.symtbl.var_exist_locally(_variable[0]):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
+
+            #! opcode
+            emit_opcode(self, store_name, self.offset)
+
+            #! register
+            self.symtbl.insert_variable(_variable[0], self.offset, _vtype, True, False)
+
+            self.offset += 1
+            #! end
+
+    def ast_let_stmnt(self, _node):
+        for _variable in _node.get(0):
+            
+            if  not _variable[1]:
+                #! null
+                push_ttable(self, type_names.NULL)
+
+            else:
+                self.visit(_variable[1])
+            
+            #! datatype
+            _vtype = self.tstack.popp()
+
+            if  self.symtbl.var_exist_locally(_variable[0]):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
+
+            #! opcode
+            emit_opcode(self, store_name, self.offset)
+
+            #! register
+            self.symtbl.insert_variable(_variable[0], self.offset, _vtype, False, False)
+
+            self.offset += 1
+            #! end
+
+    def ast_const_stmnt(self, _node):
+        for _variable in _node.get(0):
+            
+            if  not _variable[1]:
+                #! null
+                push_ttable(self, type_names.NULL)
+
+            else:
+                self.visit(_variable[1])
+            
+            #! datatype
+            _vtype = self.tstack.popp()
+
+            if  self.symtbl.var_exist_locally(_variable[0]):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
+
+            #! opcode
+            emit_opcode(self, store_name, self.offset)
+
+            #! register
+            self.symtbl.insert_variable(_variable[0], self.offset, _vtype, False, True)
+
+            
+            self.offset += 1
+            #! end
 
     def ast_expr_stmnt(self, _node):
         #! statement

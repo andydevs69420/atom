@@ -9,6 +9,7 @@ class table(object):
 
         #! ====== per types ======
         self.functions = ({})
+        self.variables = ({})
     
     def earlier(self):
         if  not self.tail:
@@ -26,9 +27,18 @@ class table(object):
     
     #! ========== OPERATION ==========
 
-    def is_local_function(self):
-        ...
+    def var_exist_locally(self, _name):
+        return _name in self.earlier().variables.keys()
     
+    def insert_variable(self,
+        _varname   ,
+        _offset    ,
+        _datatype  ,
+        _isglobal  ,
+        _isconstant,
+    ):
+        self.variables[_varname] = variabletable(_varname, _offset, _datatype, _isglobal, _isconstant)
+
     def insert_function(self,
         _funcname  ,
         _datatype  ,
@@ -73,4 +83,20 @@ class functiontable(object):
         self.retrtype   = _retrtype
         self.paramcount = _paramcount
         self.parameters = _parameters
+
+
+
+
+
+
+class variabletable(object):
+    """ Variable table for atom.
+    """
+
+    def __init__(self, _varname, _offset, _datatype, _isglobal, _isconstant):
+        self.varname    = _varname
+        self.offset     = _offset
+        self.datatype   = _datatype
+        self.isglobal   = _isglobal
+        self.isconstant = _isconstant
 

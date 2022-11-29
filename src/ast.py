@@ -21,9 +21,9 @@ class ast_type(Enum):
     SIMPLE_ASS   = 18
     AUGMENT_ASS  = 19
     IMPORT       = 20
-    VAR_SMTNT    = 21
-    LET_SMTNT    = 21
-    CONST_SMTNT  = 23
+    VAR_STMNT    = 21
+    LET_STMNT    = 22
+    CONST_STMNT  = 23
     EXPR_STMNT   = 24
     SOURCE       = 25
 
@@ -33,9 +33,9 @@ class aAst(object):
     """ Base ast for atom.
     """
 
-    def __init__(self, _type, _loc):
+    def __init__(self, _type, _site):
         self.type = _type
-        self.locs = _loc
+        self.site = _site
     
     def get(self, _index): raise NotImplementedError("prototype")
 
