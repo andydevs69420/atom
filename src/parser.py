@@ -525,10 +525,10 @@ class parser(object):
         
         #! cast
         if  self.check_both(token_type.SYMBOL, "("):
+            _iscast, _cast_or_expr = False, ...
+            
             #! '('
             self.expect_both(token_type.SYMBOL, "(")
-
-            _iscast, _cast_or_expr = False, ...
 
             if  not self.check_t(token_type.IDENTIFIER):
                 #! expresion
