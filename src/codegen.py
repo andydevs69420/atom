@@ -117,6 +117,7 @@ class generator(object):
         _operation = operation.BAD_OP
 
         if  _op == "^^":
+            #! op result
             _operation = _lhs.exponent(_rhs)
 
             #! opcode
@@ -134,12 +135,13 @@ class generator(object):
                     emit_opcode(self, fltadd)
 
         elif _op == "*":
+            #! op result
             _operation = _lhs.multiply(_rhs)
 
             #! emit float type
             push_ttable(self, object_names.FLOAT)
 
-           #! opcode
+            #! opcode
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
@@ -154,6 +156,7 @@ class generator(object):
                     emit_opcode(self, fltmul)
 
         elif _op == "/":
+            #! op result
             _operation = _lhs.divide(_rhs)
 
             #! emit float type
@@ -164,6 +167,7 @@ class generator(object):
             
         
         elif _op == "%":
+            #! op result
             _operation = _lhs.modulo(_rhs)
 
             #! opcode
@@ -181,6 +185,7 @@ class generator(object):
                     emit_opcode(self, fltrem)
 
         elif _op == "+":
+            #! op result
             _operation = _lhs.plus(_rhs)
 
             #! opcode
@@ -204,6 +209,7 @@ class generator(object):
                     emit_opcode(self, concat)
         
         elif _op == "-":
+            #! op result
             _operation = _lhs.minus(_rhs)
 
             #! opcode
@@ -221,6 +227,7 @@ class generator(object):
                     emit_opcode(self, fltsub)
         
         elif _op == "<<" or _op == ">>":
+            #! op result
             _operation = _lhs.shift(_rhs)
 
             #! emit int type
@@ -237,6 +244,7 @@ class generator(object):
              _op == "<=" or \
              _op == ">"  or \
              _op == ">=":
+            #! op result
             _operation = _lhs.relational(_rhs)
 
             #! emit bool type
@@ -255,49 +263,47 @@ class generator(object):
             elif _op == ">=":
                 emit_opcode(self, comgte)
         
-        elif _op == "!=" or \
-             _op == "==":
+        elif _op == "!=" or _op == "==":
+            #! op result
             _operation = _lhs.equal(_rhs)
 
             #! emit bool type
             push_ttable(self, object_names.BOOL)
 
             #! opcode
-            if  _lhs.is_integer(_lhs) and \
+            if  _lhs.is_integer(_lhs) and\
                 _rhs.is_integer(_rhs):
                 emit_opcode(self, equal_i)
 
-            elif _lhs.is_float(_lhs) and \
-                _rhs.is_float(_rhs):
-                emit_opcode(self, equal_f)
+            elif _lhs.is_float(_lhs) and\
+                 _rhs.is_float(_rhs):
+                 emit_opcode(self, equal_f)
             
-            elif _lhs.is_string(_lhs) and \
-                _rhs.is_string(_rhs):
-                emit_opcode(self, equal_s)
+            elif _lhs.is_string(_lhs) and\
+                 _rhs.is_string(_rhs):
+                 emit_opcode(self, equal_s)
             
-            elif _lhs.is_bool(_lhs) and \
-                _rhs.is_bool(_rhs):
-                emit_opcode(self, equal_b)
+            elif _lhs.is_bool(_lhs) and\
+                 _rhs.is_bool(_rhs):
+                 emit_opcode(self, equal_b)
             
-            elif _lhs.is_null(_lhs) and \
-                _rhs.is_null(_rhs):
-                emit_opcode(self, equal_n)
+            elif _lhs.is_null(_lhs) and\
+                 _rhs.is_null(_rhs):
+                 emit_opcode(self, equal_n)
             
             else:
                 emit_opcode(self, addressof)
             
-
             if  _op == "!=":
                 #! negate
-                emit_opcode(self, unary_lnot)
-
-
+                emit_opcode(self, log_not)
 
         if  _operation == operation.BAD_OP:
             error.raise_tracked(
                 error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.locs)
 
-
+    def ast_logical(self, _node):
+        ...
 
     def ast_expr_stmnt(self, _node):
         #! statement

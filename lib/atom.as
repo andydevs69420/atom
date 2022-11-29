@@ -3,10 +3,9 @@
 
 
 
-import [nah, sasd];
+import [nah];
 
 
-2 + "asdasd";
+2 && "asdasd";
 
 
-const x = 2;

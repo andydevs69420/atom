@@ -166,7 +166,7 @@ class parser(object):
         #! end
         return tuple(_lists)
     
-    def expr_g1(self):
+    def atom(self):
         """ ATOM
 
             Rule
@@ -177,21 +177,25 @@ class parser(object):
                     | <terminal: bool>
                     | <terminal: null>
                     | <terminal: ref>
+                    | ε
                     ;
         """
         if  self.check_t(token_type.INTEGER):
-            return self.expr_0()
+            return self.integer()
         if  self.check_t(token_type.FLOAT  ):
-            return self.expr_1()
+            return self.float()
         if  self.check_t(token_type.STRING ):
-            return self.expr_2()
+            return self.string()
         if  self.check_both(token_type.IDENTIFIER, keywords.TRUE ) or\
             self.check_both(token_type.IDENTIFIER, keywords.FALSE):
-            return self.expr_3()
+            return self.boolean()
         if  self.check_both(token_type.IDENTIFIER, keywords.NULL ):
-            return self.expr_4()
+            return self.null()
+        
+        #! epsilon
+        return None
     
-    def expr_0(self):
+    def integer(self):
         """ INT expr.
 
             Returns
@@ -205,9 +209,9 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.INT, "", _int.value)
+            ast_type.INT, "...", _int.value)
 
-    def expr_1(self):
+    def float(self):
         """ FLOAT expr.
 
             Returns
@@ -221,9 +225,9 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.FLOAT, "", _flt.value)
+            ast_type.FLOAT, "...", _flt.value)
     
-    def expr_2(self):
+    def string(self):
         """ STR expr.
 
             Returns
@@ -237,9 +241,9 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.STR, "", _str.value)
+            ast_type.STR, "...", _str.value)
 
-    def expr_3(self):
+    def boolean(self):
         """ BOOL expr.
 
             Returns
@@ -253,9 +257,9 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.BOOL, "", _bool.value)
+            ast_type.BOOL, "...", _bool.value)
     
-    def expr_4(self):
+    def null(self):
         """ NULL expr.
 
             Returns
@@ -269,27 +273,28 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.NULL, "", _null.value)
+            ast_type.NULL, "...", _null.value)
 
-    def expr_N(self):
-        """ ADDETIVE expression.
+    def multiplicative(self):
+        """ MULTIPLICATIVE expression.
 
             Returns
             -------
             ast
         """
         _start = self.lookahead
-        _node  = self.expr_g1()
+        _node  = self.atom()
 
         if not _node: return _node
 
-        while self.check_both(token_type.SYMBOL, "+") or\
-              self.check_both(token_type.SYMBOL, "-"):
+        while self.check_both(token_type.SYMBOL, "*") or\
+              self.check_both(token_type.SYMBOL, "/") or\
+              self.check_both(token_type.SYMBOL, "%"):
             
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
-            _rhs = self.expr_g1()
+            _rhs = self.atom()
             if  not _rhs:
                 error.raise_tracked(
                     error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
@@ -299,18 +304,194 @@ class parser(object):
         
         #! end
         return _node
-                
 
-    def stmnt_g1(self):
+    def addetive(self):
+        """ ADDETIVE expression.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _node  = self.multiplicative()
+
+        if not _node: return _node
+
+        while self.check_both(token_type.SYMBOL, "+") or\
+              self.check_both(token_type.SYMBOL, "-"):
+            
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.multiplicative()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+            
+            _node = expr_ast(
+                ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
+        
+        #! end
+        return _node
+    
+    def shift(self):
+        """ SHIFT expression.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _node  = self.addetive()
+
+        if not _node: return _node
+
+        while self.check_both(token_type.SYMBOL, "<<") or\
+              self.check_both(token_type.SYMBOL, ">>"):
+            
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.addetive()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+            
+            _node = expr_ast(
+                ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
+        
+        #! end
+        return _node
+    
+    def relational(self):
+        """ RELATIONAL expression.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _node  = self.shift()
+
+        if not _node: return _node
+
+        while self.check_both(token_type.SYMBOL, "<" ) or\
+              self.check_both(token_type.SYMBOL, "<=") or\
+              self.check_both(token_type.SYMBOL, ">" ) or\
+              self.check_both(token_type.SYMBOL, ">="):
+            
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.shift()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+            
+            _node = expr_ast(
+                ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
+        
+        #! end
+        return _node
+    
+    def equality(self):
+        """ EQUALITY expression.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _node  = self.relational()
+
+        if not _node: return _node
+
+        while self.check_both(token_type.SYMBOL, "==") or\
+              self.check_both(token_type.SYMBOL, "!="):
+            
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.relational()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+            
+            _node = expr_ast(
+                ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
+        
+        #! end
+        return _node
+    
+    def bitwise(self):
+        """ BITWISE expression.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _node  = self.equality()
+
+        if not _node: return _node
+
+        while self.check_both(token_type.SYMBOL, "&") or\
+              self.check_both(token_type.SYMBOL, "|") or\
+              self.check_both(token_type.SYMBOL, "^"):
+            
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.equality()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+            
+            _node = expr_ast(
+                ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
+        
+        #! end
+        return _node
+    
+    def short_circuiting(self):
+        """ SHORT CIRCUITING | JUMP (depends on context) expression.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _node  = self.bitwise()
+
+        if not _node: return _node
+
+        while self.check_both(token_type.SYMBOL, "&&") or\
+              self.check_both(token_type.SYMBOL, "||"):
+            
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.bitwise()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+            
+            _node = expr_ast(
+                ast_type.SHORTC_OP, self.d_location(_start), _node, _opt, _rhs)
+        
+        #! end
+        return _node
+
+    def compound_stmnt(self):
         """ COMPOUND statement.
 
             Returns
             -------
             ast
         """
-        return self.stmnt_g2()
+        return self.simple_stmnt()
 
-    def stmnt_g2(self):
+    def simple_stmnt(self):
         """ SIMPLE statement.
 
             Returns
@@ -318,12 +499,12 @@ class parser(object):
             ast
         """
         if  self.check_both(token_type.IDENTIFIER, keywords.IMPORT):
-            return self.stmnt_s0()
+            return self.import_stmnt()
 
         #! end
-        return self.stmnt_sN()
+        return self.expr_stmnt()
 
-    def stmnt_s0(self):
+    def import_stmnt(self):
         """ IMPORT statement.
 
             Syntax
@@ -347,14 +528,16 @@ class parser(object):
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
 
+        _loctags = self.d_location(_start)
+
         #! ';'
         self.expect_both(token_type.SYMBOL, ";")
 
         return stmnt_ast(
-            ast_type.IMPORT, self.d_location(_start), _imports)
+            ast_type.IMPORT, _loctags, _imports)
     
 
-    def stmnt_sN(self):
+    def expr_stmnt(self):
         """ EXPRESSION_STATEMENT statement.
 
             Syntax
@@ -365,7 +548,7 @@ class parser(object):
             -------
             ast
         """
-        _node = self.expr_N()
+        _node = self.short_circuiting()
         if not _node: return _node
 
         # ';'
@@ -373,14 +556,14 @@ class parser(object):
         
         #! end
         return stmnt_ast(
-            ast_type.EXPR_STMNT, "", _node)
+            ast_type.EXPR_STMNT, "...", _node)
         
-    def stmnt_g3(self):
+    def source(self):
         """ SOURCE file.
 
             Syntax
             ------
-            stmnt_g1* EOF
+            compound_stmnt* EOF
 
             Returns
             -------
@@ -389,7 +572,7 @@ class parser(object):
         _stmnt = []
 
         while self.hasNext():
-            _node = self.stmnt_g1()
+            _node = self.compound_stmnt()
 
             #! check if epsilon
             if not _node: break
@@ -401,13 +584,13 @@ class parser(object):
         self.expect_t(token_type.EOF)
 
         return stmnt_ast(
-            ast_type.SOURCE, "", _stmnt)
+            ast_type.SOURCE, "...", _stmnt)
     
     def hasNext(self):
         return not self.check_t(token_type.EOF)
     
     def parse(self):
-        return self.stmnt_g3()
+        return self.source()
         
 
         

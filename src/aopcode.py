@@ -6,9 +6,9 @@ sload  = 2
 bload  = 3
 constn = 4
 
-#! 
-unary_bnot = 5
-unary_lnot = 5
+#! unary
+bit_not = 5
+log_not = 5
 
 #! multiply
 intmul = 5
@@ -47,5 +47,8 @@ equal_b = 25
 equal_n = 26
 addressof = 27
 
-pop_top = 17
+pop_top = 28
+
+jump_if_false = 29
+jump_if_true = 30
 

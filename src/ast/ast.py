@@ -8,6 +8,7 @@ class ast_type(Enum):
     BOOL       = 4
     NULL       = 5
     BINARY_OP  = 6
+    SHORTC_OP  = 7
     IMPORT     = 123
     EXPR_STMNT = 41
     SOURCE     = 42
