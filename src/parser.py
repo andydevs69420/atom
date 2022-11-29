@@ -275,8 +275,8 @@ class parser(object):
         return expr_ast(
             ast_type.NULL, "...", _null.value)
 
-    def multiplicative(self):
-        """ MULTIPLICATIVE expression.
+    def power(self):
+        """ POWER expression.
 
             Returns
             -------
@@ -287,9 +287,7 @@ class parser(object):
 
         if not _node: return _node
 
-        while self.check_both(token_type.SYMBOL, "*") or\
-              self.check_both(token_type.SYMBOL, "/") or\
-              self.check_both(token_type.SYMBOL, "%"):
+        while self.check_both(token_type.SYMBOL, "^^"):
             
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
@@ -297,7 +295,37 @@ class parser(object):
             _rhs = self.atom()
             if  not _rhs:
                 error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+            
+            _node = expr_ast(
+                ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
+        
+        #! end
+        return _node
+
+    def multiplicative(self):
+        """ MULTIPLICATIVE expression.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _node  = self.power()
+
+        if not _node: return _node
+
+        while self.check_both(token_type.SYMBOL, "*") or\
+              self.check_both(token_type.SYMBOL, "/") or\
+              self.check_both(token_type.SYMBOL, "%"):
+            
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.power()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -326,7 +354,7 @@ class parser(object):
             _rhs = self.multiplicative()
             if  not _rhs:
                 error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -355,7 +383,7 @@ class parser(object):
             _rhs = self.addetive()
             if  not _rhs:
                 error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -386,7 +414,7 @@ class parser(object):
             _rhs = self.shift()
             if  not _rhs:
                 error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -415,7 +443,7 @@ class parser(object):
             _rhs = self.relational()
             if  not _rhs:
                 error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -445,7 +473,7 @@ class parser(object):
             _rhs = self.equality()
             if  not _rhs:
                 error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -474,7 +502,7 @@ class parser(object):
             _rhs = self.bitwise()
             if  not _rhs:
                 error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % self.previous.value, self.d_location(_start))
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.SHORTC_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -515,8 +543,6 @@ class parser(object):
             -------
             ast
         """
-        _start = self.lookahead
-
         #! "import"
         self.expect_both(token_type.IDENTIFIER, keywords.IMPORT)
 
@@ -528,13 +554,11 @@ class parser(object):
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
 
-        _loctags = self.d_location(_start)
-
         #! ';'
         self.expect_both(token_type.SYMBOL, ";")
 
         return stmnt_ast(
-            ast_type.IMPORT, _loctags, _imports)
+            ast_type.IMPORT, "...", _imports)
     
 
     def expr_stmnt(self):
@@ -575,7 +599,7 @@ class parser(object):
             _node = self.compound_stmnt()
 
             #! check if epsilon
-            if not _node: break
+            if  not _node: break
 
             #! child node
             _stmnt.append(_node)

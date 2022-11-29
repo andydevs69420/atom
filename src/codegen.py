@@ -302,7 +302,7 @@ class generator(object):
             error.raise_tracked(
                 error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.locs)
 
-    def ast_logical(self, _node):
+    def ast_shortc_op(self, _node):
         ...
 
     def ast_expr_stmnt(self, _node):
