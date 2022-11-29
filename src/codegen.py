@@ -515,7 +515,6 @@ class generator(object):
             #! register
             self.symtbl.insert_variable(_variable[0], self.offset, _vtype, False, True)
 
-            
             self.offset += 1
             #! end
 

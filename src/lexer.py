@@ -63,6 +63,10 @@ class lexer(object):
         _c = ord(self.current.clook)
         return (_c == 0x22 or _c == 0x27)
 
+    #! ============= HELPERS =============
+    def make_site(self, _start):
+        return atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _start.ln_of, self.current.safe_line, _start.cm_of, self.current.safe_colm)
+
     #! ============= BUILDER =============
 
     def comment(self):
@@ -72,10 +76,7 @@ class lexer(object):
         self.forward()
 
         if  self.current.clook != '!':
-            _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
-            error.raise_tracked(
-                error_category.LexicalError, "invalid comment initializer \"%s\". Did you mean \"#!\"??" % _token.value, _loc
-            )
+            error.raise_tracked(error_category.LexicalError, "invalid comment initializer \"%s\". Did you mean \"#!\"??" % _token.value, self.make_site(_token))
         
         self.forward()
 
@@ -156,10 +157,7 @@ class lexer(object):
                  _token.value += self.bin_part()
                 
             if  len(_token.value) == 2:
-                _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
-                error.raise_tracked(
-                    error_category.LexicalError, "improper formed literal \"%s\"." % _token.value, _loc
-                )
+                error.raise_tracked(error_category.LexicalError, "improper formed literal \"%s\"." % _token.value, self.make_site(_token))
             
             if  len(_token.value) >= 3: # > 2
                 #! convert
@@ -174,10 +172,7 @@ class lexer(object):
             _token.value += self.nextchr ()
 
             if  not self.c_is_num_start():
-                _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
-                error.raise_tracked(
-                    error_category.LexicalError, "invalid float value \"%s\"." % _token.value, _loc
-                )
+                error.raise_tracked(error_category.LexicalError, "invalid float value \"%s\"." % _token.value, self.make_site(_token))
             
             #! append next [0-9]+
             _token.value += self.num_part()
@@ -194,10 +189,7 @@ class lexer(object):
                 _token.value += self.nextchr ()
 
             if  not self.c_is_num_start():
-                _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
-                error.raise_tracked(
-                    error_category.LexicalError, "invalid float value while truncation\"%s\"." % _token.value, _loc
-                )
+                error.raise_tracked(error_category.LexicalError, "invalid float value while truncation\"%s\"." % _token.value, self.make_site(_token))
             
             #! append next [0-9]+
             _token.value += self.num_part()
@@ -285,10 +277,7 @@ class lexer(object):
             _c = self.current.clook
         
         if  _o != _c:
-            _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
-            error.raise_tracked(
-                error_category.LexicalError, "string is not properly terminated %s." % repr(_token.value), _loc
-            )
+            error.raise_tracked(error_category.LexicalError, "string is not properly terminated %s." % repr(_token.value), self.make_site(_token))
 
         else:
             self.forward()
@@ -391,10 +380,7 @@ class lexer(object):
         
         else:
             _token.value += self.nextchr()
-            _loc = atoken.make_location_from_offsets(self.current.fpath, self.current.fcode, _token.ln_of, self.current.safe_line, _token.cm_of, self.current.safe_colm)
-            error.raise_tracked(
-                error_category.LexicalError, "unknown symbol %s remove this symbol." % repr(_token.value), _loc
-            )
+            error.raise_tracked(error_category.LexicalError, "unknown symbol %s remove this symbol." % repr(_token.value), self.make_site(_token))
 
         #! end
         return _token

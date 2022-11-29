@@ -93,8 +93,7 @@ class parser(object):
             _ttype : token_type
         """
         if  not self.check_t(_ttype):
-            error.raise_tracked(
-                error_category.ParseError, "unexpected \"%s\" token. Did you mean %s??" % (self.lookahead.value, _ttype.name), self.c_location())
+            error.raise_tracked(error_category.ParseError, "unexpected \"%s\" token. Did you mean %s??" % (self.lookahead.value, _ttype.name), self.c_location())
             #! end
         
         #! next
@@ -109,8 +108,7 @@ class parser(object):
             _value : str
         """
         if  not self.check_v(_value):
-            error.raise_tracked(
-                error_category.ParseError, "unexpected token \"%s\". Did you mean \"%s\"??" % (self.lookahead.value, _value), self.c_location())
+            error.raise_tracked(error_category.ParseError, "unexpected token \"%s\". Did you mean \"%s\"??" % (self.lookahead.value, _value), self.c_location())
             #! end
         
         #! next
@@ -127,8 +125,7 @@ class parser(object):
         """
 
         if  not self.check_both(_ttype, _value):
-            error.raise_tracked(
-                error_category.ParseError, "unexpected token \"%s\". Did you mean \"%s\"??" % (self.lookahead.value, _value), self.c_location())
+            error.raise_tracked(error_category.ParseError, "unexpected token \"%s\". Did you mean \"%s\"??" % (self.lookahead.value, _value), self.c_location())
             #! end
         
         #! next
@@ -152,8 +149,7 @@ class parser(object):
 
         #! check if keyword
         if  keywords.is_keyword(_idn.value):
-            error.raise_tracked(
-                error_category.ParseError, "unexpected keyword \"%s\"." % _idn.value, self.d_location(_idn))
+            error.raise_tracked(error_category.ParseError, "unexpected keyword \"%s\"." % _idn.value, self.d_location(_idn))
 
         #! end
         return _idn.value
@@ -561,8 +557,7 @@ class parser(object):
             
             _rhs = self.unary_op()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
 
             return expr_ast(
                 ast_type.UNARY_OP, self.d_location(_start), _opt, _rhs)
@@ -576,8 +571,7 @@ class parser(object):
 
             _rhs = self.unary_op()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
 
             return expr_ast(
                 ast_type.UNARY_UNPACK, self.d_location(_start), _opt, _rhs)
@@ -631,8 +625,7 @@ class parser(object):
 
             _rhs = self.unary_op()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -661,8 +654,7 @@ class parser(object):
 
             _rhs = self.power()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -690,8 +682,7 @@ class parser(object):
 
             _rhs = self.multiplicative()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -719,8 +710,7 @@ class parser(object):
 
             _rhs = self.addetive()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -750,8 +740,7 @@ class parser(object):
 
             _rhs = self.shift()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -779,8 +768,7 @@ class parser(object):
 
             _rhs = self.relational()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -809,8 +797,7 @@ class parser(object):
 
             _rhs = self.equality()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -838,8 +825,7 @@ class parser(object):
 
             _rhs = self.bitwise()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.SHORTC_OP, self.d_location(_start), _node, _opt, _rhs)
@@ -864,8 +850,7 @@ class parser(object):
 
             _rhs = self.bitwise()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.SIMPLE_ASS, self.d_location(_start), _node, _opt, _rhs)
@@ -901,8 +886,7 @@ class parser(object):
 
             _rhs = self.simple_assignment()
             if  not _rhs:
-                error.raise_tracked(
-                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
                 ast_type.AUGMENTED_ASS, self.d_location(_start), _node, _opt, _rhs)
@@ -916,8 +900,7 @@ class parser(object):
     def non_nullable_expr(self):
         _node = self.nullable_expr()
         if  not _node:
-            error.raise_tracked(
-                error_category.ParseError, "expects an expression, got \"%s\"." % self.lookahead.value, self.c_location())
+            error.raise_tracked(error_category.ParseError, "expects an expression, got \"%s\"." % self.lookahead.value, self.c_location())
 
         #! end
         return _node
