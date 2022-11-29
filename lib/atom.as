@@ -3,7 +3,10 @@
 
 
 
-import [nah];
+import [nah, sasd];
+
 
 2 + "asdasd";
 
+
+const x = 2;

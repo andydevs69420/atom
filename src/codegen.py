@@ -160,7 +160,7 @@ class generator(object):
             push_ttable(self, object_names.FLOAT)
 
             #! opcode
-            emit_opcode(self, quotient )
+            emit_opcode(self, quotient)
             
         
         elif _op == "%":
@@ -229,6 +229,7 @@ class generator(object):
             #! opcode
             if  _op == "<<":
                 emit_opcode(self, lshift)
+
             else:
                 emit_opcode(self, rshift)
         
@@ -237,6 +238,40 @@ class generator(object):
              _op == ">"  or \
              _op == ">=":
             _operation = _lhs.relational(_rhs)
+
+            #! emit bool type
+            push_ttable(self, object_names.BOOL)
+
+            #! opcode
+            if  _op == "<":
+                emit_opcode(self, comlt )
+
+            elif _op == "<=":
+                emit_opcode(self, comlte)
+            
+            elif _op == ">":
+                emit_opcode(self, comgt )
+
+            elif _op == ">=":
+                emit_opcode(self, comgte)
+        
+        elif _op == "!=" or \
+             _op == "==":
+            _operation = _lhs.equal(_rhs)
+
+            #! emit bool type
+            push_ttable(self, object_names.BOOL)
+
+            #! opcode
+            if  _lhs.is_integer(_lhs) and _rhs.is_integer(_rhs):
+                emit_opcode(self, equal_i)
+
+            elif _lhs.is_float(_lhs) and _rhs.is_float(_rhs):
+                emit_opcode(self, equal_f)
+            
+            elif _lhs.is_string(_lhs) and _rhs.is_string(_rhs):
+                emit_opcode(self, equal_s)
+
 
 
         if  _operation == operation.BAD_OP:

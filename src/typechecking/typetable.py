@@ -124,7 +124,7 @@ class typetable(object):
                 typetable.is_bool(_right)
 
 
-    #! ======== PER TYPE OPS =====
+    #! ======== PER-TYPE OPS =====
 
     def exponent(self, _right):
         """ Only numbers can be raised.
@@ -244,6 +244,20 @@ class typetable(object):
         return operation.BAD_OP
     
     def relational(self, _right):
+        """ Only numbers(int|float) are allowed.
+
+            Returns
+            -------
+            operation 
+        """
+        if  typetable.are_numbers(self, _right):
+            #! cast as int op
+            return operation.BOOL_OP
+
+        #! end
+        return operation.BAD_OP
+    
+    def equal(self, _right):
         """ Only numbers(int|float) are allowed.
 
             Returns

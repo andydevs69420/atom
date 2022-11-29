@@ -7,5 +7,5 @@ class object_names:
     NULL   = "null"
     ARRAY  = "array"
     MAP    = "map"
-    OBJECT = "object"
+    ANY    = "any"
 

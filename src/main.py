@@ -1,8 +1,8 @@
-""" Do not use match statement inorder for other
-    implementation to work eg: pypy.
-"""
 
-from sys import argv
+from sys import argv, setrecursionlimit
+setrecursionlimit((2 ** 16) - 1)
+
+
 from astate import state
 from codegen import codegen
 
