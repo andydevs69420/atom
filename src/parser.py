@@ -166,6 +166,80 @@ class parser(object):
         #! end
         return tuple(_lists)
     
+    def list_expr(self):
+        """ List of expression.
+
+            Returns
+            -------
+            tuple
+        """
+        _start = self.lookahead
+        _lists = []
+
+        _exprN = self.nullable_expr()
+
+        #! is null?
+        if not _exprN: return tuple(_lists)
+
+        _lists.append(_exprN)
+
+        while self.check_both(token_type.SYMBOL, ","):
+            self.expect_t(token_type.SYMBOL)
+
+            _exprN = self.nullable_expr()
+            if  not _exprN:
+                error.raise_tracked(
+                    error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
+
+            _lists.append(_exprN)
+
+        #! end
+        return tuple(_lists)
+    
+    def list_key_pair(self):
+        """ List of key value pair.
+
+            Returns
+            -------
+            tuple
+        """
+        _start = self.lookahead
+        _lists = []
+
+        _exprN = self.key_value_pair()
+
+        #! is null?
+        if not _exprN: return tuple(_lists)
+
+        _lists.append(_exprN)
+
+        while self.check_both(token_type.SYMBOL, ","):
+            self.expect_t(token_type.SYMBOL)
+            
+            _exprN = self.key_value_pair()
+            if  not _exprN:
+                error.raise_tracked(
+                    error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
+
+            _lists.append(_exprN)
+
+        #! end
+        return tuple(_lists)
+    
+    def key_value_pair(self):
+        _key = self.nullable_expr()
+
+        #! is null?
+        if not _key: return _key
+
+        #! ':'
+        self.expect_both(token_type.SYMBOL, ":")
+
+        _val = self.non_nullable_expr()
+
+        #! end
+        return (_key, _val)
+    
     def atom(self):
         """ ATOM
 
@@ -177,7 +251,7 @@ class parser(object):
                     | <terminal: bool>
                     | <terminal: null>
                     | <terminal: ref>
-                    | ε
+                    | other_type
                     ;
         """
         if  self.check_t(token_type.INTEGER):
@@ -191,9 +265,26 @@ class parser(object):
             return self.boolean()
         if  self.check_both(token_type.IDENTIFIER, keywords.NULL ):
             return self.null()
+        if  self.check_t(token_type.IDENTIFIER):
+            return self.ref()
+        if  self.check_both(token_type.SYMBOL, "["):
+            return self.array_expr()
+        if  self.check_both(token_type.SYMBOL, "{"):
+            return self.map_expr()
+        if  self.check_both(token_type.SYMBOL, "("):
+            #! '('
+            self.expect_both(token_type.SYMBOL, "(")
+
+            _expr = self.non_nullable_expr()
+            
+            self.expect_both(token_type.SYMBOL, ")")
+            #! ')'
+
+            #! end
+            return _expr
         
         #! epsilon
-        return None
+        return
     
     def integer(self):
         """ INT expr.
@@ -274,6 +365,182 @@ class parser(object):
         #! end
         return expr_ast(
             ast_type.NULL, "...", _null.value)
+    
+    def ref(self):
+        """ REFERENCE expr.
+
+            Returns
+            -------
+            ast
+        """
+        _ref = self.lookahead
+
+        #! ref
+        self.expect_t(token_type.IDENTIFIER)
+
+        #! end
+        return expr_ast(
+            ast_type.NULL, "...", _ref.value)
+    
+    def array_expr(self):
+        """ ARRAY expression.
+
+            Syntax
+            ------
+            '[' list_expr* ']'
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _elements = self.list_expr()
+
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        #! end
+        return expr_ast(
+            ast_type.ARRAY, self.d_location(_start), _elements)
+    
+    def map_expr(self):
+        """ MAP expression.
+
+            Syntax
+            ------
+            '{' list_key_value_pair '}'
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+
+        #! '{'
+        self.expect_both(token_type.SYMBOL, "{")
+
+        _elements = self.list_key_pair()
+        
+        self.expect_both(token_type.SYMBOL, "}")
+        #! '}'
+
+        #! end
+        return expr_ast(
+            ast_type.MAP, self.d_location(_start), _elements)
+    
+
+    def member(self):
+        _start = self.lookahead
+        _node  = self.atom()
+
+        while self.check_both(token_type.SYMBOL, ".") or\
+              self.check_both(token_type.SYMBOL, "[") or\
+              self.check_both(token_type.SYMBOL, "("):
+
+            if  self.check_both(token_type.SYMBOL, "."):
+                #! '.'
+                self.expect_t(token_type.SYMBOL)
+
+                #! attrib
+                _attrib = self.raw_iden()
+
+                _node = expr_ast(
+                    ast_type.ATTRIBUTE, self.d_location(_start), _node, _attrib)
+            
+            elif self.check_both(token_type.SYMBOL, "["):
+                #! '['
+                self.expect_both(token_type.SYMBOL, "[")
+
+                _expr = self.non_nullable_expr()
+                
+                self.expect_both(token_type.SYMBOL, "]")
+                #! ']'
+
+                _node = expr_ast(
+                    ast_type.ELEMENT, self.d_location(_start), _node, _expr)
+            
+            elif self.check_both(token_type.SYMBOL, "("):
+                #! '('
+                self.expect_both(token_type.SYMBOL, "(")
+
+                _args = self.list_expr()
+                
+                self.expect_both(token_type.SYMBOL, ")")
+                #! ')'
+
+                _node = expr_ast(
+                    ast_type.CALL, self.d_location(_start), _node, _args)
+        
+        #! end
+        return _node
+
+    def unary_op(self):
+        _start = self.lookahead
+
+        if  self.check_both(token_type.SYMBOL, "~") or\
+            self.check_both(token_type.SYMBOL, "!") or\
+            self.check_both(token_type.SYMBOL, "+") or\
+            self.check_both(token_type.SYMBOL, "-"):
+
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+            
+            _rhs = self.unary_op()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+
+            return expr_ast(
+                ast_type.UNARY_OP, self.d_location(_start), _opt, _rhs)
+        
+        #! unpack
+        if  self.check_both(token_type.SYMBOL, "*" ) or\
+            self.check_both(token_type.SYMBOL, "**"):
+
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.unary_op()
+            if  not _rhs:
+                error.raise_tracked(
+                    error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+
+            return expr_ast(
+                ast_type.UNARY_UNPACK, self.d_location(_start), _opt, _rhs)
+        
+        #! cast
+        if  self.check_both(token_type.SYMBOL, "("):
+            #! '('
+            self.expect_both(token_type.SYMBOL, "(")
+
+            _iscast, _cast_or_expr = False, ...
+
+            if  not self.check_t(token_type.IDENTIFIER):
+                #! expresion
+                _cast_or_expr = self.non_nullable_expr()
+            else:
+                #! cast
+                _iscast = True
+                _cast_or_expr = self.raw_iden()
+
+            #! ')'
+            self.expect_both(token_type.SYMBOL, ")")
+
+            if not _iscast: return _cast_or_expr
+
+            #! return as cast
+            _expr = self.non_nullable_expr()
+            
+            #! end
+            return expr_ast(
+                ast_type.UNARY_CAST, self.d_location(_start), _cast_or_expr, _expr)
+
+        #! end
+        return self.member()
 
     def power(self):
         """ POWER expression.
@@ -283,7 +550,7 @@ class parser(object):
             ast
         """
         _start = self.lookahead
-        _node  = self.atom()
+        _node  = self.unary_op()
 
         if not _node: return _node
 
@@ -292,7 +559,7 @@ class parser(object):
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
-            _rhs = self.atom()
+            _rhs = self.unary_op()
             if  not _rhs:
                 error.raise_tracked(
                     error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
@@ -509,6 +776,19 @@ class parser(object):
         
         #! end
         return _node
+    
+
+    def nullable_expr(self):
+        return self.short_circuiting()
+    
+    def non_nullable_expr(self):
+        _node = self.nullable_expr()
+        if  not _node:
+            error.raise_tracked(
+                error_category.ParseError, "expects an expression, got \"%s\"." % self.lookahead.value, self.c_location())
+
+        #! end
+        return _node
 
     def compound_stmnt(self):
         """ COMPOUND statement.
@@ -572,7 +852,7 @@ class parser(object):
             -------
             ast
         """
-        _node = self.short_circuiting()
+        _node = self.nullable_expr()
         if not _node: return _node
 
         # ';'

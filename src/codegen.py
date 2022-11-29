@@ -3,18 +3,14 @@
 from stack import stack
 from readf import read_file
 from parser import parser
-
 from symboltable import symboltable
-from typechecking import (object_names, typetable, operation)
-
+from typing import (type_names, typetable, operation)
 from error import (error_category, error)
-
 from aopcode import *
 
 
-
-
-TARGET =...
+TARGET = ...
+MAX_NESTING_LEVEL = 255
 
 def push_ttable(_cls, _type, _intern0=None, _intern1=None):
     _typetb = typetable()
@@ -44,6 +40,7 @@ class generator(object):
         self.symtbl = symboltable()
         self.tstack = stack(typetable)
         self.bcodes = []
+        self.nstlvl = 0
 
     #! =========== VISITOR ===========
     
@@ -55,6 +52,7 @@ class generator(object):
         return _visitor(_node)
     
     def error(self, _node):
+        print(_node.locs)
         raise AttributeError("unimplemented node no# %d a.k.a %s!!!" % (_node.type.value, _node.type.name))
     
     #! =========== AST TREE ==========
@@ -64,7 +62,7 @@ class generator(object):
         I64 = int(_node.get(0))
 
         #! type
-        push_ttable(self, object_names.INT)
+        push_ttable(self, type_names.INT)
 
         #! opcode
         emit_opcode(self, iload, I64)
@@ -75,7 +73,7 @@ class generator(object):
         F64 = float(_node.get(0))
 
         #! type
-        push_ttable(self, object_names.FLOAT)
+        push_ttable(self, type_names.FLOAT)
 
         #! opcode
         emit_opcode(self, fload, F64)
@@ -85,7 +83,7 @@ class generator(object):
         STR = str(_node.get(0))
 
         #! type
-        push_ttable(self, object_names.STR)
+        push_ttable(self, type_names.STR)
 
         #! opcode
         emit_opcode(self, sload, STR)
@@ -95,7 +93,7 @@ class generator(object):
         BOOL = _node.get(0) == "true"
 
         #! type
-        push_ttable(self, object_names.BOOL)
+        push_ttable(self, type_names.BOOL)
 
         #! opcode
         emit_opcode(self, bload, BOOL)
@@ -103,17 +101,44 @@ class generator(object):
 
     def ast_null(self, _node):
         #! type
-        push_ttable(self, object_names.NULL)
+        push_ttable(self, type_names.NULL)
 
         #! opcode
         emit_opcode(self, constn, None)
 
+    
+    def ast_unary_op(self, _node):
+        """
+             $0    $1
+            _op  _rhs
+        """
+        self.nstlvl += 1
+        if  self.nstlvl >= MAX_NESTING_LEVEL:
+            error.raise_tracked(
+                error_category.CompileError, "max nesting level for expression reached.", _node.locs)
+
+        _op = _node.get(0)
+        self.visit(_node.get(1)) # rhs
+
+        _rhs = self.tstack.popp()
+
+        #! default
+        _operation = operation.BAD_OP
+
+
+        self.nstlvl -= 1
+        #! end
 
     def ast_binary_op(self, _node):
         """
              $0    $1   $2
             _lhs  _op  _rhs
         """
+        self.nstlvl += 1
+        if  self.nstlvl >= MAX_NESTING_LEVEL:
+            error.raise_tracked(
+                error_category.CompileError, "max nesting level for expression reached.", _node.locs)
+
         _op = _node.get(1)
         self.visit(_node.get(2)) # rhs
         self.visit(_node.get(0)) # lhs
@@ -132,13 +157,13 @@ class generator(object):
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
-                    push_ttable(self, object_names.INT)
+                    push_ttable(self, type_names.INT)
 
                     emit_opcode(self, intadd)
 
                 case operation.FLOAT_OP:
                     #! emit float type
-                    push_ttable(self, object_names.FLOAT)
+                    push_ttable(self, type_names.FLOAT)
 
                     emit_opcode(self, fltadd)
 
@@ -147,19 +172,19 @@ class generator(object):
             _operation = _lhs.multiply(_rhs)
 
             #! emit float type
-            push_ttable(self, object_names.FLOAT)
+            push_ttable(self, type_names.FLOAT)
 
             #! opcode
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
-                    push_ttable(self, object_names.INT)
+                    push_ttable(self, type_names.INT)
 
                     emit_opcode(self, intmul)
 
                 case operation.FLOAT_OP:
                     #! emit float type
-                    push_ttable(self, object_names.FLOAT)
+                    push_ttable(self, type_names.FLOAT)
 
                     emit_opcode(self, fltmul)
 
@@ -168,7 +193,7 @@ class generator(object):
             _operation = _lhs.divide(_rhs)
 
             #! emit float type
-            push_ttable(self, object_names.FLOAT)
+            push_ttable(self, type_names.FLOAT)
 
             #! opcode
             emit_opcode(self, quotient)
@@ -182,13 +207,13 @@ class generator(object):
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
-                    push_ttable(self, object_names.INT)
+                    push_ttable(self, type_names.INT)
 
                     emit_opcode(self, intrem)
 
                 case operation.FLOAT_OP:
                     #! emit float type
-                    push_ttable(self, object_names.FLOAT)
+                    push_ttable(self, type_names.FLOAT)
 
                     emit_opcode(self, fltrem)
 
@@ -200,19 +225,19 @@ class generator(object):
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
-                    push_ttable(self, object_names.INT)
+                    push_ttable(self, type_names.INT)
 
                     emit_opcode(self, intadd)
 
                 case operation.FLOAT_OP:
                     #! emit float type
-                    push_ttable(self, object_names.FLOAT)
+                    push_ttable(self, type_names.FLOAT)
 
                     emit_opcode(self, fltadd)
                 
                 case _:
                     #! emit str type
-                    push_ttable(self, object_names.STR)
+                    push_ttable(self, type_names.STR)
 
                     emit_opcode(self, concat)
         
@@ -224,13 +249,13 @@ class generator(object):
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
-                    push_ttable(self, object_names.INT)
+                    push_ttable(self, type_names.INT)
 
                     emit_opcode(self, intsub)
 
                 case operation.FLOAT_OP:
                     #! emit float type
-                    push_ttable(self, object_names.FLOAT)
+                    push_ttable(self, type_names.FLOAT)
                     
                     emit_opcode(self, fltsub)
         
@@ -239,7 +264,7 @@ class generator(object):
             _operation = _lhs.shift(_rhs)
 
             #! emit int type
-            push_ttable(self, object_names.INT)
+            push_ttable(self, type_names.INT)
 
             #! opcode
             if  _op == "<<":
@@ -256,7 +281,7 @@ class generator(object):
             _operation = _lhs.relational(_rhs)
 
             #! emit bool type
-            push_ttable(self, object_names.BOOL)
+            push_ttable(self, type_names.BOOL)
 
             #! opcode
             if  _op == "<":
@@ -276,7 +301,7 @@ class generator(object):
             _operation = _lhs.equal(_rhs)
 
             #! emit bool type
-            push_ttable(self, object_names.BOOL)
+            push_ttable(self, type_names.BOOL)
 
             #! opcode
             if  _lhs.is_integer(_lhs) and\
@@ -310,17 +335,31 @@ class generator(object):
             error.raise_tracked(
                 error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.locs)
 
+        self.nstlvl -= 1
+        #! end
+
     def ast_shortc_op(self, _node):
         """
              $0    $1   $2
             _lhs  _op  _rhs
         """
+        self.nstlvl += 1
+        if  self.nstlvl >= MAX_NESTING_LEVEL:
+            error.raise_tracked(
+                error_category.CompileError, "max nesting level for expression reached.", _node.locs)
+
+        _target = ...
+
         #! lhs
         self.visit(_node.get(0))
 
         #! jump to last control if false
-        _target =\
-        emit_opcode(self, jump_if_false, TARGET)
+        if  _node.get(1) == "&&":
+            _target =\
+            emit_opcode(self, jump_if_false, TARGET)
+        else:
+            _target =\
+            emit_opcode(self, jump_if_true, TARGET)
 
         #! pop lhs
         emit_opcode(self, pop_top)
@@ -330,6 +369,9 @@ class generator(object):
 
         #! jump here
         _target[2] = get_byteoff(self)
+
+        self.nstlvl -= 1
+        #! end
 
 
     def ast_expr_stmnt(self, _node):

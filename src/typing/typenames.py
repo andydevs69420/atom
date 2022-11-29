@@ -1,5 +1,5 @@
 
-class object_names:
+class type_names:
     INT    = "int"
     FLOAT  = "float"
     STR    = "str"

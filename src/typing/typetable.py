@@ -1,6 +1,6 @@
 
 from enum import Enum
-from . import object_names
+from . import type_names
 
 
 class operation(Enum):
@@ -41,27 +41,21 @@ class typetable(object):
         """
         _supported_types = []
 
-        for _idx in range(len(self.types)):
-            _format =  ""
-            _format += self.types[_idx]
-
+        for _each_type in self.types:
             if  not self.internal0:
-                _supported_types.append(_format)
+                _supported_types.append(_each_type)
                 continue
-
-            _format += "["
-            _format += self.internal0.totype()
-
-            if   self.internal1:
-                _format += ":"
-                _format += self.internal1.totype()
-
-            _format += "]"
-
-            _supported_types.append(_format)
+            
+            for _each_int0 in self.internal0.totype():
+                if  not self.internal1:
+                    _supported_types.append("%s[%s]" % (_each_type, _each_int0))
+                    continue
+                
+                for _each_int1 in self.internal1.totype():
+                    _supported_types.append("%s[%s:%s]" % (_each_type, _each_int0, _each_int1))
         
         #! end
-        return _supported_types
+        return tuple(_supported_types)
     
     #! ========= SINGULAR =========
 
@@ -73,27 +67,27 @@ class typetable(object):
     
     @staticmethod
     def is_integer(_type):
-        return bool(object_names.INT in \
+        return bool(type_names.INT in \
             _type.totype())
           
     @staticmethod
     def is_float(_type):
-        return bool(object_names.FLOAT in \
+        return bool(type_names.FLOAT in \
             _type.totype())
     
     @staticmethod
     def is_string(_type):
-        return bool(object_names.STR in \
+        return bool(type_names.STR in \
             _type.totype())
     
     @staticmethod
     def is_bool(_type):
-        return bool(object_names.BOOL in \
+        return bool(type_names.BOOL in \
             _type.totype())
     
     @staticmethod
     def is_null(_type):
-        return bool(object_names.NULL in \
+        return bool(type_names.NULL in \
             _type.totype())
 
     #! ========= PLURAL =========

@@ -2,16 +2,25 @@ from enum import Enum
 
 
 class ast_type(Enum):
-    INT        = 1
-    FLOAT      = 2
-    STR        = 3
-    BOOL       = 4
-    NULL       = 5
-    BINARY_OP  = 6
-    SHORTC_OP  = 7
-    IMPORT     = 123
-    EXPR_STMNT = 41
-    SOURCE     = 42
+    INT          = 1
+    FLOAT        = 2
+    STR          = 3
+    BOOL         = 4
+    NULL         = 5
+    REF          = 6
+    ARRAY        = 7
+    MAP          = 8
+    ATTRIBUTE    = 9
+    ELEMENT      = 10
+    CALL         = 12
+    UNARY_OP     = 13
+    UNARY_CAST   = 14
+    UNARY_UNPACK = 15
+    BINARY_OP    = 16
+    SHORTC_OP    = 17
+    IMPORT       = 18
+    EXPR_STMNT   = 19
+    SOURCE       = 20
 
 
 

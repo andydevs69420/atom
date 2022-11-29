@@ -33,7 +33,7 @@ class atoken(object):
         _paddN = 3
 
         _stx = 0 if ((_line_start - 1) - _paddN) < 0 else ((_line_start - 1) - _paddN)
-        _end = (len(_lines) - 1) if (_line_end + _paddN) > len(_lines) else (_line_end + _paddN)
+        _end = len(_lines) if (_line_end + _paddN) > len(_lines) else (_line_end + _paddN)
 
         _print_lines = _lines[_stx:_end]
 
