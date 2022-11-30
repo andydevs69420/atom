@@ -8,7 +8,10 @@ class operation(Enum):
     FLOAT_OP = 0x02
     STR_OP   = 0x03
     BOOL_OP  = 0x04
-    BAD_OP   = 0x05
+    NULL_OP  = 0x05
+    ARRAY_UNPACK = 0x06
+    MAP_UNPACK   = 0x07
+    BAD_OP   = 0x08
 
 
 class typetable(object):
@@ -42,8 +45,10 @@ class typetable(object):
         _supported_types = []
 
         for _each_type in self.types:
+            
+            _supported_types.append(_each_type)
+
             if  not self.internal0:
-                _supported_types.append(_each_type)
                 continue
             
             for _each_int0 in self.internal0.totype():
@@ -89,6 +94,11 @@ class typetable(object):
     def is_null(_type):
         return bool(type_names.NULL in \
             _type.totype())
+    
+    @staticmethod
+    def is_array(_type):
+        return bool(type_names.ARRAY in \
+            _type.totype())
 
     #! ========= PLURAL =========
 
@@ -117,6 +127,10 @@ class typetable(object):
         return  typetable.is_bool(_left ) and \
                 typetable.is_bool(_right)
 
+    @staticmethod
+    def are_nulltype(_left, _right):
+        return  typetable.is_null(_left ) and \
+                typetable.is_null(_right)
 
     #! ======== PER-TYPE OPS =====
 
@@ -166,6 +180,13 @@ class typetable(object):
             #! cast as float op
             return operation.FLOAT_OP
 
+        #! end
+        return operation.BAD_OP
+    
+    def unpack(self):
+        if  typetable.is_array(self):
+            return operation.ARRAY_UNPACK
+        
         #! end
         return operation.BAD_OP
 

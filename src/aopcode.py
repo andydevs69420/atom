@@ -11,6 +11,10 @@ sload  = "sload"
 bload  = "bload"
 constn = "constn"
 
+build_array = "build_array"
+array_append = "array_append"
+array_extend = "array_extend"
+
 #! unary
 bit_not = "bit_not"
 log_not = "log_not"

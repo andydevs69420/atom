@@ -4,10 +4,10 @@ from stack import stack
 from readf import read_file
 from parser import parser
 from symboltable import symboltable
-from typing import (type_names, typetable, operation)
+from atyping import (type_names, typetable, operation)
 from error import (error_category, error)
 from aopcode import *
-
+from ast import ast_type
 
 TARGET = ...
 MAX_NESTING_LEVEL = 255
@@ -108,7 +108,65 @@ class generator(object):
 
         #! opcode
         emit_opcode(self, constn, None)
+    
 
+    def ast_array(self, _node):
+        _arrtype = []
+        _element = _node.get(0)
+        _arrsize = 0
+        _hasunpack = False
+
+        while _arrsize < len(_element):
+            #! element
+            _elem = _element[_arrsize]
+
+            if  _elem.type == ast_type.UNARY_UNPACK:
+                #! build array before unpack
+                #! opcode
+                emit_opcode(self, build_array, _arrsize)
+
+                #! =========================
+                _hasunpack = True
+                
+                #! visit each element
+                self.visit(_elem)
+
+                #! current
+                _arrtype.append(self.tstack.popp())
+
+                #! internal
+                _arrtype[-1] = _arrtype[-1].internal0
+                
+            else:
+                self.visit(_elem)
+
+                #! current
+                _arrtype.append(self.tstack.popp())
+            
+                if  _hasunpack:
+                    #! opcode
+                    emit_opcode(self, array_append)
+            
+            _arrsize += 1
+        
+        if  not _hasunpack:
+            #! opcode
+            emit_opcode(self, build_array, _arrsize)
+
+        _internal_type = set([ _xx for _type in _arrtype for _xx in _type.totype()])
+      
+        if  len(_internal_type) > 1 or len(_arrtype) <= 0:
+            push_ttable(self, type_names.ANY)
+
+            #! finalize
+            _internal_type = self.tstack.popp()
+        
+        else:
+            _internal_type = _arrtype[0]
+
+        #! array type
+        push_ttable(self, type_names.ARRAY, _internal_type)
+        
     
     def ast_unary_op(self, _node):
         """
@@ -192,6 +250,34 @@ class generator(object):
 
         self.nstlvl -= 1
         #! end
+    
+    def ast_unary_unpack(self, _node):
+        """
+             $0    $1
+            _op  _rhs
+        """
+        self.nstlvl += 1
+        if  self.nstlvl >= MAX_NESTING_LEVEL:
+            error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
+
+        _op = _node.get(0)
+        self.visit(_node.get(1)) # rhs
+
+        _rhs = self.tstack.peek()
+
+        #! default
+        _operation = operation.BAD_OP
+
+        if  _op == "*":
+            #! op result
+            _operation = _rhs.unpack()
+
+            #! opcode
+            emit_opcode(self, array_extend)
+        
+        if  _operation == operation.BAD_OP:
+            error.raise_tracked(error_category.CompileError, "cannot unpack %s." % _rhs.repr(), _node.site)
+
 
     def ast_binary_op(self, _node):
         """
@@ -367,25 +453,20 @@ class generator(object):
             push_ttable(self, type_names.BOOL)
 
             #! opcode
-            if  _lhs.is_integer(_lhs) and\
-                _rhs.is_integer(_rhs):
+            if  typetable.are_integers(_lhs, _rhs):
                 emit_opcode(self, equal_i)
 
-            elif _lhs.is_float(_lhs) and\
-                 _rhs.is_float(_rhs):
-                 emit_opcode(self, equal_f)
+            elif typetable.are_floats(_lhs, _rhs):
+                emit_opcode(self, equal_f)
             
-            elif _lhs.is_string(_lhs) and\
-                 _rhs.is_string(_rhs):
-                 emit_opcode(self, equal_s)
+            elif typetable.are_strings(_lhs, _rhs):
+                emit_opcode(self, equal_s)
             
-            elif _lhs.is_bool(_lhs) and\
-                 _rhs.is_bool(_rhs):
-                 emit_opcode(self, equal_b)
+            elif typetable.are_booleans(_lhs, _rhs):
+                emit_opcode(self, equal_b)
             
-            elif _lhs.is_null(_lhs) and\
-                 _rhs.is_null(_rhs):
-                 emit_opcode(self, equal_n)
+            elif typetable.are_nulltype(_lhs, _rhs):
+                emit_opcode(self, equal_n)
             
             else:
                 emit_opcode(self, addressof)

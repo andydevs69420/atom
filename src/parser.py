@@ -303,6 +303,7 @@ class parser(object):
         return (_var, _val)
 
     
+    
     def atom(self):
         """ ATOM
 
