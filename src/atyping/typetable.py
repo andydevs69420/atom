@@ -25,6 +25,17 @@ class typetable(object):
     
     def repr(self):
         return self.totype()[0]
+    
+    def reprall(self):
+        _fmt = ""
+        _all = self.totype()
+        for _idx in range(len(self.totype())):
+            _fmt += _all[_idx]
+
+            if _idx < len(_all) - 1:
+                _fmt += "|"
+        
+        return "[" + _fmt + "]"
 
     def totype(self):
         """ Generates supported type.

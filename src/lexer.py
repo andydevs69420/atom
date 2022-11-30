@@ -142,17 +142,16 @@ class lexer(object):
         _token.value += self.num_part()
 
         if  _token.value == '0':
-            _token.value += self.nextchr()
 
-            if   _token.value in ('0x', '0X'):
+            if   self.current.clook in ('x', 'X'):
                  _token.value += self.nextchr ()
                  _token.value += self.hex_part()
 
-            elif _token.value in ('0o', '0O'):
+            elif self.current.clook in ('o', 'O'):
                  _token.value += self.nextchr ()
                  _token.value += self.oct_part()
             
-            elif _token.value in ('0b', '0B'):
+            elif self.current.clook in ('b', 'B'):
                  _token.value += self.nextchr ()
                  _token.value += self.bin_part()
                 

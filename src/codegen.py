@@ -154,7 +154,7 @@ class generator(object):
             emit_opcode(self, build_array, _arrsize)
 
         _internal_type = set([ _xx for _type in _arrtype for _xx in _type.totype()])
-      
+        
         if  len(_internal_type) > 1 or len(_arrtype) <= 0:
             push_ttable(self, type_names.ANY)
 
@@ -476,7 +476,7 @@ class generator(object):
                 emit_opcode(self, log_not)
 
         if  _operation == operation.BAD_OP:
-            error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.site)
+            error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs.reprall(), _op, _rhs.reprall()), _node.site)
 
         self.nstlvl -= 1
         #! end
