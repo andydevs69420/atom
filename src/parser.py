@@ -447,7 +447,7 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.NULL, "...", _ref.value)
+            ast_type.REF, self.d_location(_ref), _ref.value)
     
     def array_expr(self):
         """ ARRAY expression.
@@ -961,11 +961,13 @@ class parser(object):
         if  not self.under(context.GLOBAL, True):
             error.raise_tracked(error_category.SematicError, "cannot declaire imports here!", self.d_location(_start))
 
+        _locsite = self.d_location(_start)
+
         #! ';'
         self.expect_both(token_type.SYMBOL, ";")
 
         return stmnt_ast(
-            ast_type.IMPORT, "...", _imports)
+            ast_type.IMPORT, _locsite, _imports)
     
     def var_stmnt(self):
         #! "var"

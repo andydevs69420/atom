@@ -11,6 +11,9 @@ sload  = "sload"
 bload  = "bload"
 constn = "constn"
 
+load_global = "load_global"
+load_local  = "load_local"
+
 build_array = "build_array"
 array_push = "array_push"
 array_pushall = "array_pushall"
@@ -64,7 +67,8 @@ bitand = "bitand"
 bitxor = "bitxor"
 bitor  = "bitor"
 
-store_name = "store_name"
+store_global = "store_global"
+store_local  = "store_local"
 
 pop_top = "pop_top"
 

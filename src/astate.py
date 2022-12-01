@@ -1,11 +1,14 @@
 
 from sys import argv
 from os import path as ospath
-
 from stack import stack
 
 BASE_PATH = ospath.abspath(ospath.dirname(argv[0]))
 
+
+
+CODE   = "code"
+MEMORY = "memory"
 
 class state(object):
     """ Shared state for atom.
@@ -16,7 +19,8 @@ class state(object):
             BASE_PATH, 
             ospath.join(BASE_PATH    , "lib"), 
             ospath.join(ospath.curdir, "lib"),
-            ospath.join(ospath.curdir, "bin")
+            ospath.join(ospath.curdir, "bin"),
         ]
-        self.names = []
+        self.names = ([])
         self.files = stack(str)
+        self.codes = ({})

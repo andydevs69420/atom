@@ -1,7 +1,7 @@
 
 
 from stack import stack
-from readf import read_file
+from readf import (file_isfile, read_file)
 from parser import parser
 from symboltable import symboltable
 from atyping import *
@@ -102,9 +102,27 @@ class generator(object):
         #! opcode
         emit_opcode(self, constn, None)
     
+    def ast_ref(self, _node):
+        _var = _node.get(0)
+
+        if  not self.symtbl.name_exist(_var):
+            error.raise_tracked(error_category.CompileError, "var \"%s\" is not defined." % _var, _node.site)
+
+        _name = self.symtbl.get_name(_var)
+
+        #! type
+        push_ttable(self, _name.get_datatype())
+
+        #! opcode
+        if  _name.is_global():
+            emit_opcode(self, load_global, _var, _name.get_offset())
+        
+        else:
+            emit_opcode(self, load_local, _var, _name.get_offset())
+    
 
     def ast_array(self, _node):
-        _arrtype = []
+        _arrtype = None
         _element = _node.get(0)
         _arrsize = 0
         _hasunpack = False
@@ -112,6 +130,7 @@ class generator(object):
         while _arrsize < len(_element):
             #! element
             _elem = _element[_arrsize]
+            _current = ...
 
             if  _elem.type == ast_type.UNARY_UNPACK:
                 #! build array before unpack
@@ -124,31 +143,44 @@ class generator(object):
                 #! visit each element
                 self.visit(_elem)
 
+                #! virtual current
+                _current = self.tstack.peek()
+
                 #! current
-                _arrtype.append(self.tstack.popp())
+                _arrtype = self.tstack.popp() if  not _arrtype else _arrtype
 
                 #! internal
-                _arrtype[-1] = _arrtype[-1].internal0
+                _arrtype = _arrtype.elementtype
                 
             else:
                 self.visit(_elem)
 
+                #! virtual current
+                _current = self.tstack.peek()
+
                 #! current
-                _arrtype.append(self.tstack.popp())
+                _arrtype = self.tstack.popp() if  not _arrtype else _arrtype
             
                 if  _hasunpack:
                     #! opcode
                     emit_opcode(self, array_push)
             
             _arrsize += 1
+
+            if  not _arrtype.matches(_current):
+                #! array of any
+                push_ttable(self, any_t())
+
+                #! set as array element type
+                _arrtype = self.tstack.popp()
+
         
         if  not _hasunpack:
             #! opcode
             emit_opcode(self, build_array, _arrsize)
 
-
         #! array type
-        push_ttable(self, type_names.ARRAY)
+        push_ttable(self, array_t(_arrtype))
         
     
     def ast_unary_op(self, _node):
@@ -523,7 +555,6 @@ class generator(object):
 
         self.nstlvl -= 1
         #! end
-
     
     def ast_var_stmnt(self, _node):
         for _variable in _node.get(0):
@@ -538,11 +569,11 @@ class generator(object):
             #! datatype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.var_exist_locally(_variable[0]):
+            if  self.symtbl.var_exist(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
             #! opcode
-            emit_opcode(self, store_name, self.offset)
+            emit_opcode(self, store_global, self.offset)
 
             #! register
             self.symtbl.insert_variable(_variable[0], self.offset, _vtype, True, False)
@@ -563,11 +594,11 @@ class generator(object):
             #! datatype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.var_exist_locally(_variable[0]):
+            if  self.symtbl.var_exist(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
             #! opcode
-            emit_opcode(self, store_name, self.offset)
+            emit_opcode(self, store_local, self.offset)
 
             #! register
             self.symtbl.insert_variable(_variable[0], self.offset, _vtype, False, False)
@@ -588,14 +619,17 @@ class generator(object):
             #! datatype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.var_exist_locally(_variable[0]):
+            if  self.symtbl.var_exist(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
+            _is_global = self.symtbl.is_global()
+
             #! opcode
-            emit_opcode(self, store_name, self.offset)
+            _opcode = store_global if _is_global else store_local
+            emit_opcode(self, _opcode, self.offset)
 
             #! register
-            self.symtbl.insert_variable(_variable[0], self.offset, _vtype, False, True)
+            self.symtbl.insert_variable(_variable[0], self.offset, _vtype, _is_global, True)
 
             self.offset += 1
             #! end
@@ -625,10 +659,17 @@ class codegen(generator):
         self.gparser = parser(self.__state)
     
     def ast_import(self, _node):
-        for _each_import in _node.get(0)[::-1]:
+        for _each_import in _node.get(0):
+
+            #! put extra
+            _fpath = _each_import + ".as"
+            
+            #! check file
+            if  not file_isfile(self.__state, _fpath):
+                error.raise_tracked(error_category.CompileError, "file not found or invalid file \"%s\"." % _each_import, _node.site)
 
             #! read file first
-            read_file(self.__state, _each_import + ".as")
+            read_file(self.__state, _fpath)
 
             #! parse
             _parse = parser(self.__state)
@@ -640,9 +681,15 @@ class codegen(generator):
 
     
     def generate(self):
+        #! compile each child node
         self.visit(self.gparser.parse())
 
         for x in self.bcodes:
             print(x)
+
+        #! set program code
+        self.__state.codespace["program"] = self.bcodes
+
+        #! end
         return self.bcodes
 

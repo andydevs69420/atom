@@ -8,5 +8,7 @@ class type_names:
     NULL   = "null"
     ARRAY  = "array"
     MAP    = "map"
+    FN     = "fn"
+    TYPE   = "type"
     ANY    = "any"
 

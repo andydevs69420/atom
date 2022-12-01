@@ -1,6 +1,6 @@
 
 from sys import argv, setrecursionlimit
-setrecursionlimit((2 ** 16) - 1)
+setrecursionlimit(100_000)
 
 
 from astate import state
@@ -13,8 +13,13 @@ def main():
     _state = state()
     read_file(_state, argv[1])
 
+    #! compile
     _cgen = codegen(_state)
     _cgen.generate()
+
+    #! run
+    
+
     #! end
 
 main()

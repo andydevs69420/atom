@@ -10,6 +10,8 @@ class table(object):
         #! ====== per types ======
         self.functions = ({})
         self.variables = ({})
+        self.enums     = ({})
+        self.types     = ({})
     
     def earlier(self):
         if  not self.tail:
@@ -25,11 +27,101 @@ class table(object):
         #! recurse
         self.tail.newtail()
     
+    #! ========== CHECKER ==========
+
+    def name_exist(self, _name):
+        """ bottom to up searching.
+        """
+        _current_scope = self.earlier()
+
+        while _current_scope:
+            if  _current_scope.var_exist(_name) or \
+                _current_scope.fun_exist(_name)  or \
+                _current_scope.enum_exist(_name) or \
+                _current_scope.type_exist(_name):
+                return True
+            
+            _current_scope = _current_scope.head
+        
+        return False
+
+    def var_exist(self, _name):
+        """ local searching.
+        """
+        return _name in self.variables.keys()
+    
+    def fun_exist(self, _name):
+        """ local searching.
+        """
+        return _name in self.functions.keys()
+    
+    def enum_exist(self, _name):
+        """ local searching.
+        """
+        return _name in self.enums.keys()
+    
+    def type_exist(self, _name):
+        """ local searching.
+        """
+        return _name in self.types.keys()
+    
     #! ========== OPERATION ==========
 
-    def var_exist_locally(self, _name):
-        return _name in self.earlier().variables.keys()
+    def get_name(self, _name):
+        """ bottom to up retriving.
+        """
+        assert self.name_exist(_name), "uncaught name error."
+
+        _current = self.earlier()
+
+        while _current:
+            if  _current.name_exist(_name):
+                if  _current.var_exist(_name):
+                    return _current.get_var(_name)
+                
+                elif _current.fun_exist(_name):
+                    return _current.get_func(_name)
+
+                elif _current.enum_exist(_name):
+                    return _current.get_enum(_name)
+                
+                elif _current.type_exist(_name):
+                    return _current.get_enum(_name)
+            
+            _current = _current.head
+        
+    def get_var(self, _name):
+        """ local retriving.
+        """
+        assert self.var_exist(_name), "uncaught var error."
+
+        #! end
+        return self.variables[_name]
     
+    def get_func(self, _name):
+        """ local retriving.
+        """
+        assert self.fun_exist(_name), "uncaught fun error."
+
+        #! end
+        return self.functions[_name]
+    
+    def get_enum(self, _name):
+        """ local retriving.
+        """
+        assert self.enum_exist(_name), "uncaught enum error."
+
+        #! end
+        return self.enums[_name]
+    
+    def get_type(self, _name):
+        """ local retriving.
+        """
+        assert self.type_exist(_name), "uncaught type error."
+
+        #! end
+        return self.types[_name]
+
     def insert_variable(self,
         _varname   ,
         _offset    ,
@@ -55,6 +147,9 @@ class symboltable(table):
 
     def __init__(self):
         super().__init__(None)
+    
+    def is_global(self):
+        return not self.head
 
     def newscope(self):
         self.newtail()
@@ -72,31 +167,68 @@ class symboltable(table):
         return _current
 
 
+class typetable(object):
 
-class functiontable(object):
+    def __init__(self):
+        pass
+    
+    def get_name(self):...
+
+    def get_offset(self):...
+
+    def get_datatype(self):...
+
+    def is_global(self):...
+
+    def is_constant(self):...
+
+
+class functiontable(typetable):
     """ Function table for atom.
     """
 
     def __init__(self, _funcname, _datatype, _retrtype, _paramcount, _parameters):
+        super().__init__()
         self.funcname   = _funcname
         self.datatype   = _datatype
         self.retrtype   = _retrtype
         self.paramcount = _paramcount
         self.parameters = _parameters
+    
+
+    def is_global(self):
+        return True
+    
+    def is_constant(self):
+        return True
 
 
 
-
-
-
-class variabletable(object):
+class variabletable(typetable):
     """ Variable table for atom.
     """
 
     def __init__(self, _varname, _offset, _datatype, _isglobal, _isconstant):
+        super().__init__()
         self.varname    = _varname
         self.offset     = _offset
         self.datatype   = _datatype
         self.isglobal   = _isglobal
         self.isconstant = _isconstant
+    
+    def get_name(self):
+        return self.varname
+    
+    def get_offset(self):
+        return self.offset
 
+    def get_datatype(self):
+        return self.datatype
+    
+    def is_global(self):
+        return self.isglobal
+    
+    def is_constant(self):
+        return self.isconstant
+
+#! END

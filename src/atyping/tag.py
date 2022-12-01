@@ -34,6 +34,7 @@ class tag_t(object):
         pass
     
     def repr(self):raise NotImplementedError("Holly shake! not overridden.")
+    def matches(self, _rhs):raise NotImplementedError("Holly shake! not overridden.")
     def isprimitive(self):return False
     def isnonprimitive(self): False
     def isany(self):return False
@@ -106,6 +107,9 @@ class any_t(tag_t):
     
     def repr(self):
         return self.name
+    
+    def matches(self, _rhs):
+        return _rhs.isany()
     
     def isany(self):
         return True
@@ -228,6 +232,9 @@ class integer_t(number_t):
     
     def repr(self):
         return self.name
+    
+    def matches(self, _rhs):
+        return _rhs.isint() or _rhs.isboolean()
 
     def isint(self):
         return True
@@ -263,6 +270,9 @@ class float_t(number_t):
     def repr(self):
         return self.name
     
+    def matches(self, _rhs):
+        return _rhs.isfloat()
+    
     def isfloat(self):
         return True
 
@@ -277,6 +287,9 @@ class boolean_t(primitive_t):
     
     def repr(self):
         return self.name
+    
+    def matches(self, _rhs):
+        return _rhs.isboolean()
     
     def isboolean(self):
         return True
@@ -293,6 +306,9 @@ class null_t(primitive_t):
     def repr(self):
         return self.name
     
+    def matches(self, _rhs):
+        return _rhs.isboolean()
+    
     def isnull(self):
         return True
 
@@ -307,6 +323,9 @@ class string_t(nonprimitive_t):
     
     def repr(self):
         return self.name
+    
+    def matches(self, _rhs):
+        return _rhs.isstring()
     
     def isstring(self):
         return True
@@ -332,6 +351,12 @@ class array_t(nonprimitive_t):
     def repr(self):
         return self.name + "[" + self.elementtype.repr() + "]"
     
+    def matches(self, _rhs):
+        if  not _rhs.isarray():
+            return False
+
+        return self.elementtype.matches(_rhs.elementtype)
+    
     def isarray(self):
         return True
 
@@ -352,6 +377,12 @@ class map_t(nonprimitive_t):
         
     def repr(self):
         return self.name + "[" + self.keytype.repr() + ":" + self.valtype.repr() + "]"
+    
+    def matches(self, _rhs):
+        if  not _rhs.ismap():
+            return False
+        
+        return self.keytype.matches(_rhs.keytype) and self.valtype.matches(_rhs.valtype)
 
     def ismap(self):
         return True
