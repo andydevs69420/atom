@@ -2,6 +2,8 @@
 from sys import argv
 from os import path as ospath
 from stack import stack
+from aframe import frame
+from aobjects import aobject
 
 BASE_PATH = ospath.abspath(ospath.dirname(argv[0]))
 
@@ -10,7 +12,7 @@ BASE_PATH = ospath.abspath(ospath.dirname(argv[0]))
 CODE   = "code"
 MEMORY = "memory"
 
-class state(object):
+class astate(object):
     """ Shared state for atom.
     """
 
@@ -24,3 +26,9 @@ class state(object):
         self.names = ([])
         self.files = stack(str)
         self.codes = ({})
+        self.stack = stack(frame  )
+        self.value = stack(aobject)
+        self.oprnd = stack(aobject)
+        
+        #! GC
+        self.gcroot = None

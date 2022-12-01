@@ -30,4 +30,10 @@ class stack(object):
     
     def isempty(self):
         return len(self.__internal) <= 0
+    
+    def __iter__(self):
+        return self.__internal
+
+    def __getitem__(self, _index):
+        return self.__internal[_index]
 

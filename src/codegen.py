@@ -688,7 +688,7 @@ class codegen(generator):
             print(x)
 
         #! set program code
-        self.__state.codespace["program"] = self.bcodes
+        self.__state.codes["program"] = self.bcodes
 
         #! end
         return self.bcodes

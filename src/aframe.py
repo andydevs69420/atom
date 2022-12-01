@@ -7,10 +7,9 @@ class frame(object):
     def __init__(self, _instructions):
         super().__init__()
         self.ipointer = 00
-        self.localref = []
         self.instructions = _instructions
     
-    
+
 
 
 
