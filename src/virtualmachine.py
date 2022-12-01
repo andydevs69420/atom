@@ -6,6 +6,23 @@ from mem import *
 def push_operand(_cls, _aobject):
     _cls.state.oprnd.generic_push(_aobject)
 
+def popp_operand(_cls):
+    return _cls.state.oprnd.popp()
+
+
+
+def push_value(_cls, _offset, _vvalue):
+    if  (_offset + 1) > len(_cls.state.value):
+        #! make slot
+        _cls.state.value.generic_push(_vvalue)
+    
+    else:
+        #! set slot
+        _cls.state.value[_offset] = _vvalue
+
+def popp_value(_cls):
+    return _cls.state.value.popp()
+
 
 class virtualmachine(object):
     """ Virtual machine for atom.
@@ -26,6 +43,16 @@ class virtualmachine(object):
     
         #! push to opstack
         push_operand(self, _int)
+    
+
+    def store_global(self, _bytecode_chunk):
+        _offset = _bytecode_chunk[2]
+
+        #! pop value
+        _vvalue = popp_operand(self)
+
+        #! push to value stack
+        push_value(self, _offset, _vvalue)
 
     
     #! =========== visitor ===========
@@ -54,6 +81,9 @@ class virtualmachine(object):
 
             #! next
             _top.ipointer += 1
+
+            if  _top.ipointer >= len(_top.instructions):
+                break
 
         #! end
         return 0x00
