@@ -3,3 +3,10 @@ src/__pycache__/**
 
 src/typechecking/__pycache__/
 src/typechecking/__pycache__/**
+
+src/atyping/__pycache__/
+src/atyping__pycache__/**
+
+src/aobjects/__pycache__/
+src/aobjects/__pycache__/**
+
