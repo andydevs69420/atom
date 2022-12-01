@@ -4,7 +4,7 @@ from stack import stack
 from readf import read_file
 from parser import parser
 from symboltable import symboltable
-from atyping import (type_names, typetable, operation)
+from atyping import *
 from error import (error_category, error)
 from aopcode import *
 from ast import ast_type
@@ -14,16 +14,9 @@ MAX_NESTING_LEVEL = 255
 
 
 
-def push_ttable(_cls, _type, _intern0=None, _intern1=None):
-    _typetb = typetable()
-    _typetb.types.append(_type)
-
-    #! internal
-    _typetb.internal0 = _intern0
-    _typetb.internal1 = _intern1
-
+def push_ttable(_cls, _type):
     #! push type
-    _cls.tstack.push(_typetb)
+    _cls.tstack.generic_push(_type)
 
 
 def get_byteoff(_cls):
@@ -41,7 +34,7 @@ class generator(object):
     def __init__(self):
         self.offset = 0
         self.symtbl = symboltable()
-        self.tstack = stack(typetable)
+        self.tstack = stack(tag_t)
         self.bcodes = []
         self.nstlvl = 0
         
@@ -65,7 +58,7 @@ class generator(object):
         I64 = int(_node.get(0))
 
         #! type
-        push_ttable(self, type_names.INT)
+        push_ttable(self, integer_t())
 
         #! opcode
         emit_opcode(self, iload, I64)
@@ -76,7 +69,7 @@ class generator(object):
         F64 = float(_node.get(0))
 
         #! type
-        push_ttable(self, type_names.FLOAT)
+        push_ttable(self, float_t())
 
         #! opcode
         emit_opcode(self, fload, F64)
@@ -86,7 +79,7 @@ class generator(object):
         STR = str(_node.get(0))
 
         #! type
-        push_ttable(self, type_names.STR)
+        push_ttable(self, string_t())
 
         #! opcode
         emit_opcode(self, sload, STR)
@@ -96,7 +89,7 @@ class generator(object):
         BOOL = _node.get(0) == "true"
 
         #! type
-        push_ttable(self, type_names.BOOL)
+        push_ttable(self, boolean_t())
 
         #! opcode
         emit_opcode(self, bload, BOOL)
@@ -104,7 +97,7 @@ class generator(object):
 
     def ast_null(self, _node):
         #! type
-        push_ttable(self, type_names.NULL)
+        push_ttable(self, null_t())
 
         #! opcode
         emit_opcode(self, constn, None)
@@ -145,7 +138,7 @@ class generator(object):
             
                 if  _hasunpack:
                     #! opcode
-                    emit_opcode(self, array_append)
+                    emit_opcode(self, array_push)
             
             _arrsize += 1
         
@@ -153,19 +146,9 @@ class generator(object):
             #! opcode
             emit_opcode(self, build_array, _arrsize)
 
-        _internal_type = set([ _xx for _type in _arrtype for _xx in _type.totype()])
-        
-        if  len(_internal_type) > 1 or len(_arrtype) <= 0:
-            push_ttable(self, type_names.ANY)
-
-            #! finalize
-            _internal_type = self.tstack.popp()
-        
-        else:
-            _internal_type = _arrtype[0]
 
         #! array type
-        push_ttable(self, type_names.ARRAY, _internal_type)
+        push_ttable(self, type_names.ARRAY)
         
     
     def ast_unary_op(self, _node):
@@ -187,39 +170,39 @@ class generator(object):
 
         if  _op == "~":
             #! op result
-            _operation = _rhs.bit_not()
+            _operation = _rhs.bitnot()
 
             #! emit int type
-            push_ttable(self, type_names.INT)
+            push_ttable(self, integer_t())
 
             #! opcode
             emit_opcode(self, bit_not)
         
         elif _op == "!":
             #! op result
-            _operation = _rhs.log_not()
+            _operation = _rhs.lognot()
 
             #! emit int type
-            push_ttable(self, type_names.BOOL)
+            push_ttable(self, boolean_t())
 
             #! opcode
             emit_opcode(self, log_not)
 
         elif _op == "+":
             #! op result
-            _operation = _rhs.positive()
+            _operation = _rhs.pos()
 
             match _operation:
                 case operation.INT_OP:
                     #! emit int type
-                    push_ttable(self, type_names.INT)
+                    push_ttable(self, integer_t())
 
                     #! opcode
                     emit_opcode(self, intpos)
                 
                 case operation.FLOAT_OP:
                     #! emit int type
-                    push_ttable(self, type_names.FLOAT)
+                    push_ttable(self, float_t())
 
                     #! opcode
                     emit_opcode(self, fltpos)
@@ -227,20 +210,20 @@ class generator(object):
         
         elif _op == "-":
             #! op result
-            _operation = _rhs.negative()
+            _operation = _rhs.neg()
 
             #! opcode
             match _operation:
                 case operation.INT_OP:
                     #! emit int type
-                    push_ttable(self, type_names.INT)
+                    push_ttable(self, integer_t())
 
                     #! opcode
                     emit_opcode(self, intneg)
                 
                 case operation.FLOAT_OP:
                     #! emit int type
-                    push_ttable(self, type_names.FLOAT)
+                    push_ttable(self, float_t())
 
                     #! opcode
                     emit_opcode(self, fltneg)
@@ -273,7 +256,7 @@ class generator(object):
             _operation = _rhs.unpack()
 
             #! opcode
-            emit_opcode(self, array_extend)
+            emit_opcode(self, array_pushall)
         
         if  _operation == operation.BAD_OP:
             error.raise_tracked(error_category.CompileError, "cannot unpack %s." % _rhs.repr(), _node.site)
@@ -300,49 +283,46 @@ class generator(object):
 
         if  _op == "^^":
             #! op result
-            _operation = _lhs.exponent(_rhs)
+            _operation = _lhs.pow(_rhs)
 
             #! opcode
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
-                    push_ttable(self, type_names.INT)
+                    push_ttable(self, integer_t())
 
                     emit_opcode(self, intadd)
 
                 case operation.FLOAT_OP:
                     #! emit float type
-                    push_ttable(self, type_names.FLOAT)
+                    push_ttable(self, float_t())
 
                     emit_opcode(self, fltadd)
 
         elif _op == "*":
             #! op result
-            _operation = _lhs.multiply(_rhs)
-
-            #! emit float type
-            push_ttable(self, type_names.FLOAT)
+            _operation = _lhs.mul(_rhs)
 
             #! opcode
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
-                    push_ttable(self, type_names.INT)
+                    push_ttable(self, integer_t())
 
                     emit_opcode(self, intmul)
 
                 case operation.FLOAT_OP:
                     #! emit float type
-                    push_ttable(self, type_names.FLOAT)
+                    push_ttable(self, float_t())
 
                     emit_opcode(self, fltmul)
 
         elif _op == "/":
             #! op result
-            _operation = _lhs.divide(_rhs)
+            _operation = _lhs.div(_rhs)
 
             #! emit float type
-            push_ttable(self, type_names.FLOAT)
+            push_ttable(self, float_t())
 
             #! opcode
             emit_opcode(self, quotient)
@@ -350,61 +330,61 @@ class generator(object):
         
         elif _op == "%":
             #! op result
-            _operation = _lhs.modulo(_rhs)
+            _operation = _lhs.mod(_rhs)
 
             #! opcode
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
-                    push_ttable(self, type_names.INT)
+                    push_ttable(self, integer_t())
 
                     emit_opcode(self, intrem)
 
                 case operation.FLOAT_OP:
                     #! emit float type
-                    push_ttable(self, type_names.FLOAT)
+                    push_ttable(self,float_t())
 
                     emit_opcode(self, fltrem)
 
         elif _op == "+":
             #! op result
-            _operation = _lhs.plus(_rhs)
+            _operation = _lhs.add(_rhs)
 
             #! opcode
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
-                    push_ttable(self, type_names.INT)
+                    push_ttable(self, integer_t())
 
                     emit_opcode(self, intadd)
 
                 case operation.FLOAT_OP:
                     #! emit float type
-                    push_ttable(self, type_names.FLOAT)
+                    push_ttable(self, float_t())
 
                     emit_opcode(self, fltadd)
                 
-                case _:
+                case operation.STR_OP:
                     #! emit str type
-                    push_ttable(self, type_names.STR)
+                    push_ttable(self, string_t())
 
                     emit_opcode(self, concat)
         
         elif _op == "-":
             #! op result
-            _operation = _lhs.minus(_rhs)
+            _operation = _lhs.sub(_rhs)
 
             #! opcode
             match _operation:
                 case operation.INT_OP  :
                     #! emit int type
-                    push_ttable(self, type_names.INT)
+                    push_ttable(self, integer_t())
 
                     emit_opcode(self, intsub)
 
                 case operation.FLOAT_OP:
                     #! emit float type
-                    push_ttable(self, type_names.FLOAT)
+                    push_ttable(self, float_t())
                     
                     emit_opcode(self, fltsub)
         
@@ -413,7 +393,7 @@ class generator(object):
             _operation = _lhs.shift(_rhs)
 
             #! emit int type
-            push_ttable(self, type_names.INT)
+            push_ttable(self, integer_t())
 
             #! opcode
             if  _op == "<<":
@@ -430,7 +410,7 @@ class generator(object):
             _operation = _lhs.relational(_rhs)
 
             #! emit bool type
-            push_ttable(self, type_names.BOOL)
+            push_ttable(self, boolean_t())
 
             #! opcode
             if  _op == "<":
@@ -447,25 +427,25 @@ class generator(object):
         
         elif _op == "!=" or _op == "==":
             #! op result
-            _operation = _lhs.equal(_rhs)
+            _operation = _lhs.equality(_rhs)
 
             #! emit bool type
-            push_ttable(self, type_names.BOOL)
+            push_ttable(self, boolean_t())
 
             #! opcode
-            if  typetable.are_integers(_lhs, _rhs):
+            if  _lhs.isint() and _rhs.isint():
                 emit_opcode(self, equal_i)
 
-            elif typetable.are_floats(_lhs, _rhs):
+            elif _lhs.isfloat() or _rhs.isfloat():
                 emit_opcode(self, equal_f)
             
-            elif typetable.are_strings(_lhs, _rhs):
+            elif _lhs.isstring() and _rhs.isstring():
                 emit_opcode(self, equal_s)
             
-            elif typetable.are_booleans(_lhs, _rhs):
+            elif _lhs.isboolean() and _rhs.isboolean():
                 emit_opcode(self, equal_b)
             
-            elif typetable.are_nulltype(_lhs, _rhs):
+            elif _lhs.isnull() and _rhs.isnull():
                 emit_opcode(self, equal_n)
             
             else:
@@ -474,9 +454,30 @@ class generator(object):
             if  _op == "!=":
                 #! negate
                 emit_opcode(self, log_not)
+        
+        elif _op == "&" or \
+             _op == "^" or \
+             _op == "|":
+            
+            #! op result
+            _operation = _lhs.bitwise(_rhs)
+
+            #! emit int type
+            push_ttable(self, integer_t())
+
+            #! opcode
+            if  _op == "&":
+                emit_opcode(self, bitand)
+
+            elif _op == "^":
+                emit_opcode(self, bitxor)
+            
+            elif _op == "|":
+                emit_opcode(self, bitor)
+
 
         if  _operation == operation.BAD_OP:
-            error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs.reprall(), _op, _rhs.reprall()), _node.site)
+            error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.site)
 
         self.nstlvl -= 1
         #! end
@@ -518,7 +519,7 @@ class generator(object):
         self.tstack.popp()
 
         #! emit as any
-        push_ttable(self, type_names.ANY)
+        push_ttable(self, any_t())
 
         self.nstlvl -= 1
         #! end

@@ -12,8 +12,8 @@ bload  = "bload"
 constn = "constn"
 
 build_array = "build_array"
-array_append = "array_append"
-array_extend = "array_extend"
+array_push = "array_push"
+array_pushall = "array_pushall"
 
 #! unary
 bit_not = "bit_not"
@@ -60,6 +60,9 @@ equal_b = "equal_b"
 equal_n = "equal_n"
 addressof = "addressof"
 
+bitand = "bitand"
+bitxor = "bitxor"
+bitor  = "bitor"
 
 store_name = "store_name"
 
