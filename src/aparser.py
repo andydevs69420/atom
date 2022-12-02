@@ -12,8 +12,8 @@ class parser(object):
     """
 
     def __init__(self, _state):
-        self.__state   = _state
-        self.lexer     = lexer(self.__state)
+        self.state     = _state
+        self.lexer     = lexer(self.state)
         self.lookahead = self.lexer.getNext()
         self.previous  = self.lexer
         self.context   = []
@@ -429,7 +429,7 @@ class parser(object):
         #! '['
         self.expect_both(token_type.SYMBOL, "[")
 
-        _internal = self.datatype_nvoid()
+        _internal = self.datatype()
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
@@ -443,7 +443,7 @@ class parser(object):
         #! '['
         self.expect_both(token_type.SYMBOL, "[")
 
-        _return = self.datatype_nvoid()
+        _return = self.datatype()
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
@@ -457,12 +457,12 @@ class parser(object):
         #! '['
         self.expect_both(token_type.SYMBOL, "[")
 
-        _key_type = self.datatype_nvoid()
+        _key_type = self.datatype()
 
         #! ':'
         self.expect_both(token_type.SYMBOL, ":")
 
-        _val_type = self.datatype_nvoid()
+        _val_type = self.datatype()
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
@@ -1126,7 +1126,7 @@ class parser(object):
         self.expect_both(token_type.SYMBOL, ")")
         #! ')'
 
-        
+
 
         _body = self.function_body()
 

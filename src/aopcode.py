@@ -9,7 +9,7 @@ iload  = "iload"
 fload  = "fload"
 sload  = "sload"
 bload  = "bload"
-constn = "constn"
+nload  = "nload"
 
 load_global = "load_global"
 load_local  = "load_local"
@@ -73,6 +73,7 @@ bitor  = "bitor"
 
 store_global = "store_global"
 store_local  = "store_local"
+store_fast   = "store_fast"
 
 pop_top = "pop_top"
 

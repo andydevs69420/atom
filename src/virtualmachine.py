@@ -57,6 +57,15 @@ class virtualmachine(object):
         #! push to opstack
         push_operand(self, _flt)
     
+    def nload(self, _bytecode_chunk):
+        _null =\
+        ainteger(_bytecode_chunk[2])
+
+        atom_object_New(self.state, _null)
+    
+        #! push to opstack
+        push_operand(self, _null)
+    
     def load_global(self, _bytecode_chunk):
         _offset = _bytecode_chunk[3]
 

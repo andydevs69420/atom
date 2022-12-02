@@ -35,8 +35,9 @@ class ast_type(Enum):
     VAR_STMNT    = 30
     LET_STMNT    = 31
     CONST_STMNT  = 32
-    EXPR_STMNT   = 33
-    SOURCE       = 34
+    RETURN_STMNT = 33
+    EXPR_STMNT   = 34
+    SOURCE       = 35
 
 
 

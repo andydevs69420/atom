@@ -42,7 +42,7 @@ class table(object):
                 return True
             
             _current_scope = _current_scope.head
-        
+
         return False
 
     def var_exist(self, _name):
@@ -144,9 +144,15 @@ class table(object):
 class symboltable(table):
     """ The symboltble class.
     """
+    
+    def __init__(self, _parent=None):
+        super().__init__(_parent)
 
-    def __init__(self):
-        super().__init__(None)
+    def __new__(_cls):
+        if  not hasattr(_cls, "instance"):
+            _cls.instance = super(symboltable, _cls).__new__(_cls)
+    
+        return _cls.instance
     
     def is_global(self):
         return not self.head

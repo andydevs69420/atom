@@ -8,8 +8,8 @@ class lexer(object):
     """
 
     def __init__(self, _state):
-        self.__state = _state
-        self.current = self.__state.files.pop()
+        self.state   = _state
+        self.current = self.state.files.pop()
 
 
     #! ============= CHECKER =============

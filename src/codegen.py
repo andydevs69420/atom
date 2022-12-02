@@ -38,6 +38,7 @@ class generator(object):
         self.bcodes = []
         self.nstlvl = 0
         
+        self.currentfunctiontype = None
 
     #! =========== VISITOR ===========
     
@@ -157,7 +158,7 @@ class generator(object):
         push_ttable(self, null_t())
 
         #! opcode
-        emit_opcode(self, constn, None)
+        emit_opcode(self, nload, None)
     
     def ast_ref(self, _node):
         _var = _node.get(0)
@@ -613,17 +614,69 @@ class generator(object):
         self.nstlvl -= 1
         #! end
 
-    
-    #! =============== compound ===============
-
+    #! ========== compound statement ==========
     def ast_function(self, _node):
-        """  $0     $1      $2     $3
-            param  fname  params  body
-        """
-        #! visit type
+        _old_offset = self.offset
+        _old_bcodes = self.bcodes
+
+        self.offset = 0
+        self.bcodes = []
+
+        #! =======================
+
+        #! new func scope
+        self.symtbl.newscope()
+
+        #! visit returntype
         self.visit(_node.get(0))
 
-        _return = self.tstack.popp()
+        #! set current function
+        self.currentfunctiontype =\
+        self.tstack.popp()
+
+        if  self.symtbl.name_exist(_node.get(1)):
+            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(1), _node.site)
+
+        #! compile parameters
+        for _each_param in _node.get(2):
+            #! visit type
+            self.visit(_each_param[1])
+
+            #! param dtype
+            _vtype = self.tstack.popp()
+
+            if  self.symtbl.var_exist(_each_param[0]):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
+
+            #! opcode
+            emit_opcode(self, store_fast, _each_param[0], self.offset)
+
+            #! register
+            self.symtbl.insert_variable(_each_param[0], self.offset, _vtype, True, False)
+
+            self.offset += 1
+            #! end
+
+        #! compile body
+        for _each_child in _node.get(3):
+
+            #! visit child
+            self.visit(_each_child)
+        
+        #! unset current function
+        self.currentfunctiontype =\
+        None
+
+        #! end func scope
+        self.symtbl.endscope()
+
+        #! store code
+        self.state.codes[_node.get(1)] = self.bcodes
+
+        #! restore
+        self.offset = _old_offset
+        self.bcodes = _old_bcodes
+
 
     #! =========== simple statement ===========
 
@@ -632,7 +685,10 @@ class generator(object):
             
             if  not _variable[1]:
                 #! null
-                push_ttable(self, type_names.NULL)
+                push_ttable(self, null_t())
+
+                #! push null
+                emit_opcode(self, nload, None)
 
             else:
                 self.visit(_variable[1])
@@ -640,7 +696,7 @@ class generator(object):
             #! datatype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.var_exist(_variable[0]):
+            if  self.symtbl.name_exist(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
             #! opcode
@@ -657,7 +713,10 @@ class generator(object):
             
             if  not _variable[1]:
                 #! null
-                push_ttable(self, type_names.NULL)
+                push_ttable(self, null_t())
+
+                #! push null
+                emit_opcode(self, nload, None)
 
             else:
                 self.visit(_variable[1])
@@ -682,7 +741,10 @@ class generator(object):
             
             if  not _variable[1]:
                 #! null
-                push_ttable(self, type_names.NULL)
+                push_ttable(self, null_t())
+
+                #! push null
+                emit_opcode(self, nload, None)
 
             else:
                 self.visit(_variable[1])
@@ -716,18 +778,19 @@ class generator(object):
         for _each_node in _node.get(0):
             self.visit(_each_node)
 
-
-
 class codegen(generator):
     """ Analyzer and byte-code like generator for atom.
+
+        Code block generator.
     """
 
     def __init__(self, _state):
         super().__init__()
-
         #! init prop
-        self.__state = _state
-        self.gparser = parser(self.__state)
+        self.state   = _state
+        self.gparser = parser(self.state)
+
+    #! ========== simple ============
     
     def ast_import(self, _node):
         for _each_import in _node.get(0):
@@ -736,20 +799,19 @@ class codegen(generator):
             _fpath = _each_import + ".as"
             
             #! check file
-            if  not file_isfile(self.__state, _fpath):
+            if  not file_isfile(self.state, _fpath):
                 error.raise_tracked(error_category.CompileError, "file not found or invalid file \"%s\"." % _each_import, _node.site)
 
             #! read file first
-            read_file(self.__state, _fpath)
+            read_file(self.state, _fpath)
 
             #! parse
-            _parse = parser(self.__state)
+            _parse = parser(self.state)
             
             for _each_node in _parse.raw_parse():
                 #! visit each node
                 self.visit(_each_node)
         #! end
-
     
     def generate(self):
         #! compile each child node
@@ -759,8 +821,7 @@ class codegen(generator):
             print(x)
 
         #! set program code
-        self.__state.codes["program"] = self.bcodes
+        self.state.codes["program"] = self.bcodes
 
         #! end
         return self.bcodes
-
