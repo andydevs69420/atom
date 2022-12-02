@@ -2,14 +2,15 @@
 #! another comment!
 #! asdasd
 
+
 import [nah];
 
-const x = 2 ;
+const x = 2;
 
 var xx = x % 2;
 
-fun[int] main() 
+fun[int] main(_a:int, _b:str) 
 {   
-    printf();
-    return 0x0;
+    printf("Hello World {0} {1}", [a, 2]);
 }
+

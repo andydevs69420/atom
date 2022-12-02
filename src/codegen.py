@@ -51,7 +51,64 @@ class generator(object):
     def error(self, _node):
         raise AttributeError("unimplemented node no# %d a.k.a %s!!!" % (_node.type.value, _node.type.name))
     
-    #! =========== AST TREE ==========
+    #! ========= DATA TYPING ==========
+
+    def ast_any_t(self, _node):
+        #! push int type
+        push_ttable(self, any_t())
+
+    def ast_int_t(self, _node):
+        #! push int type
+        push_ttable(self, integer_t())
+    
+    def ast_float_t(self, _node):
+        #! push int type
+        push_ttable(self, float_t())
+    
+    def ast_str_t(self, _node):
+        #! push int type
+        push_ttable(self, string_t())
+    
+    def ast_bool_t(self, _node):
+        #! push int type
+        push_ttable(self, boolean_t())
+
+    def ast_void_t(self, _node):
+        #! push int type
+        push_ttable(self, null_t())
+
+    def ast_array_t(self, _node):
+        #! internal
+        self.visit(_node.get(1))
+
+        _internal = self.tstack.popp()
+
+        #! push int type
+        push_ttable(self, array_t(_internal))
+    
+    def ast_fn_t(self, _node):
+        #! return
+        self.visit(_node.get(1))
+
+        _return = self.tstack.popp()
+
+        #! push int type
+        push_ttable(self, fn_t(_return))
+    
+    def ast_map_t(self, _node):
+        #! val type
+        self.visit(_node.get(2))
+
+        #! key type
+        self.visit(_node.get(1))
+
+        _key = self.tstack.popp()
+        _val = self.tstack.popp()
+
+        #! push int type
+        push_ttable(self, map_t(_key, _val))
+
+    #! =========== CONST VAL ==========
 
     def ast_int(self, _node):
         #! max is int 64
@@ -555,7 +612,21 @@ class generator(object):
 
         self.nstlvl -= 1
         #! end
+
     
+    #! =============== compound ===============
+
+    def ast_function(self, _node):
+        """  $0     $1      $2     $3
+            param  fname  params  body
+        """
+        #! visit type
+        self.visit(_node.get(0))
+
+        _return = self.tstack.popp()
+
+    #! =========== simple statement ===========
+
     def ast_var_stmnt(self, _node):
         for _variable in _node.get(0):
             

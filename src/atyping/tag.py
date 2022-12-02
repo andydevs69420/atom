@@ -12,6 +12,7 @@ __ALL = __all__ = [
             "boolean_t", 
             "null_t",
             "array_t",
+            "fn_t",
             "map_t",
             "user_t"]
 
@@ -44,6 +45,7 @@ class tag_t(object):
     def isboolean(self):return False
     def isnull(self):return False
     def isarray(self):return False
+    def isfunction(self): return False
     def ismap(self):return False
     def isuserdefined(self):return False
 
@@ -364,6 +366,28 @@ class array_t(nonprimitive_t):
 
     def unpack(self):
         return operation.ARRAY_UNPACK
+
+class fn_t(nonprimitive_t):
+    """ Array compiletime tag.
+    """
+
+    def __init__(self, _returntype):
+        super().__init__()
+        self.name = type_names.FN
+        self.returntype = _returntype
+    
+    def repr(self):
+        return self.name + "[" + self.returntype.repr() + "]"
+    
+    def matches(self, _rhs):
+        if  not _rhs.isfunction():
+            return False
+
+        return self.returntype.matches(_rhs.returntype)
+    
+    def isfunction(self):
+        return True
+
 
 class map_t(nonprimitive_t):
     """ Map compiletime tag.

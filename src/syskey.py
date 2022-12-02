@@ -5,6 +5,7 @@ class keywords:
     TRUE   = "true"
     FALSE  = "false"
     NULL   = "null"
+    FUN    = "fun"
     IMPORT = "import"
     CONST  = "const"
     VAR    = "var"

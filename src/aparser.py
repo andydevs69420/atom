@@ -2,10 +2,9 @@
 from atoken import (token_type, atoken)
 from alexer import lexer
 from error import (error_category, error)
-
 from aast import (ast_type, stmnt_ast, expr_ast)
-
-from syskey import (keywords)
+from syskey import keywords
+from atyping import type_names
 from context import context
 
 class parser(object):
@@ -206,7 +205,7 @@ class parser(object):
 
             #! check
             if  not _exprN:
-                error.raise_tracked(error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "unexpected end of expression after \"%s\"." % self.previous.value, self.d_location(_start))
 
             #! append
             _lists.append(_exprN)
@@ -240,7 +239,7 @@ class parser(object):
 
             #! check
             if  not _exprN:
-                error.raise_tracked(error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "unexpected end of key and pair after \"%s\"." % self.previous.value, self.d_location(_start))
 
             #! append
             _lists.append(_exprN)
@@ -279,7 +278,7 @@ class parser(object):
 
             #! check
             if  not self.check_t(token_type.IDENTIFIER):
-                error.raise_tracked(error_category.ParseError, "unexpected end of list after \"%s\"." % self.previous.value, self.d_location(_start))
+                error.raise_tracked(error_category.ParseError, "unexpected end of declairation after \"%s\"." % self.previous.value, self.d_location(_start))
 
             #! next
             _list.append(self.declaire())
@@ -301,8 +300,179 @@ class parser(object):
         _val = self.non_nullable_expr()
 
         return (_var, _val)
-
     
+    def list_parameter(self):
+        """ List of parameters.
+
+            Returns
+            -------
+            tuple
+        """
+        _start = self.lookahead
+        _list  = []
+
+        _param = self.parameter()
+        if not _param: return tuple(_list)
+
+        _list.append(_param)
+
+        while self.check_both(token_type.SYMBOL, ","):
+            #! ','
+            self.expect_t(token_type.SYMBOL)
+
+            #! check
+            if  not self.check_t(token_type.IDENTIFIER):
+                error.raise_tracked(error_category.ParseError, "unexpected end of parameters after \"%s\"." % self.previous.value, self.d_location(_start))
+
+            _list.append(self.parameter())
+        
+        #! end
+        return tuple(_list)
+    
+    def parameter(self):
+        if  not self.check_t(token_type.IDENTIFIER):
+            return None
+        
+        #! param name
+        _identifier = self.raw_iden()
+
+        #! ':'
+        self.expect_both(token_type.SYMBOL, ":")
+
+        #! "datatype"
+        _datatype = self.datatype()
+
+        #!
+        return (_identifier, _datatype)
+
+    def datatype(self):
+        """ Use keywords from typing to ensure proper spelling.
+
+            No void.
+        """
+        if  self.check_both(token_type.IDENTIFIER, type_names.ANY  ):
+            return self.t_any()
+        if  self.check_both(token_type.IDENTIFIER, type_names.INT  ):
+            return self.t_int()
+        if  self.check_both(token_type.IDENTIFIER, type_names.FLOAT):
+            return self.t_flt()
+        if  self.check_both(token_type.IDENTIFIER, type_names.STR  ):
+            return self.t_str()
+        if  self.check_both(token_type.IDENTIFIER, type_names.BOOL ):
+            return self.t_bool()
+        #! leave null for void
+        if  self.check_both(token_type.IDENTIFIER, type_names.ARRAY):
+            return self.t_array()
+        if  self.check_both(token_type.IDENTIFIER, type_names.FN   ):
+            return self.t_fn()
+        if  self.check_both(token_type.IDENTIFIER, type_names.MAP  ):
+            return self.t_map()
+        #! end
+        return self.t_user()
+    
+    def returntype(self):
+        """ Use keywords from typing to ensure proper spelling.
+
+            With void.
+        """
+        if  self.check_both(token_type.IDENTIFIER, type_names.INT  ):
+            return self.t_int()
+        if  self.check_both(token_type.IDENTIFIER, type_names.FLOAT):
+            return self.t_flt()
+        if  self.check_both(token_type.IDENTIFIER, type_names.STR  ):
+            return self.t_str()
+        if  self.check_both(token_type.IDENTIFIER, type_names.BOOL ):
+            return self.t_bool()
+        if  self.check_both(token_type.IDENTIFIER, type_names.VOID ):
+            return self.t_void()
+        if  self.check_both(token_type.IDENTIFIER, type_names.ARRAY):
+            return self.t_array()
+        if  self.check_both(token_type.IDENTIFIER, type_names.FN   ):
+            return self.t_fn()
+        if  self.check_both(token_type.IDENTIFIER, type_names.MAP  ):
+            return self.t_map()
+    
+        #! end
+        return self.t_user()
+
+    def t_any(self):
+        return expr_ast(
+            ast_type.ANY_T, "...", self.raw_iden())
+
+    def t_int(self):
+        return expr_ast(
+            ast_type.INT_T, "...", self.raw_iden())
+    
+    def t_flt(self):
+        return expr_ast(
+            ast_type.FLT_T, "...", self.raw_iden())
+    
+    def t_str(self):
+        return expr_ast(
+            ast_type.STR_T, "...", self.raw_iden())
+    
+    def t_bool(self):
+        return expr_ast(
+            ast_type.BOOL_T, "...", self.raw_iden())
+    
+    def t_bool(self):
+        return expr_ast(
+            ast_type.BOOL_T, "...", self.raw_iden())
+    
+    def t_void(self):
+        return expr_ast(
+            ast_type.VOID_T, "...", self.raw_iden())
+    
+    def t_array(self):
+        _array = self.raw_iden()
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _internal = self.datatype_nvoid()
+
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        return expr_ast(
+            ast_type.ARRAY_T, "...", _array, _internal)
+    
+    def t_fn(self):
+        _fn = self.raw_iden()
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _return = self.datatype_nvoid()
+
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        return expr_ast(
+            ast_type.FN_T, "...", _fn, _return)
+    
+    def t_map(self):
+        _map = self.raw_iden()
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _key_type = self.datatype_nvoid()
+
+        #! ':'
+        self.expect_both(token_type.SYMBOL, ":")
+
+        _val_type = self.datatype_nvoid()
+
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        return expr_ast(
+            ast_type.MAP_T, "...", _map, _key_type, _val_type)
+    
+    def t_user(self):
+        return expr_ast(
+            ast_type.USER_T, "...", self.raw_iden())
     
     def atom(self):
         """ ATOM
@@ -913,7 +1083,88 @@ class parser(object):
             -------
             ast
         """
+        if  self.check_both(token_type.IDENTIFIER, keywords.FUN):
+            return self.function()
+        #! end
         return self.simple_stmnt()
+    
+
+    def function(self):
+        """ Function declairation.
+
+            Syntax
+            ------
+            "fun" '[' returntype ']' raw_iden '(' list_parameters ')' function_body;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+
+        #! enter ctx
+        self.enter(context.FUNCTION)
+
+        #! "fun"
+        self.expect_both(token_type.IDENTIFIER, keywords.FUN)
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _return = self.returntype()
+    
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        _fname = self.raw_iden()
+
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        _parameters = self.list_parameter()
+    
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
+        
+
+        _body = self.function_body()
+
+        #! leave ctx
+        self.leave(context.FUNCTION)
+
+        if  not self.under(context.GLOBAL, True):
+            error.raise_tracked(error_category.SematicError, "function declairation should be done globally!", self.d_location(_start))
+
+        #! end
+        return stmnt_ast(
+            ast_type.FUNCTION, self.d_location(_start), _return, _fname, _parameters, _body)
+    
+    def function_body(self):
+        _body = []
+        #! enter ctx
+        self.enter(context.LOCAL)
+
+        #! '{'
+        self.expect_both(token_type.SYMBOL, "{")
+
+        while True:
+            _node = self.compound_stmnt()
+
+            #! check if epsilon
+            if  not _node: break
+
+            #! child node
+            _body.append(_node)
+
+        self.expect_both(token_type.SYMBOL, "}")
+        #! '}'
+        
+        #! leave ctx
+        self.leave(context.LOCAL)
+
+        #! end
+        return tuple(_body)
 
     def simple_stmnt(self):
         """ SIMPLE statement.

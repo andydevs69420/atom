@@ -2,30 +2,41 @@ from enum import Enum
 
 
 class ast_type(Enum):
-    INT          = 1
-    FLOAT        = 2
-    STR          = 3
-    BOOL         = 4
-    NULL         = 5
-    REF          = 6
-    ARRAY        = 7
-    MAP          = 8
-    ATTRIBUTE    = 9
-    ELEMENT      = 10
-    CALL         = 12
-    UNARY_OP     = 13
-    UNARY_CAST   = 14
-    UNARY_UNPACK = 15
-    BINARY_OP    = 16
-    SHORTC_OP    = 17
-    SIMPLE_ASS   = 18
-    AUGMENT_ASS  = 19
-    IMPORT       = 20
-    VAR_STMNT    = 21
-    LET_STMNT    = 22
-    CONST_STMNT  = 23
-    EXPR_STMNT   = 24
-    SOURCE       = 25
+    ANY_T        = 0
+    INT_T        = 1
+    FLOAT_T      = 2
+    STR_T        = 3
+    BOOL_T       = 4
+    VOID_T       = 5
+    ARRAY_T      = 6
+    FN_T         = 7
+    MAP_T        = 8
+    USER_T       = 9
+    INT          = 10
+    FLOAT        = 11
+    STR          = 12
+    BOOL         = 13
+    NULL         = 14
+    REF          = 15
+    ARRAY        = 16
+    MAP          = 17
+    ATTRIBUTE    = 18
+    ELEMENT      = 19
+    CALL         = 20
+    UNARY_OP     = 21
+    UNARY_CAST   = 22
+    UNARY_UNPACK = 23
+    BINARY_OP    = 24
+    SHORTC_OP    = 25
+    SIMPLE_ASS   = 26
+    AUGMENT_ASS  = 27
+    FUNCTION     = 28
+    IMPORT       = 29
+    VAR_STMNT    = 30
+    LET_STMNT    = 31
+    CONST_STMNT  = 32
+    EXPR_STMNT   = 33
+    SOURCE       = 34
 
 
 

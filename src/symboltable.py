@@ -195,7 +195,6 @@ class functiontable(typetable):
         self.paramcount = _paramcount
         self.parameters = _parameters
     
-
     def is_global(self):
         return True
     

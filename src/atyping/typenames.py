@@ -1,14 +1,15 @@
 
 
 class type_names:
+    ANY    = "any"
     INT    = "int"
     FLOAT  = "float"
     STR    = "str"
     BOOL   = "bool"
     NULL   = "null"
+    VOID   = "void"
     ARRAY  = "array"
-    MAP    = "map"
     FN     = "fn"
+    MAP    = "map"
     TYPE   = "type"
-    ANY    = "any"
 
