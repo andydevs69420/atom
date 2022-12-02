@@ -37,7 +37,7 @@ def read_file(_state, _file_path):
 
                 #! read
                 _file = open(_loc, "r")
-                _state.files.generic_push(afile(_loc, _file.read()))
+                _state.files.append(afile(_loc, _file.read()))
 
                 #! close stream
                 _file.close()

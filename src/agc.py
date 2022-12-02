@@ -26,7 +26,7 @@ class agc:
         _state .gcroot  = _object
     
     @staticmethod
-    def markstack(_state):
+    def markvalue(_state):
         _state.gcroot = 2
     
     @staticmethod

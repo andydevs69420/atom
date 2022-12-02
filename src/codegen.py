@@ -2,12 +2,12 @@
 
 from stack import stack
 from readf import (file_isfile, read_file)
-from parser import parser
+from aparser import parser
 from symboltable import symboltable
 from atyping import *
 from error import (error_category, error)
 from aopcode import *
-from ast import ast_type
+from aast import ast_type
 
 TARGET = ...
 MAX_NESTING_LEVEL = 255
@@ -323,13 +323,13 @@ class generator(object):
                     #! emit int type
                     push_ttable(self, integer_t())
 
-                    emit_opcode(self, intadd)
+                    emit_opcode(self, intpow)
 
                 case operation.FLOAT_OP:
                     #! emit float type
                     push_ttable(self, float_t())
 
-                    emit_opcode(self, fltadd)
+                    emit_opcode(self, fltpow)
 
         elif _op == "*":
             #! op result
@@ -573,7 +573,7 @@ class generator(object):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
             #! opcode
-            emit_opcode(self, store_global, self.offset)
+            emit_opcode(self, store_global, _variable[0], self.offset)
 
             #! register
             self.symtbl.insert_variable(_variable[0], self.offset, _vtype, True, False)
@@ -598,7 +598,7 @@ class generator(object):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
             #! opcode
-            emit_opcode(self, store_local, self.offset)
+            emit_opcode(self, store_local, _variable[0], self.offset)
 
             #! register
             self.symtbl.insert_variable(_variable[0], self.offset, _vtype, False, False)
@@ -626,7 +626,7 @@ class generator(object):
 
             #! opcode
             _opcode = store_global if _is_global else store_local
-            emit_opcode(self, _opcode, self.offset)
+            emit_opcode(self, _opcode, _variable[0], self.offset)
 
             #! register
             self.symtbl.insert_variable(_variable[0], self.offset, _vtype, _is_global, True)

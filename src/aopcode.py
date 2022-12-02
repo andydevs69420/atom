@@ -26,6 +26,10 @@ fltpos  = "fltpos"
 intneg  = "intneg"
 fltneg  = "fltneg"
 
+#! exponent
+intpow = "intpow"
+fltpow = "fltpow"
+
 #! multiply
 intmul = "intmul"
 fltmul = "fltmul"

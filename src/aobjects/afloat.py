@@ -2,14 +2,14 @@
 
 from . import aobject
 
-class ainteger(aobject):
+class afloat(aobject):
 
-    def __init__(self, _rawint):
+    def __init__(self, _rawflt):
         super().__init__()
-        self.raw = _rawint
+        self.raw = _rawflt
     
     def __str__(self):
-        return "%d" % self.raw
+        return "%f" % self.raw
 
     def __get__(self):
         return self.raw

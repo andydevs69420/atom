@@ -1,9 +1,9 @@
 
 from atoken import (token_type, atoken)
-from lexer import lexer
+from alexer import lexer
 from error import (error_category, error)
 
-from ast import (ast_type, stmnt_ast, expr_ast)
+from aast import (ast_type, stmnt_ast, expr_ast)
 
 from syskey import (keywords)
 from context import context
