@@ -5,15 +5,19 @@
 
 import [nah];
 
-const x = 2;
+const x = 2, y = x;
 
 
-fun[array[int]] main(_a:int, _b:str)
+fun[array[int]] mains(_a:int, _b:int)
 {   2 + 2 * x + _a;
 
-    _a + [1, 2, 3];
-
+    let x = _a + _b;
+    const c = 2, y = 3;
 }
 
+x + y * z;
+
+
+x();
 
 

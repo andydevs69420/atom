@@ -1230,6 +1230,9 @@ class parser(object):
 
         _ended = self.d_location(_start)
 
+        if  not self.under(context.GLOBAL, True):
+            error.raise_tracked(error_category.SematicError, "cannot use \"var\" to declaire variables here!", _ended)
+
         #! ';'
         self.expect_both(token_type.SYMBOL, ";")
 
@@ -1247,7 +1250,7 @@ class parser(object):
 
         _ended = self.d_location(_start)
 
-        if  not self.under(context.LOCAL, True):
+        if  not self.under(context.LOCAL, False):
             error.raise_tracked(error_category.SematicError, "cannot use \"let\" to declaire variables here!", _ended)
 
         #! ';'

@@ -207,7 +207,7 @@ class virtualmachine(object):
 
         _new =\
         ainteger(_lhs.raw + _rhs.raw)
-
+        
         #! store
         atom_object_New(self.state, _new)
 

@@ -163,10 +163,10 @@ class generator(object):
     def ast_ref(self, _node):
         _var = _node.get(0)
 
-        if  not self.symtbl.name_exist(_var):
+        if  not self.symtbl.name_exist_globally(_var):
             error.raise_tracked(error_category.CompileError, "var \"%s\" is not defined." % _var, _node.site)
 
-        _name = self.symtbl.get_name(_var)
+        _name = self.symtbl.lookup(_var)
 
         #! type
         push_ttable(self, _name.get_datatype())
@@ -246,7 +246,14 @@ class generator(object):
 
         #! array type
         push_ttable(self, array_t(_arrtype))
-        
+    
+
+    def ast_call(self, _node):
+        """ 
+             $0         $1
+            object  parameters
+        """
+        print(_node)
     
     def ast_unary_op(self, _node):
         """
@@ -642,7 +649,8 @@ class generator(object):
         self.currentfunctiontype =\
         self.tstack.popp()
 
-        if  self.symtbl.name_exist(_node.get(1)):
+        #! check if function name is already defined.
+        if  self.symtbl.name_exist_globally(_node.get(1)):
             error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(1), _node.site)
 
         #! compile parameters
@@ -654,7 +662,8 @@ class generator(object):
             #! param dtype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.var_exist(_each_param[0]):
+            #! check if parameter is already defined.
+            if  self.symtbl.name_exist_locally(_each_param[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
 
             #! make param list
@@ -696,6 +705,8 @@ class generator(object):
     #! =========== simple statement ===========
 
     def ast_var_stmnt(self, _node):
+        """ Global variable declairation.
+        """
         for _variable in _node.get(0):
             
             if  not _variable[1]:
@@ -711,7 +722,7 @@ class generator(object):
             #! datatype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.name_exist(_variable[0]):
+            if  self.symtbl.name_exist_locally(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
             #! opcode
@@ -739,7 +750,7 @@ class generator(object):
             #! datatype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.var_exist(_variable[0]):
+            if  self.symtbl.name_exist_locally(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
             #! opcode
@@ -767,7 +778,7 @@ class generator(object):
             #! datatype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.var_exist(_variable[0]):
+            if  self.symtbl.name_exist_locally(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
             _is_global = self.symtbl.is_global()
