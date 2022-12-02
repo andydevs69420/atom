@@ -236,6 +236,13 @@ class generator(object):
         if  not _hasunpack:
             #! opcode
             emit_opcode(self, build_array, _arrsize)
+        
+        if  _arrsize <= 0:
+            #! array of any
+            push_ttable(self, any_t())
+
+            #! set as array element type
+            _arrtype = self.tstack.popp()
 
         #! array type
         push_ttable(self, array_t(_arrtype))
@@ -623,6 +630,7 @@ class generator(object):
         self.bcodes = []
 
         #! =======================
+        _parameters = []
 
         #! new func scope
         self.symtbl.newscope()
@@ -639,6 +647,7 @@ class generator(object):
 
         #! compile parameters
         for _each_param in _node.get(2):
+
             #! visit type
             self.visit(_each_param[1])
 
@@ -647,6 +656,9 @@ class generator(object):
 
             if  self.symtbl.var_exist(_each_param[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
+
+            #! make param list
+            _parameters.append((_each_param[0], _vtype))
 
             #! opcode
             emit_opcode(self, store_fast, _each_param[0], self.offset)
@@ -669,6 +681,9 @@ class generator(object):
 
         #! end func scope
         self.symtbl.endscope()
+
+        #! register
+        self.symtbl.insert_function(_node.get(1), self.offset, fn_t(self.currentfunctiontype), self.currentfunctiontype, len(_parameters), tuple(_parameters))
 
         #! store code
         self.state.codes[_node.get(1)] = self.bcodes

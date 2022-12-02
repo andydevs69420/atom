@@ -133,12 +133,13 @@ class table(object):
 
     def insert_function(self,
         _funcname  ,
+        _offset    ,
         _datatype  ,
         _retrtype  ,
         _paramcount,
         _parameters,
     ):
-        self.functions[_funcname] = functiontable(_funcname, _datatype, _retrtype, _paramcount, _parameters)
+        self.functions[_funcname] = functiontable(_funcname, _offset, _datatype, _retrtype, _paramcount, _parameters)
 
 
 class symboltable(table):
@@ -193,9 +194,10 @@ class functiontable(typetable):
     """ Function table for atom.
     """
 
-    def __init__(self, _funcname, _datatype, _retrtype, _paramcount, _parameters):
+    def __init__(self, _funcname, _offset, _datatype, _retrtype, _paramcount, _parameters):
         super().__init__()
         self.funcname   = _funcname
+        self.offset     = _offset
         self.datatype   = _datatype
         self.retrtype   = _retrtype
         self.paramcount = _paramcount
