@@ -5,10 +5,10 @@
 
 import [nah];
 
-const x = 2, y = x;
+var x = 2, y = x;
 
 
-fun[array[int]] mains(_a:int, _b:int)
+fun[array[int]] main(_a:int, _b:int)
 {   2 + 2 * x + _a;
 
     let x = _a + _b;

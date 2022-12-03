@@ -3,7 +3,7 @@
 from stack import stack
 from readf import (file_isfile, read_file)
 from aparser import parser
-from symboltable import symboltable
+from symboltable2 import SymbolTable
 from atyping import *
 from error import (error_category, error)
 from aopcode import *
@@ -33,7 +33,7 @@ class generator(object):
 
     def __init__(self):
         self.offset = 0
-        self.symtbl = symboltable()
+        self.symtbl = SymbolTable()
         self.tstack = stack(tag_t)
         self.bcodes = []
         self.nstlvl = 0
@@ -163,7 +163,7 @@ class generator(object):
     def ast_ref(self, _node):
         _var = _node.get(0)
 
-        if  not self.symtbl.name_exist_globally(_var):
+        if  not self.symtbl.contains(_var):
             error.raise_tracked(error_category.CompileError, "var \"%s\" is not defined." % _var, _node.site)
 
         _name = self.symtbl.lookup(_var)
@@ -171,12 +171,11 @@ class generator(object):
         #! type
         push_ttable(self, _name.get_datatype())
 
+        #! check
+        _opcode = load_global if _name.is_global() else load_local
+
         #! opcode
-        if  _name.is_global():
-            emit_opcode(self, load_global, _var, _name.get_offset())
-        
-        else:
-            emit_opcode(self, load_local, _var, _name.get_offset())
+        emit_opcode(self, _opcode, _var, _name.get_offset())
     
 
     def ast_array(self, _node):
@@ -650,7 +649,7 @@ class generator(object):
         self.tstack.popp()
 
         #! check if function name is already defined.
-        if  self.symtbl.name_exist_globally(_node.get(1)):
+        if  self.symtbl.contains(_node.get(1)):
             error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(1), _node.site)
 
         #! compile parameters
@@ -663,7 +662,7 @@ class generator(object):
             _vtype = self.tstack.popp()
 
             #! check if parameter is already defined.
-            if  self.symtbl.name_exist_locally(_each_param[0]):
+            if  self.symtbl.haslocal(_each_param[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
 
             #! make param list
@@ -673,7 +672,7 @@ class generator(object):
             emit_opcode(self, store_fast, _each_param[0], self.offset)
 
             #! register
-            self.symtbl.insert_variable(_each_param[0], self.offset, _vtype, True, False)
+            self.symtbl.insert_var(_each_param[0], self.offset, _vtype, True, False)
 
             self.offset += 1
             #! end
@@ -692,7 +691,7 @@ class generator(object):
         self.symtbl.endscope()
 
         #! register
-        self.symtbl.insert_function(_node.get(1), self.offset, fn_t(self.currentfunctiontype), self.currentfunctiontype, len(_parameters), tuple(_parameters))
+        self.symtbl.insert_fun(_node.get(1), self.offset, fn_t(self.currentfunctiontype), self.currentfunctiontype, len(_parameters), tuple(_parameters))
 
         #! store code
         self.state.codes[_node.get(1)] = self.bcodes
@@ -722,14 +721,14 @@ class generator(object):
             #! datatype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.name_exist_locally(_variable[0]):
+            if  self.symtbl.contains(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
             #! opcode
             emit_opcode(self, store_global, _variable[0], self.offset)
 
             #! register
-            self.symtbl.insert_variable(_variable[0], self.offset, _vtype, True, False)
+            self.symtbl.insert_var(_variable[0], self.offset, _vtype, True, False)
 
             self.offset += 1
             #! end
@@ -750,14 +749,14 @@ class generator(object):
             #! datatype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.name_exist_locally(_variable[0]):
+            if  self.symtbl.haslocal(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
             #! opcode
             emit_opcode(self, store_local, _variable[0], self.offset)
 
             #! register
-            self.symtbl.insert_variable(_variable[0], self.offset, _vtype, False, False)
+            self.symtbl.insert_var(_variable[0], self.offset, _vtype, False, False)
 
             self.offset += 1
             #! end
@@ -778,17 +777,19 @@ class generator(object):
             #! datatype
             _vtype = self.tstack.popp()
 
-            if  self.symtbl.name_exist_locally(_variable[0]):
+            if  self.symtbl.haslocal(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
 
-            _is_global = self.symtbl.is_global()
+            _is_global = self.symtbl.isglobal()
+
+            #! check
+            _opcode = store_global if _is_global else store_local
 
             #! opcode
-            _opcode = store_global if _is_global else store_local
             emit_opcode(self, _opcode, _variable[0], self.offset)
 
             #! register
-            self.symtbl.insert_variable(_variable[0], self.offset, _vtype, _is_global, True)
+            self.symtbl.insert_var(_variable[0], self.offset, _vtype, _is_global, True)
 
             self.offset += 1
             #! end

@@ -140,7 +140,14 @@ class SymbolTable(HashTable):
         self.upperscope = _parent
         self.childnodes = stack(SymbolTable)
     
-    #! ======= checker   =======
+    #! ======== checker ========
+    
+    def isglobal(self):
+        #! check
+        _top = self.childnodes.peek() if not self.childnodes.isempty() else self
+
+        #! end
+        return not (not (not _top.upperscope))
 
     def contains(self, _name):
         """ Check for global name.
