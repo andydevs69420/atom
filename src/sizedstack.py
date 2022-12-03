@@ -25,6 +25,9 @@ class sizedstack(object):
     def peek(self):
         return self.__internal[self.__spointer - 1]
     
+    def bott(self):
+        return self.__internal[0]
+
     def isempty(self):
         return self.__spointer <= 0
-
+    

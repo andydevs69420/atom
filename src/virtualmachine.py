@@ -14,18 +14,6 @@ def popp_operand(_cls):
     return _cls.state.oprnd.popp()
 
 
-def push_value(_cls, _offset, _vvalue):
-    if  (_offset + 1) > len(_cls.state.value):
-        #! make slot
-        _cls.state.value.append(_vvalue)
-    
-    else:
-        #! set slot
-        _cls.state.value[_offset] = _vvalue
-
-def popp_value(_cls):
-    return _cls.state.value.popp()
-
 
 class virtualmachine(object):
     """ Virtual machine for atom.
@@ -80,20 +68,46 @@ class virtualmachine(object):
 
         #! retrieve object
         _object =\
-        atom_object_Get(self.state, self.state.value[_offset])
+        atom_object_Get(self.state, self.state.stack.bott().get(_offset))
 
         #! push to opstack
         push_operand(self, _object)
     
-    def load_global(self, _bytecode_chunk):
+    def load_local(self, _bytecode_chunk):
         _offset = _bytecode_chunk[3]
 
         #! retrieve object
         _object =\
-        atom_object_Get(self.state, self.state.value[_offset])
+        atom_object_Get(self.state, self.state.stack.peek().get(_offset))
 
         #! push to opstack
         push_operand(self, _object)
+    
+
+    def call_function(self, _bytecode_chunk):
+        _popsize = _bytecode_chunk[2]
+
+        #! params
+        _tmp = []
+
+        #! appended inorder
+        for _r in range(_popsize): _tmp.append(popp_operand(self))
+
+        _funpntr =\
+        popp_operand(self)
+
+
+        #! pushback
+        for _r in range(_popsize): push_operand(self, _tmp.pop())
+
+        #! push program frame
+        self.state.stack.push(frame(self.state.codes[_funpntr.funpntr]))
+
+        for i in self.state.codes[_funpntr.funpntr]:
+            print(i)
+    
+    def return_control(self, _bytecode_chunk):
+        self.state.stack.popp()
     
     #! ========= pow =========
 
@@ -291,7 +305,30 @@ class virtualmachine(object):
         popp_operand(self)
 
         #! push to value stack
-        push_value(self, _offset, _vvalue.offset)
+        self.state.stack.bott().set(_offset, _vvalue.offset)
+    
+    
+    def store_local(self, _bytecode_chunk):
+        _offset = _bytecode_chunk[3]
+
+        #! pop value
+        _vvalue =\
+        popp_operand(self)
+
+        #! push to value stack
+        self.state.stack.peek().set(_offset, _vvalue.offset)
+        
+    
+    def store_fast(self, _bytecode_chunk):
+        _offset = _bytecode_chunk[3]
+
+        #! pop value
+        _vvalue =\
+        popp_operand(self)
+
+        #! push to value stack
+        self.state.stack.peek().set(_offset, _vvalue.offset)
+        
 
     def pop_top(self, _bytecode_chunk):
         popp_operand(self)

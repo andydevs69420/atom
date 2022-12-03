@@ -31,7 +31,6 @@ class astate(object):
         #! VM
         self.stack = sizedstack(1000)
         self.oprnd = stack( aobject )
-        self.value = ([])
         
         #! MEM
         self.memory = mem()

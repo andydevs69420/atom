@@ -14,6 +14,8 @@ def main():
     _cgen = codegen(_state)
     _cgen.generate()
 
+    print("compile finished.")
+
     #! run
     _virm = virtualmachine(_state)
     _virm.run()

@@ -24,6 +24,8 @@ array_pushall = "array_pushall"
 call_function = "call_function"
 call_method = "call_method"
 
+return_control = "return_control"
+
 #! unary
 bit_not = "bit_not"
 log_not = "log_not"

@@ -28,6 +28,10 @@ class stack(object):
         assert not self.isempty(), "empty stack!"
         return self.__internal[-1]
     
+    def bott(self):
+        assert not self.isempty(), "empty stack!"
+        return self.__internal[0]
+    
     def isempty(self):
         return len(self.__internal) <= 0
 

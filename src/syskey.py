@@ -11,6 +11,7 @@ class keywords:
     CONST  = "const"
     VAR    = "var"
     LET    = "let"
+    RETURN = "return"
 
 
     @staticmethod

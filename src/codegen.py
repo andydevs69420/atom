@@ -12,6 +12,7 @@ from abuiltins.getter import getbuiltin
 
 TARGET = ...
 MAX_NESTING_LEVEL = 255
+MAX_TYPE_NESTING_LEVEL = 10
 
 
 
@@ -38,8 +39,10 @@ class generator(object):
         self.tstack = stack(tag_t)
         self.bcodes = []
         self.nstlvl = 0
+        self.typlvl = 0
         
-        self.currentfunctiontype = None
+        self.currentfunctiontype   = None
+        self.functionhasreturntype = False
 
     #! =========== VISITOR ===========
     
@@ -80,6 +83,10 @@ class generator(object):
         push_ttable(self, null_t())
 
     def ast_array_t(self, _node):
+        self.typlvl += 1
+        if  self.typlvl >= MAX_TYPE_NESTING_LEVEL:
+            error.raise_tracked(error_category.CompileError, "max nesting level for type reached.", _node.site)
+
         #! internal
         self.visit(_node.get(1))
 
@@ -87,8 +94,15 @@ class generator(object):
 
         #! push int type
         push_ttable(self, array_t(_internal))
+
+        #! end
+        self.typlvl -= 1
     
     def ast_fn_t(self, _node):
+        self.typlvl += 1
+        if  self.typlvl >= MAX_TYPE_NESTING_LEVEL:
+            error.raise_tracked(error_category.CompileError, "max nesting level for type reached.", _node.site)
+
         #! return
         self.visit(_node.get(1))
 
@@ -96,8 +110,15 @@ class generator(object):
 
         #! push int type
         push_ttable(self, fn_t(_return))
+
+        #! end
+        self.typlvl -= 1
     
     def ast_map_t(self, _node):
+        self.typlvl += 1
+        if  self.typlvl >= MAX_TYPE_NESTING_LEVEL:
+            error.raise_tracked(error_category.CompileError, "max nesting level for type reached.", _node.site)
+
         #! val type
         self.visit(_node.get(2))
 
@@ -109,6 +130,9 @@ class generator(object):
 
         #! push int type
         push_ttable(self, map_t(_key, _val))
+
+        #! end
+        self.typlvl -= 1
 
     #! =========== CONST VAL ==========
 
@@ -253,64 +277,27 @@ class generator(object):
              $0         $1
             object  parameters
         """
-        _object_ast = _node.get(0)
-        _paramcount = len(_node.get(1))
-    
         
         #! "name" (..., ..., ...)
-        if  _object_ast.type == ast_type.ATTRIBUTE:
+        if  _node.get(0).type == ast_type.ATTRIBUTE:
 
-            #! visit object
-            self.visit(_object_ast)
-
-            #! datatype
-            _functype = self.tstack.popp()
-
-            #! check if callable
-            if  not _functype.isfunction():
-                error.raise_tracked(error_category.CompileError, "%s %s is not a callable type." % (_functype.repr(), _object_ast.get(0)), _object_ast.site)
-
-            #! check parameter count
-            if  _functype.paramcount != _paramcount:
-                error.raise_tracked(error_category.CompileError, "%s requires %d argument, got %d." % (_object_ast.get(0), _functype.paramcount, _paramcount), _object_ast.site)
-
-            #! emit return type
-            push_ttable(self, _functype.returntype)
-
-            _index = 0
-
-            #! check every arguments
-            for _each_param in _node.get(1)[::-1]:
-
-                #! visit param
-                self.visit(_each_param)
-
-                _typeN = self.tstack.popp()
-
-                #! match type
-                if  not _functype.parameters[_index][1].matches(_typeN):
-                    error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[_index][0], _functype.parameters[_index][1].repr(), _typeN.repr()), _object_ast.site)
-
-                _index += 1
-            
-            #! opcode
-            emit_opcode(self, call_function)
+           ...
 
         
         else:
             #! visit object
-            self.visit(_object_ast)
+            self.visit(_node.get(0))
 
             #! datatype
             _functype = self.tstack.popp()
 
             #! check if callable
             if  not _functype.isfunction():
-                error.raise_tracked(error_category.CompileError, "%s %s is not a callable type." % (_functype.repr(), _object_ast.get(0)), _object_ast.site)
+                error.raise_tracked(error_category.CompileError, "%s is not a callable type." % _functype.repr(), _node.site)
 
             #! check parameter count
-            if  _functype.paramcount != _paramcount:
-                error.raise_tracked(error_category.CompileError, "%s requires %d argument, got %d." % (_object_ast.get(0), _functype.paramcount, _paramcount), _object_ast.site)
+            if  _functype.paramcount != len(_node.get(1)):
+                error.raise_tracked(error_category.CompileError, "requires %d argument, got %d." % (_functype.paramcount, len(_node.get(1))), _node.site)
 
             #! emit return type
             push_ttable(self, _functype.returntype)
@@ -327,12 +314,12 @@ class generator(object):
 
                 #! match type
                 if  not _functype.parameters[_index][1].matches(_typeN):
-                    error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[_index][0], _functype.parameters[_index][1].repr(), _typeN.repr()), _object_ast.site)
+                    error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[_index][0], _functype.parameters[_index][1].repr(), _typeN.repr()), _node.site)
 
                 _index += 1
             
             #! opcode
-            emit_opcode(self, call_function)
+            emit_opcode(self, call_function, len(_node.get(1)))
         
     
     def ast_unary_op(self, _node):
@@ -751,7 +738,7 @@ class generator(object):
         _datatype = fn_t(_returntype, len(_parameters), _parameters)
 
         #! register
-        self.symtbl.insert_fun(_node.get(2), self.offset, True, _mod, _datatype, _returntype)
+        self.symtbl.insert_fun(_node.get(2), self.offset, True,  _datatype, _returntype)
 
         #! validate
         _modinfo = getbuiltin(_mod)
@@ -815,7 +802,7 @@ class generator(object):
             emit_opcode(self, store_fast, _each_param[0], self.offset)
 
             #! register
-            self.symtbl.insert_var(_each_param[0], self.offset, _vtype, True, False)
+            self.symtbl.insert_var(_each_param[0], self.offset, _vtype, False, False)
 
             self.offset += 1
             #! end
@@ -823,9 +810,15 @@ class generator(object):
         #! compile body
         for _each_child in _node.get(3):
 
+            #! check
+            if  _each_child.type == ast_type.RETURN_STMNT:
+                self.functionhasreturntype = True
+           
             #! visit child
             self.visit(_each_child)
-
+        
+        if  not self.functionhasreturntype and not self.currentfunctiontype.matches(null_t()):
+            error.raise_tracked(error_category.CompileError, "function \"%s\" has no visible return." %  _node.get(1), _node.site)
 
         #! end func scope
         self.symtbl.endscope()
@@ -838,7 +831,7 @@ class generator(object):
         self.bcodes = _old_bcodes
 
         #! register
-        self.symtbl.insert_fun(_node.get(1), self.offset, False, "this", fn_t(self.currentfunctiontype, len(_parameters), _parameters), self.currentfunctiontype)
+        self.symtbl.insert_fun(_node.get(1), self.offset, False, fn_t(self.currentfunctiontype, len(_parameters), _parameters), self.currentfunctiontype)
 
         #! unset current function
         self.currentfunctiontype =\
@@ -946,10 +939,38 @@ class generator(object):
 
             self.offset += 1
             #! end
+    
+    def ast_return_stmnt(self, _node):
+        """   $0
+            return
+        """
+
+        if  not _node.get(0):
+            #! emit nulltype
+            push_ttable(null_t())
+
+            #! opcode
+            emit_opcode(self, nload, None)
+        
+        else:
+            #! visit expr
+            self.visit(_node.get(0))
+        
+
+        _dtype = self.tstack.popp()
+
+        if  not self.currentfunctiontype.matches(_dtype):
+            error.raise_tracked(error_category.CompileError, "expected return type %s, got %s." %  (self.currentfunctiontype.repr(), _dtype.repr()), _node.site)
+
+        #! opcode
+        emit_opcode(self, return_control)
 
     def ast_expr_stmnt(self, _node):
         #! statement
         self.visit(_node.get(0))
+
+        #! pop last type
+        self.tstack.popp()
 
         #! opcode
         emit_opcode(self, pop_top)
@@ -996,9 +1017,6 @@ class codegen(generator):
     def generate(self):
         #! compile each child node
         self.visit(self.gparser.parse())
-
-        for x in self.bcodes:
-            print(x)
 
         #! set program code
         self.state.codes["program"] = self.bcodes

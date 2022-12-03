@@ -1240,6 +1240,8 @@ class parser(object):
             return self.let_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.CONST):
             return self.const_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.RETURN):
+            return self.return_stmnt()
 
         #! end
         return self.expr_stmnt()
@@ -1273,8 +1275,8 @@ class parser(object):
 
         _locsite = self.d_location(_start)
 
-        #! ';'
         self.expect_both(token_type.SYMBOL, ";")
+        #! ';'
 
         return stmnt_ast(
             ast_type.IMPORT, _locsite, _imports)
@@ -1292,8 +1294,8 @@ class parser(object):
         if  not self.under(context.GLOBAL, True):
             error.raise_tracked(error_category.SematicError, "cannot use \"var\" to declaire variables here!", _ended)
 
-        #! ';'
         self.expect_both(token_type.SYMBOL, ";")
+        #! ';'
 
         #! end
         return stmnt_ast(
@@ -1312,8 +1314,8 @@ class parser(object):
         if  not self.under(context.LOCAL, False):
             error.raise_tracked(error_category.SematicError, "cannot use \"let\" to declaire variables here!", _ended)
 
-        #! ';'
         self.expect_both(token_type.SYMBOL, ";")
+        #! ';'
 
         #! end
         return stmnt_ast(
@@ -1329,12 +1331,26 @@ class parser(object):
 
         _ended = self.d_location(_start)
 
-        #! ';'
         self.expect_both(token_type.SYMBOL, ";")
+        #! ';'
 
         #! end
         return stmnt_ast(
             ast_type.CONST_STMNT, _ended, _declaire)
+    
+    def return_stmnt(self):
+        _start = self.lookahead
+
+        #! "return"
+        self.expect_both(token_type.IDENTIFIER, keywords.RETURN)
+
+        _expr = self.nullable_expr()
+
+        self.expect_both(token_type.SYMBOL, ";")
+        #! ';'
+
+        return stmnt_ast(
+            ast_type.RETURN_STMNT, self.d_location(_start), _expr)
 
     def expr_stmnt(self):
         """ EXPRESSION_STATEMENT statement.

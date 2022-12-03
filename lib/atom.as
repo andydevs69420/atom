@@ -5,17 +5,13 @@
 
 
 
-fun[array[int]] main(_a:int, _b:int)
+fun[int] main(_a:int, _b:int)
 {   
-   
-    let x   = _a +  _b;
-    const c = 2, y = 3;
+    return _a + _b;
 }
 
-var f = main;
 
-
-f(2, 3);
+main(2,3);
 
 
 
