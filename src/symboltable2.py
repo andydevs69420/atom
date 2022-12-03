@@ -1,6 +1,7 @@
 """ LinkedList of HashTable
 """
 
+from stack import stack
 
 class Node(object):
     """ Base node for LinkedList.
@@ -40,10 +41,9 @@ class HashTable(object):
     """ HashTable base.
     """
 
+    LOAD_FACTOR = 0.75
+
     def __init__(self):
-        self.head = None
-        self.tail = None
-        #! ===============
         self.__htsize = 16
         self.__elsize = 0
         self.__bucket = [None for _r in range(self.__htsize)]
@@ -64,7 +64,7 @@ class HashTable(object):
         self.__bucket[_index] = LinkedList(_key, _value)
         self.__elsize += 1
 
-        if  (float(self.__elsize) / self.__htsize) > 0.75:
+        if  (float(self.__elsize) / self.__htsize) > HashTable.LOAD_FACTOR:
             self.rehash()
     
 
@@ -129,63 +129,202 @@ class HashTable(object):
         return _hashcode
 
 
-
 class SymbolTable(HashTable):
     """ SymbolTable base.
 
         Bottom to up.
     """
 
-    def __init__(self):
+    def __init__(self, _parent=None):
         super().__init__()
-
-    def insert_variable(self, _key, _value):
-        self.getlast().put(_key, _value)
+        self.upperscope = _parent
+        self.childnodes = stack(SymbolTable)
     
-    def lookup_global(self, _key):
-        _last = self.getlast()
+    #! ======= checker   =======
 
-        while _last:
-            if _last.haskey(_key): return _last.get(_key)
+    def contains(self, _name):
+        """ Check for global name.
+        """
+        _top = self.childnodes.peek() if not self.childnodes.isempty() else self
 
-            _last = _last.head
-        
+        while _top:
+            #! check
+            if _top.haskey(_name): return True
+
+            #! next
+            _top = _top.upperscope
+
+        #! end
         return False
-    
-    def lookup_local(self, _key):
-        if  self.getlast().haskey(_key):
-            return False
 
-        return self.getlast().haskey(_key)
+    def haslocal(self, _name):
+        """ Check for local name.
+        """
+        _top = self.childnodes.peek() if not self.childnodes.isempty() else self
+        return _top.haskey(_name)
+
+    #! ======= operation =======
+    
+    def insert(self, _key, _value):
+        #! check bottom
+        _top = self.childnodes.peek() if not self.childnodes.isempty() else self
+        
+        #! insert
+        _top.put(_key, _value)
+    
+    def insert_var(self,
+        _varname   ,
+        _offset    ,
+        _datatype  ,
+        _isglobal  ,
+        _isconstant,
+    ):
+        #! check bottom
+        _top = self.childnodes.peek() if not self.childnodes.isempty() else self
+        
+        #! insert
+        _top.put(_varname, variabletable(_varname, _offset, _datatype, _isglobal, _isconstant))
+    
+    def insert_fun(self,
+        _funcname  ,
+        _offset    ,
+        _datatype  ,
+        _retrtype  ,
+        _paramcount,
+        _parameters,
+    ):
+        #! check bottom
+        _top = self.childnodes.peek() if not self.childnodes.isempty() else self
+        
+        #! insert
+        _top.put(_funcname, functiontable(_funcname, _offset, _datatype, _retrtype, _paramcount, _parameters))
+
+    def lookup(self, _key):
+        #! check bottom
+        _top = self.childnodes.peek() if not self.childnodes.isempty() else self
+
+        while _top:
+            #! check
+            if _top.haskey(_key): return _top.get(_key)
+
+            #! next
+            _top = _top.upperscope
+
+        #! end
+        raise KeyError("key not found \"%s\"." % _key)
     
     def newscope(self):
-        self.newtail()
+        """ Creates new symboltable node.
+        """
+        self.childnodes.push(SymbolTable(_parent=self if self.childnodes.isempty() else self.childnodes.peek()))
     
     def endscope(self):
-        _end = self.getlast()
-        _end.head.tail = None
+        """ Removes scope from hierarchy.
+        """
+        self.childnodes.popp()
+
+
+
+class typetable(object):
+
+    def __init__(self):
+        pass
+    
+    def get_name(self):...
+
+    def get_offset(self):...
+
+    def get_datatype(self):...
+
+    def is_global(self):...
+
+    def is_constant(self):...
+
+
+class functiontable(typetable):
+    """ Function table for atom.
+    """
+
+    def __init__(self, _funcname, _offset, _datatype, _retrtype, _paramcount, _parameters):
+        super().__init__()
+        self.funcname   = _funcname
+        self.offset     = _offset
+        self.datatype   = _datatype
+        self.retrtype   = _retrtype
+        self.paramcount = _paramcount
+        self.parameters = _parameters
+    
+    def get_name(self):
+        return self.funcname
+    
+    def get_offset(self):
+        return self.offset
+    
+    def get_datatype(self):
+        return self.datatype
+    
+    def is_global(self):
+        return True
+    
+    def is_constant(self):
+        return True
+
+
+
+class variabletable(typetable):
+    """ Variable table for atom.
+    """
+
+    def __init__(self, _varname, _offset, _datatype, _isglobal, _isconstant):
+        super().__init__()
+        self.varname    = _varname
+        self.offset     = _offset
+        self.datatype   = _datatype
+        self.isglobal   = _isglobal
+        self.isconstant = _isconstant
+    
+    def get_name(self):
+        return self.varname
+    
+    def get_offset(self):
+        return self.offset
+
+    def get_datatype(self):
+        return self.datatype
+    
+    def is_global(self):
+        return self.isglobal
+    
+    def is_constant(self):
+        return self.isconstant
+
+#! END
+
 
 
 if  __name__ == "__main__":
     _st = SymbolTable()
-    _st.insert_variable("Andy", 2)
-    _st.insert_variable("Marielle", 10)
-    _st.insert_variable("Orpheus", "OPAW")
-    print(_st.lookup_global("Andy"))
-    print(_st.lookup_global("Marielle"))
-    
+    _st.insert("Marielle", 10000000)
+    _st.insert("Andy", 23)
+    print(_st.lookup("Andy"))
+    _st.insert("Andy2", 20000)
 
-    _st.newscope()
+    _st.newscope() #1
 
-    _st.insert_variable("Orpheus", 2000)
-    print(_st.lookup_global("Andy"))
-    print(_st.lookup_global("Marielle"))
-    print(_st.lookup_global("Orpheus"))
-    _st.insert_variable("amanda", 2)
+    _st.insert("Andy2", 200)
+    print(_st.lookup("Andy2"))
 
-    _st.endscope()
+    _st.newscope()      #2
+    _st.insert("Marielle", 100)
+    print(_st.lookup("Marielle"))
+    _st.endscope()      #2
 
-    if  not _st.lookup_local("amanda"):
-        print("Error amanda not found!")
+    print(_st.lookup("Marielle"))
 
-    print(_st.lookup_global("Orpheus"))
+    _st.endscope() #1
+
+    print(_st.lookup("Andy2"))
+
+
+
+
