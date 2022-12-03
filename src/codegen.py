@@ -258,14 +258,7 @@ class generator(object):
     
         
         #! "name" (..., ..., ...)
-        if  _object_ast.type == ast_type.REF:
-
-            # #! check
-            # if  not self.symtbl.contains(_node.get(0).get(0)):
-            #     error.raise_tracked(error_category.CompileError, "function \"%s\" is not defined." % _object_ast.get(0), _object_ast.site)
-            
-            # #! get info 
-            # _info = self.symtbl.lookup(_object_ast.get(0))
+        if  _object_ast.type == ast_type.ATTRIBUTE:
 
             #! visit object
             self.visit(_object_ast)
@@ -301,25 +294,45 @@ class generator(object):
                 _index += 1
             
             #! opcode
-            emit_opcode(self, call_function, _object_ast.get(0))
+            emit_opcode(self, call_function)
 
-
-        elif _object_ast.type == ast_type.ATTRIBUTE:
-            #! compile attribute
-            self.call_part_attribute(_node.get(0))
-
-            #! compile param
-            for _each_param in _node.get(1)[::-1]:
-
-                #! visit each param
-                self.visit(_each_param)
-        
-            #! opcode
-            emit_opcode(self, call_method, len(_node.get(1)))
         
         else:
+            #! visit object
+            self.visit(_object_ast)
+
+            #! datatype
+            _functype = self.tstack.popp()
+
+            #! check if callable
+            if  not _functype.isfunction():
+                error.raise_tracked(error_category.CompileError, "%s %s is not a callable type." % (_functype.repr(), _object_ast.get(0)), _object_ast.site)
+
+            #! check parameter count
+            if  _functype.paramcount != _paramcount:
+                error.raise_tracked(error_category.CompileError, "%s requires %d argument, got %d." % (_object_ast.get(0), _functype.paramcount, _paramcount), _object_ast.site)
+
+            #! emit return type
+            push_ttable(self, _functype.returntype)
+
+            _index = 0
+
+            #! check every arguments
+            for _each_param in _node.get(1)[::-1]:
+
+                #! visit param
+                self.visit(_each_param)
+
+                _typeN = self.tstack.popp()
+
+                #! match type
+                if  not _functype.parameters[_index][1].matches(_typeN):
+                    error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[_index][0], _functype.parameters[_index][1].repr(), _typeN.repr()), _object_ast.site)
+
+                _index += 1
+            
             #! opcode
-            emit_opcode(self, call_method, len(_node.get(1)))
+            emit_opcode(self, call_function)
         
     
     def ast_unary_op(self, _node):
