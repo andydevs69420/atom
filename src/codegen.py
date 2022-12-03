@@ -253,14 +253,58 @@ class generator(object):
              $0         $1
             object  parameters
         """
-        _type = _node.get(0).type
+        _object_ast = _node.get(0)
+        _paramcount = len(_node.get(1))
+    
+        
+        #! "name" (..., ..., ...)
+        if  _object_ast.type == ast_type.REF:
 
-        # error.raise_tracked(error_category.CompileError, "%s is not callable." % _dtype.repr(), _node.site)
-
-        if  _type == ast_type.REF:
-            ...
+            # #! check
+            # if  not self.symtbl.contains(_node.get(0).get(0)):
+            #     error.raise_tracked(error_category.CompileError, "function \"%s\" is not defined." % _object_ast.get(0), _object_ast.site)
             
-        elif _type == ast_type.ATTRIBUTE:
+            # #! get info 
+            # _info = self.symtbl.lookup(_object_ast.get(0))
+
+            #! visit object
+            self.visit(_object_ast)
+
+            #! datatype
+            _functype = self.tstack.popp()
+
+            #! check if callable
+            if  not _functype.isfunction():
+                error.raise_tracked(error_category.CompileError, "%s %s is not a callable type." % (_functype.repr(), _object_ast.get(0)), _object_ast.site)
+
+            #! check parameter count
+            if  _functype.paramcount != _paramcount:
+                error.raise_tracked(error_category.CompileError, "%s requires %d argument, got %d." % (_object_ast.get(0), _functype.paramcount, _paramcount), _object_ast.site)
+
+            #! emit return type
+            push_ttable(self, _functype.returntype)
+
+            _index = 0
+
+            #! check every arguments
+            for _each_param in _node.get(1)[::-1]:
+
+                #! visit param
+                self.visit(_each_param)
+
+                _typeN = self.tstack.popp()
+
+                #! match type
+                if  not _functype.parameters[_index][1].matches(_typeN):
+                    error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[_index][0], _functype.parameters[_index][1].repr(), _typeN.repr()), _object_ast.site)
+
+                _index += 1
+            
+            #! opcode
+            emit_opcode(self, call_function, _object_ast.get(0))
+
+
+        elif _object_ast.type == ast_type.ATTRIBUTE:
             #! compile attribute
             self.call_part_attribute(_node.get(0))
 
@@ -277,8 +321,6 @@ class generator(object):
             #! opcode
             emit_opcode(self, call_method, len(_node.get(1)))
         
-    def call_part_attribute(self, _node):
-        ...
     
     def ast_unary_op(self, _node):
         """
@@ -693,10 +735,10 @@ class generator(object):
         self.symtbl.endscope()
 
         #! datatype
-        _datatype = fn_t(_returntype, len(_parameters), [_p[1] for _p in _parameters])
+        _datatype = fn_t(_returntype, len(_parameters), _parameters)
 
         #! register
-        self.symtbl.insert_fun(_node.get(2), self.offset, True, _datatype, self.currentfunctiontype, len(_parameters), tuple(_parameters))
+        self.symtbl.insert_fun(_node.get(2), self.offset, True, _mod, _datatype, _returntype)
 
         #! validate
         _modinfo = getbuiltin(_mod)
@@ -726,15 +768,15 @@ class generator(object):
         #! =======================
         _parameters = []
 
-        #! new func scope
-        self.symtbl.newscope()
-
         #! visit returntype
         self.visit(_node.get(0))
 
         #! set current function
         self.currentfunctiontype =\
         self.tstack.popp()
+
+        #! new func scope
+        self.symtbl.newscope()
 
         #! check if function name is already defined.
         if  self.symtbl.contains(_node.get(1)):
@@ -770,16 +812,10 @@ class generator(object):
 
             #! visit child
             self.visit(_each_child)
-        
-        #! unset current function
-        self.currentfunctiontype =\
-        None
+
 
         #! end func scope
         self.symtbl.endscope()
-
-        #! register
-        self.symtbl.insert_fun(_node.get(1), self.offset, False, fn_t(self.currentfunctiontype, len(_parameters), [_p[1] for _p in _parameters]), self.currentfunctiontype, len(_parameters), tuple(_parameters))
 
         #! store code
         self.state.codes[_node.get(1)] = self.bcodes
@@ -787,6 +823,22 @@ class generator(object):
         #! restore
         self.offset = _old_offset
         self.bcodes = _old_bcodes
+
+        #! register
+        self.symtbl.insert_fun(_node.get(1), self.offset, False, "this", fn_t(self.currentfunctiontype, len(_parameters), _parameters), self.currentfunctiontype)
+
+        #! unset current function
+        self.currentfunctiontype =\
+        None
+        
+        #! val opcode
+        emit_opcode(self, load_funpntr, _node.get(1))
+
+        #! var opcode
+        emit_opcode(self, store_global, _node.get(1), self.offset)
+
+        #! end
+        self.offset += 1
 
 
     #! =========== simple statement ===========

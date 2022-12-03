@@ -11,6 +11,8 @@ sload  = "sload"
 bload  = "bload"
 nload  = "nload"
 
+load_funpntr = "load_funpntr"
+
 load_global = "load_global"
 load_local  = "load_local"
 

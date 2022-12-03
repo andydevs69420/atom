@@ -16,7 +16,7 @@ class fn_t(nonprimitive_t):
     def repr(self):
         _param = ""
         for _p in range(self.paramcount):
-            _param += self.parameters[_p].repr()
+            _param += self.parameters[_p][1].repr()
 
             if  _p < (self.paramcount - 1):
                 _param += ", "
@@ -31,7 +31,7 @@ class fn_t(nonprimitive_t):
             return False
         
         for _x, _y in zip(self.parameters, _rhs.parameters):
-            if  not _x.matches(_y):
+            if  not _x[1].matches(_y[1]):
                 return False
 
         return self.returntype.matches(_rhs.returntype)

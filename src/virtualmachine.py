@@ -65,6 +65,25 @@ class virtualmachine(object):
     
         #! push to opstack
         push_operand(self, _null)
+
+    def load_funpntr(self, _bytecode_chunk):
+        _funpntr =\
+        afun(_bytecode_chunk[2])
+
+        atom_object_New(self.state, _funpntr)
+    
+        #! push to opstack
+        push_operand(self, _funpntr)
+    
+    def load_global(self, _bytecode_chunk):
+        _offset = _bytecode_chunk[3]
+
+        #! retrieve object
+        _object =\
+        atom_object_Get(self.state, self.state.value[_offset])
+
+        #! push to opstack
+        push_operand(self, _object)
     
     def load_global(self, _bytecode_chunk):
         _offset = _bytecode_chunk[3]

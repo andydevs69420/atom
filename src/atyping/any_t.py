@@ -13,7 +13,7 @@ class any_t(tag_t):
         return self.name
     
     def matches(self, _rhs):
-        return _rhs.isany()
+        return True
     
     def isany(self):
         return True
