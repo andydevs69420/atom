@@ -43,9 +43,3 @@ class tag_t(object):
     def relational(self, _rhs):return operation.BAD_OP
     def equality(self, _rhs):return operation.BAD_OP
     def bitwise(self, _rhs):return operation.BAD_OP
-
-
-    #! ====== member check ========
-    """ Checks if an object hass attribute.
-    """
-    def hasAttribute(self, _attribute):return False

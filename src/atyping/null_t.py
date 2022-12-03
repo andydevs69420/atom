@@ -14,7 +14,7 @@ class null_t(primitive_t):
         return self.name
     
     def matches(self, _rhs):
-        return _rhs.isboolean()
+        return _rhs.isnull()
     
     def isnull(self):
         return True

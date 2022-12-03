@@ -1083,11 +1083,72 @@ class parser(object):
             -------
             ast
         """
+        if  self.check_both(token_type.IDENTIFIER, keywords.NATIVE):
+            return self.native_function_proto()
         if  self.check_both(token_type.IDENTIFIER, keywords.FUN):
             return self.function()
         #! end
         return self.simple_stmnt()
     
+    def native_function_proto(self):
+        """ Native function prototype.
+
+            Syntax
+            ------
+            anotation
+            "fun" '[' returntype ']' raw_iden '(' list_parameters ')' ';' ;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+
+        #! "native"
+        self.expect_both(token_type.IDENTIFIER, keywords.NATIVE)
+
+        #! "::"
+        self.expect_both(token_type.SYMBOL, "::")
+
+        #! mod directory
+        _lib = self.raw_iden()
+
+        #! enter ctx
+        self.enter(context.FUNCTION)
+
+        #! "fun"
+        self.expect_both(token_type.IDENTIFIER, keywords.FUN)
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _return = self.returntype()
+    
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        _fname = self.raw_iden()
+
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        _parameters = self.list_parameter()
+    
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
+        #! ';'
+        self.expect_both(token_type.SYMBOL, ";")
+
+        #! leave ctx
+        self.leave(context.FUNCTION)
+
+        if  not self.under(context.GLOBAL, True):
+            error.raise_tracked(error_category.SematicError, "function prototype declairation should be done globally!", self.d_location(_start))
+
+        #! end
+        return stmnt_ast(
+            ast_type.NATIVE_FUNCTION, self.d_location(_start), _lib, _return, _fname, _parameters)
 
     def function(self):
         """ Function declairation.
@@ -1125,8 +1186,6 @@ class parser(object):
     
         self.expect_both(token_type.SYMBOL, ")")
         #! ')'
-
-
 
         _body = self.function_body()
 

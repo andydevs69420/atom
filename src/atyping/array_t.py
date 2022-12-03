@@ -18,7 +18,7 @@ class array_t(nonprimitive_t):
         if  not _rhs.isarray():
             return False
 
-        return self.elementtype.matches(_rhs.elementtype)
+        return self.elementtype.matches(_rhs.elementtype) or self.elementtype.isany()
     
     def isarray(self):
         return True
@@ -27,3 +27,4 @@ class array_t(nonprimitive_t):
 
     def unpack(self):
         return operation.ARRAY_UNPACK
+    

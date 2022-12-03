@@ -1,12 +1,9 @@
-
 from sys import argv, setrecursionlimit
-setrecursionlimit(100_000)
-
+setrecursionlimit(20_000)
 
 from astate import astate
 from codegen import codegen
 from virtualmachine import virtualmachine
-
 from readf import read_file
 
 def main():

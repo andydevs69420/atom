@@ -195,6 +195,7 @@ class SymbolTable(HashTable):
     def insert_fun(self,
         _funcname  ,
         _offset    ,
+        _isnative  ,
         _datatype  ,
         _retrtype  ,
         _paramcount,
@@ -204,7 +205,7 @@ class SymbolTable(HashTable):
         _top = self.childnodes.peek() if not self.childnodes.isempty() else self
         
         #! insert
-        _top.put(_funcname, functiontable(_funcname, _offset, _datatype, _retrtype, _paramcount, _parameters))
+        _top.put(_funcname, functiontable(_funcname, _offset, _isnative, _datatype, _retrtype, _paramcount, _parameters))
 
     def lookup(self, _key):
         #! check bottom
@@ -252,10 +253,11 @@ class functiontable(typetable):
     """ Function table for atom.
     """
 
-    def __init__(self, _funcname, _offset, _datatype, _retrtype, _paramcount, _parameters):
+    def __init__(self, _funcname, _offset, _isnative, _datatype, _retrtype, _paramcount, _parameters):
         super().__init__()
         self.funcname   = _funcname
         self.offset     = _offset
+        self.isnative   = _isnative
         self.datatype   = _datatype
         self.retrtype   = _retrtype
         self.paramcount = _paramcount
@@ -266,6 +268,9 @@ class functiontable(typetable):
     
     def get_offset(self):
         return self.offset
+    
+    def is_native(self):
+        return self.isnative
     
     def get_datatype(self):
         return self.datatype

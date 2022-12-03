@@ -30,14 +30,15 @@ class ast_type(Enum):
     SHORTC_OP    = 25
     SIMPLE_ASS   = 26
     AUGMENT_ASS  = 27
-    FUNCTION     = 28
-    IMPORT       = 29
-    VAR_STMNT    = 30
-    LET_STMNT    = 31
-    CONST_STMNT  = 32
-    RETURN_STMNT = 33
-    EXPR_STMNT   = 34
-    SOURCE       = 35
+    NATIVE_FUNCTION = 28
+    FUNCTION     = 29
+    IMPORT       = 30
+    VAR_STMNT    = 31
+    LET_STMNT    = 32
+    CONST_STMNT  = 33
+    RETURN_STMNT = 34
+    EXPR_STMNT   = 35
+    SOURCE       = 36
 
 
 

@@ -6,17 +6,33 @@ class fn_t(nonprimitive_t):
     """ Array compiletime tag.
     """
 
-    def __init__(self, _returntype):
+    def __init__(self, _returntype, _paramcount, _parameters):
         super().__init__()
         self.name = type_names.FN
         self.returntype = _returntype
+        self.paramcount = _paramcount
+        self.parameters = _parameters
     
     def repr(self):
-        return self.name + "[" + self.returntype.repr() + "]"
+        _param = ""
+        for _p in range(self.paramcount):
+            _param += self.parameters[_p].repr()
+
+            if  _p < (self.paramcount - 1):
+                _param += ", "
+        #! end
+        return self.name + "[" + self.returntype.repr() + "]" + "(" + _param + ")"
     
     def matches(self, _rhs):
         if  not _rhs.isfunction():
             return False
+        
+        if  self.paramcount != _rhs.paramcount:
+            return False
+        
+        for _x, _y in zip(self.parameters, _rhs.parameters):
+            if  not _x.matches(_y):
+                return False
 
         return self.returntype.matches(_rhs.returntype)
     

@@ -363,6 +363,12 @@ class lexer(object):
             if   self.current.clook == '|' or\
                  self.current.clook == '=':
                 _token.value += self.nextchr()
+        
+        elif self.current.clook == ':':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == ':':
+                _token.value += self.nextchr()
 
         elif self.current.clook == '(' or\
              self.current.clook == ')' or\
@@ -372,7 +378,6 @@ class lexer(object):
              self.current.clook == '}' or\
              self.current.clook == '.' or\
              self.current.clook == '!' or\
-             self.current.clook == ':' or\
              self.current.clook == ';' or\
              self.current.clook == ',':
             _token.value += self.nextchr()

@@ -8,6 +8,7 @@ from atyping import *
 from error import (error_category, error)
 from aopcode import *
 from aast import ast_type
+from abuiltins.getter import getbuiltin
 
 TARGET = ...
 MAX_NESTING_LEVEL = 255
@@ -260,6 +261,12 @@ class generator(object):
         if  _type == ast_type.ATTRIBUTE:
             #! compile attribute
             self.call_part_attribute(_node.get(0))
+
+            #! compile param
+            for _each_param in _node.get(1)[::-1]:
+
+                #! visit each param
+                self.visit(_each_param)
         
             #! opcode
             emit_opcode(self, call_method, len(_node.get(1)))
@@ -641,6 +648,68 @@ class generator(object):
         #! end
 
     #! ========== compound statement ==========
+
+    def ast_native_function(self, _node):
+        _parameters = []
+
+        #! target mod
+        _mod = _node.get(0)
+
+        #! new func scope
+        self.symtbl.newscope()
+
+        #! visit returntype
+        self.visit(_node.get(1))
+
+        _returntype = self.tstack.popp()
+
+        #! check if function name is already defined.
+        if  self.symtbl.contains(_node.get(2)):
+            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(2), _node.site)
+
+        #! compile parameters
+        for _each_param in _node.get(3):
+
+            #! visit type
+            self.visit(_each_param[1])
+
+            #! param dtype
+            _vtype = self.tstack.popp()
+
+            #! check if parameter is already defined.
+            if  self.symtbl.haslocal(_each_param[0]):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
+
+            #! make param list
+            _parameters.append((_each_param[0], _vtype))
+
+        #! end func scope
+        self.symtbl.endscope()
+
+        #! datatype
+        _datatype = fn_t(_returntype, len(_parameters), [_p[1] for _p in _parameters])
+
+        #! register
+        self.symtbl.insert_fun(_node.get(2), self.offset, True, _datatype, self.currentfunctiontype, len(_parameters), tuple(_parameters))
+
+        #! validate
+        _modinfo = getbuiltin(_mod)
+
+        #! check if native exist
+        if  not _modinfo:
+            error.raise_tracked(error_category.CompileError, "module \"%s\" is not defined." %  _mod, _node.site)
+        
+        #! check if function is in native
+        if  not _modinfo.hasmeta(_node.get(2)):
+            error.raise_tracked(error_category.CompileError, "function \"%s\" is not defined at \"%s\"." %  (_node.get(2), _mod), _node.site)
+
+        _meta = _modinfo.getmeta(_node.get(2))
+
+        #! check if meta matches
+        if  not _meta.matches(_datatype):
+            error.raise_tracked(error_category.CompileError, "function data not matched \"%s\" and \"%s\"." %  (_meta.repr(), _datatype.repr()), _node.site)
+
+
     def ast_function(self, _node):
         _old_offset = self.offset
         _old_bcodes = self.bcodes
@@ -704,7 +773,7 @@ class generator(object):
         self.symtbl.endscope()
 
         #! register
-        self.symtbl.insert_fun(_node.get(1), self.offset, fn_t(self.currentfunctiontype), self.currentfunctiontype, len(_parameters), tuple(_parameters))
+        self.symtbl.insert_fun(_node.get(1), self.offset, False, fn_t(self.currentfunctiontype, len(_parameters), [_p[1] for _p in _parameters]), self.currentfunctiontype, len(_parameters), tuple(_parameters))
 
         #! store code
         self.state.codes[_node.get(1)] = self.bcodes
