@@ -252,7 +252,20 @@ class generator(object):
              $0         $1
             object  parameters
         """
-        print(_node)
+        _type = _node.get(0).type
+
+        #! visit object
+        self.visit(_node.get(0))
+
+        if  _type == ast_type.ATTRIBUTE:
+            #! compile attribute
+            self.call_part_attribute(_node.get(0))
+        
+            #! opcode
+            emit_opcode(self, call_method, len(_node.get(1)))
+        
+    def call_part_attribute(self, _node):
+        ...
     
     def ast_unary_op(self, _node):
         """
