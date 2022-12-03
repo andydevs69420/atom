@@ -255,10 +255,12 @@ class generator(object):
         """
         _type = _node.get(0).type
 
-        #! visit object
-        self.visit(_node.get(0))
+        # error.raise_tracked(error_category.CompileError, "%s is not callable." % _dtype.repr(), _node.site)
 
-        if  _type == ast_type.ATTRIBUTE:
+        if  _type == ast_type.REF:
+            ...
+            
+        elif _type == ast_type.ATTRIBUTE:
             #! compile attribute
             self.call_part_attribute(_node.get(0))
 
@@ -268,6 +270,10 @@ class generator(object):
                 #! visit each param
                 self.visit(_each_param)
         
+            #! opcode
+            emit_opcode(self, call_method, len(_node.get(1)))
+        
+        else:
             #! opcode
             emit_opcode(self, call_method, len(_node.get(1)))
         

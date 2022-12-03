@@ -5,7 +5,7 @@
 
 import [nah];
 
-native::std 
+native::std
 fun[void] printf(_x:str, _y:array[str]);
 
 var x = 2, y = x;
