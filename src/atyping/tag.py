@@ -8,6 +8,7 @@ class tag_t(object):
     def __init__(self):
         pass
     
+    def qualname(self):raise NotImplementedError("Holly shake! not overridden.")
     def repr(self):raise NotImplementedError("Holly shake! not overridden.")
     def matches(self, _rhs):raise NotImplementedError("Holly shake! not overridden.")
 

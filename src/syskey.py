@@ -7,6 +7,7 @@ class keywords:
     NULL   = "null"
     NATIVE = "native"
     FUN    = "fun"
+    WRAP   = "wrap"
     IMPORT = "import"
     CONST  = "const"
     VAR    = "var"

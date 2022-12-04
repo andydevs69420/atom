@@ -11,7 +11,7 @@ class ast_type(Enum):
     ARRAY_T      = 6
     FN_T         = 7
     MAP_T        = 8
-    USER_T       = 9
+    TYPE_T       = 9
     INT          = 10
     FLOAT        = 11
     STR          = 12
@@ -22,23 +22,24 @@ class ast_type(Enum):
     MAP          = 17
     ATTRIBUTE    = 18
     ELEMENT      = 19
-    CALL         = 20
-    UNARY_OP     = 21
-    UNARY_CAST   = 22
+    CALL_WRAPPER = 20
+    CALL         = 21
+    UNARY_OP     = 22
     UNARY_UNPACK = 23
     BINARY_OP    = 24
     SHORTC_OP    = 25
     SIMPLE_ASS   = 26
     AUGMENT_ASS  = 27
-    NATIVE_FUNCTION = 28
-    FUNCTION     = 29
-    IMPORT       = 30
-    VAR_STMNT    = 31
-    LET_STMNT    = 32
-    CONST_STMNT  = 33
-    RETURN_STMNT = 34
-    EXPR_STMNT   = 35
-    SOURCE       = 36
+    FUNCTION     = 28
+    IMPORT       = 29
+    FUNCTION_WRAPPER = 30
+    NATIVE_FUNCTION  = 31
+    VAR_STMNT    = 32
+    LET_STMNT    = 33
+    CONST_STMNT  = 34
+    RETURN_STMNT = 35
+    EXPR_STMNT   = 36
+    SOURCE       = 37
 
 
 

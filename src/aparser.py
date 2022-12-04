@@ -475,7 +475,7 @@ class parser(object):
     
     def t_user(self):
         return expr_ast(
-            ast_type.USER_T, "...", self.raw_iden())
+            ast_type.TYPE_T, "...", self.raw_iden())
     
     def atom(self):
         """ ATOM
@@ -673,12 +673,14 @@ class parser(object):
             ast_type.MAP, self.d_location(_start), _elements)
     
 
+
     def member(self):
         _start = self.lookahead
         _node  = self.atom()
 
         while self.check_both(token_type.SYMBOL, ".") or\
               self.check_both(token_type.SYMBOL, "[") or\
+              self.check_both(token_type.SYMBOL, "!") or\
               self.check_both(token_type.SYMBOL, "("):
 
             if  self.check_both(token_type.SYMBOL, "."):
@@ -702,6 +704,22 @@ class parser(object):
 
                 _node = expr_ast(
                     ast_type.ELEMENT, self.d_location(_start), _node, _expr)
+            
+            elif  self.check_both(token_type.SYMBOL, "!"):
+                #! '!'
+                self.expect_both(token_type.SYMBOL, "!")
+
+                #! '('
+                self.expect_both(token_type.SYMBOL, "(")
+
+                _params = self.list_expr()
+                
+                self.expect_both(token_type.SYMBOL, ")")
+                #! ')'
+
+                _node = expr_ast(
+                    ast_type.CALL_WRAPPER, self.d_location(_start), _node, _params)
+
             
             elif self.check_both(token_type.SYMBOL, "("):
                 #! '('
@@ -749,33 +767,6 @@ class parser(object):
 
             return expr_ast(
                 ast_type.UNARY_UNPACK, self.d_location(_start), _opt, _rhs)
-        
-        #! cast
-        if  self.check_both(token_type.SYMBOL, "("):
-            _iscast, _cast_or_expr = False, ...
-            
-            #! '('
-            self.expect_both(token_type.SYMBOL, "(")
-
-            if  not self.check_t(token_type.IDENTIFIER):
-                #! expresion
-                _cast_or_expr = self.non_nullable_expr()
-            else:
-                #! cast
-                _iscast = True
-                _cast_or_expr = self.raw_iden()
-
-            #! ')'
-            self.expect_both(token_type.SYMBOL, ")")
-
-            if not _iscast: return _cast_or_expr
-
-            #! return as cast
-            _expr = self.non_nullable_expr()
-            
-            #! end
-            return expr_ast(
-                ast_type.UNARY_CAST, self.d_location(_start), _cast_or_expr, _expr)
 
         #! end
         return self.member()
@@ -1086,72 +1077,10 @@ class parser(object):
             -------
             ast
         """
-        if  self.check_both(token_type.IDENTIFIER, keywords.NATIVE):
-            return self.native_function_proto()
         if  self.check_both(token_type.IDENTIFIER, keywords.FUN):
             return self.function()
         #! end
         return self.simple_stmnt()
-    
-    def native_function_proto(self):
-        """ Native function prototype.
-
-            Syntax
-            ------
-            anotation
-            "fun" '[' returntype ']' raw_iden '(' list_parameters ')' ';' ;
-
-            Returns
-            -------
-            ast
-        """
-        _start = self.lookahead
-
-        #! "native"
-        self.expect_both(token_type.IDENTIFIER, keywords.NATIVE)
-
-        #! "::"
-        self.expect_both(token_type.SYMBOL, "::")
-
-        #! mod directory
-        _lib = self.raw_iden()
-
-        #! enter ctx
-        self.enter(context.FUNCTION)
-
-        #! "fun"
-        self.expect_both(token_type.IDENTIFIER, keywords.FUN)
-
-        #! '['
-        self.expect_both(token_type.SYMBOL, "[")
-
-        _return = self.returntype()
-    
-        self.expect_both(token_type.SYMBOL, "]")
-        #! ']'
-
-        _fname = self.raw_iden()
-
-        #! '('
-        self.expect_both(token_type.SYMBOL, "(")
-
-        _parameters = self.list_parameter()
-    
-        self.expect_both(token_type.SYMBOL, ")")
-        #! ')'
-
-        #! ';'
-        self.expect_both(token_type.SYMBOL, ";")
-
-        #! leave ctx
-        self.leave(context.FUNCTION)
-
-        if  not self.under(context.GLOBAL, True):
-            error.raise_tracked(error_category.SematicError, "function prototype declairation should be done globally!", self.d_location(_start))
-
-        #! end
-        return stmnt_ast(
-            ast_type.NATIVE_FUNCTION, self.d_location(_start), _lib, _return, _fname, _parameters)
 
     def function(self):
         """ Function declairation.
@@ -1237,6 +1166,10 @@ class parser(object):
         """
         if  self.check_both(token_type.IDENTIFIER, keywords.IMPORT):
             return self.import_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.WRAP):
+            return self.function_wrapper()
+        if  self.check_both(token_type.IDENTIFIER, keywords.NATIVE):
+            return self.native_function_proto()
         if  self.check_both(token_type.IDENTIFIER, keywords.VAR):
             return self.var_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.LET):
@@ -1248,7 +1181,8 @@ class parser(object):
 
         #! end
         return self.expr_stmnt()
-
+    
+    
     def import_stmnt(self):
         """ IMPORT statement.
 
@@ -1283,6 +1217,107 @@ class parser(object):
 
         return stmnt_ast(
             ast_type.IMPORT, _locsite, _imports)
+    
+    def function_wrapper(self):
+        """ Function wrapper
+
+            Syntax
+            ------
+            "wrap" parameter raw_iden '(' list_parameter ')' non_nullable_expression ;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        #! "wrap"
+        self.expect_both(token_type.IDENTIFIER, keywords.WRAP)
+
+        _param0 = self.parameter()
+
+        #! wrapper name
+        _wrapname = self.raw_iden()
+
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        _parameters = self.list_parameter()
+
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
+        _expr = self.non_nullable_expr()
+
+        if  not self.under(context.GLOBAL, True):
+            error.raise_tracked(error_category.SematicError, "function wrapper declairation should be done globally!", self.d_location(_start))
+
+        _locsite = self.d_location(_start)
+
+        self.expect_both(token_type.SYMBOL, ";")
+        #! ';'
+
+        return expr_ast(
+            ast_type.FUNCTION_WRAPPER, _locsite, _param0, _wrapname, _parameters, _expr)
+    
+    def native_function_proto(self):
+        """ Native function prototype.
+
+            Syntax
+            ------
+            anotation
+            "fun" '[' returntype ']' raw_iden '(' list_parameters ')' ';' ;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+
+        #! "native"
+        self.expect_both(token_type.IDENTIFIER, keywords.NATIVE)
+
+        #! "::"
+        self.expect_both(token_type.SYMBOL, "::")
+
+        #! mod directory
+        _lib = self.raw_iden()
+
+        #! enter ctx
+        self.enter(context.FUNCTION)
+
+        #! "fun"
+        self.expect_both(token_type.IDENTIFIER, keywords.FUN)
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _return = self.returntype()
+    
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        _fname = self.raw_iden()
+
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        _parameters = self.list_parameter()
+    
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
+        #! ';'
+        self.expect_both(token_type.SYMBOL, ";")
+
+        #! leave ctx
+        self.leave(context.FUNCTION)
+
+        if  not self.under(context.GLOBAL, True):
+            error.raise_tracked(error_category.SematicError, "function prototype declairation should be done globally!", self.d_location(_start))
+
+        #! end
+        return stmnt_ast(
+            ast_type.NATIVE_FUNCTION, self.d_location(_start), _lib, _return, _fname, _parameters)
     
     def var_stmnt(self):
         #! "var"
