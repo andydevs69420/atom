@@ -30,18 +30,18 @@ class tag_t(object):
     #! ======== operation =======
     """ If its not overridden, then the operator is not applicable for its operand(s).
     """
-    def bitnot(self):return operation.BAD_OP
-    def lognot(self):return operation.BAD_OP
-    def pos(self):return operation.BAD_OP
-    def neg(self):return operation.BAD_OP
-    def unpack(self):return operation.BAD_OP
-    def pow(self, _rhs):return operation.BAD_OP
-    def mul(self, _rhs):return operation.BAD_OP
-    def div(self, _rhs):return operation.BAD_OP
-    def mod(self, _rhs):return operation.BAD_OP
-    def add(self, _rhs):return operation.BAD_OP
-    def sub(self, _rhs):return operation.BAD_OP
-    def shift(self, _rhs):return operation.BAD_OP
-    def relational(self, _rhs):return operation.BAD_OP
-    def equality(self, _rhs):return operation.BAD_OP
-    def bitwise(self, _rhs):return operation.BAD_OP
+    def bitnot(self):return operation.op_error_t()
+    def lognot(self):return operation.op_error_t()
+    def pos(self):return operation.op_error_t()
+    def neg(self):return operation.op_error_t()
+    def unpack(self):return operation.op_error_t()
+    def pow(self, _rhs):return operation.op_error_t()
+    def mul(self, _rhs):return operation.op_error_t()
+    def div(self, _rhs):return operation.op_error_t()
+    def mod(self, _rhs):return operation.op_error_t()
+    def add(self, _rhs):return operation.op_error_t()
+    def sub(self, _rhs):return operation.op_error_t()
+    def shift(self, _rhs):return operation.op_error_t()
+    def relational(self, _rhs):return operation.op_error_t()
+    def equality(self, _rhs):return operation.op_error_t()
+    def bitwise(self, _rhs):return operation.op_error_t()

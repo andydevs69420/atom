@@ -105,16 +105,15 @@ class virtualmachine(object):
     
 
     def build_array(self, _bytecode_chunk):
-        print("Last", _bytecode_chunk)
         _popsize = _bytecode_chunk[2]
 
         #! temp
         _arr = []
 
         #! appended inorder
-        for _r in range(_popsize):_arr.insert(0, popp_operand(self))
+        for _r in range(_popsize):_arr.append(popp_operand(self))
 
-        _new_arr = aarray(*_arr)
+        _new_arr = aarray(*_arr[::-1])
 
         atom_object_New(self.state, _new_arr)
 

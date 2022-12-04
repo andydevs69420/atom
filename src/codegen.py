@@ -205,7 +205,7 @@ class generator(object):
 
     def ast_array(self, _node):
         _arrtype = None
-        _element = _node.get(0)
+        _element = _node.get(0)[::1]
         _arrsize = 0
         _hasunpack = False
 
@@ -217,7 +217,8 @@ class generator(object):
             if  _elem.type == ast_type.UNARY_UNPACK:
                 #! build array before unpack
                 #! opcode
-                emit_opcode(self, build_array, _arrsize)
+                if  not _hasunpack:
+                    emit_opcode(self, build_array, _arrsize)
 
                 #! =========================
                 _hasunpack = True
@@ -232,7 +233,7 @@ class generator(object):
                 _arrtype = self.tstack.popp()
 
                 #! internal
-                _arrtype = _arrtype.elementtype
+                _arrtype = self.tstack.popp() if not _arrtype else _arrtype
                 
             else:
                 self.visit(_elem)
@@ -241,7 +242,7 @@ class generator(object):
                 _current = self.tstack.peek()
 
                 #! current
-                _arrtype = self.tstack.popp() if  not _arrtype else _arrtype
+                _arrtype = self.tstack.popp() if not _arrtype else _arrtype
             
                 if  _hasunpack:
                     #! opcode
@@ -256,7 +257,7 @@ class generator(object):
                 #! set as array element type
                 _arrtype = self.tstack.popp()
 
-        
+    
         if  not _hasunpack:
             #! opcode
             emit_opcode(self, build_array, _arrsize)
