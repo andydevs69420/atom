@@ -1,3 +1,4 @@
+import gc
 from sys import argv, setrecursionlimit
 setrecursionlimit(20_000)
 
@@ -10,11 +11,15 @@ def main():
     _state = astate()
     read_file(_state, argv[1])
 
+    #! set args
+    _state.aargv.extend(argv[1:])
+
     #! compile
     _cgen = codegen(_state)
     _cgen.generate()
 
-    print("compile finished.")
+    print("Compile finished...")
+    gc.collect()
 
     #! run
     _virm = virtualmachine(_state)

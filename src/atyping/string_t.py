@@ -10,6 +10,13 @@ class string_t(nonprimitive_t):
         super().__init__()
         self.name = type_names.STR
     
+    def __new__(_cls):
+        if  not hasattr(_cls, "instance"):
+            _cls.instance = super(string_t, _cls).__new__(_cls)
+        
+        #! end
+        return _cls.instance
+    
     def repr(self):
         return self.name
     
@@ -23,7 +30,7 @@ class string_t(nonprimitive_t):
 
     def add(self, _rhs):
         if  _rhs.isstring():
-            return operation.STR_OP
+            return operation.op_string_t()
         
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()

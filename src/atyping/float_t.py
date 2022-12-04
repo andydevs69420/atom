@@ -9,6 +9,13 @@ class float_t(number_t):
         super().__init__()
         self.name = type_names.FLOAT
     
+    def __new__(_cls):
+        if  not hasattr(_cls, "instance"):
+            _cls.instance = super(float_t, _cls).__new__(_cls)
+        
+        #! end
+        return _cls.instance
+    
     def repr(self):
         return self.name
     

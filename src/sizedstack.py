@@ -10,24 +10,21 @@ class sizedstack(object):
 
     def __init__(self, _size_t):
         self.__spointer = 0
-        self.__internal = [None for _r in range(_size_t)]
+        self.__internal = []
     
     def push(self, _object):
-        self.__internal[self.__spointer] = _object
-        self.__spointer += 1
+        self.__internal.append(_object)
+       
 
     def popp(self):
-        assert (self.__spointer >= 0), "Stack Underflow!!!"
-        _top = self.__internal[self.__spointer - 1]
-        self.__spointer -= 1
-        return _top
+        return self.__internal.pop()
     
     def peek(self):
-        return self.__internal[self.__spointer - 1]
+        return self.__internal[-1]
     
     def bott(self):
         return self.__internal[0]
 
     def isempty(self):
-        return self.__spointer <= 0
+        return len(self.__internal) <= 0
     

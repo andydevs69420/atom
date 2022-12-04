@@ -14,4 +14,4 @@ class primitive_t(tag_t):
         return True
     
     def lognot(self):
-        return operation.BOOL_OP
+        return operation.op_boolean_t()

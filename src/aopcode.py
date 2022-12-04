@@ -12,6 +12,7 @@ bload  = "bload"
 nload  = "nload"
 
 load_funpntr = "load_funpntr"
+load_mod_funpntr = "load_mod_funpntr"
 
 load_global = "load_global"
 load_local  = "load_local"
@@ -22,6 +23,7 @@ array_pushall = "array_pushall"
 
 
 call_function = "call_function"
+call_native = "call_native"
 call_method = "call_method"
 
 return_control = "return_control"

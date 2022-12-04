@@ -2,16 +2,19 @@
 #! another comment!
 #! asdasd
 
+import [std];
+
+print(STDERRID);
 
 
-
-fun[int] main(_a:int, _b:int)
+fun[int] main(_args:array[str])
 {   
-    return _a + _b;
+    const x = [1,*[], "Hello", *[1,2,3, *[4]], 2];
+
+    print(x);
+    print(_args);
+
+    return 0x0;
 }
-
-
-main(2,3);
-
 
 

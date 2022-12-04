@@ -24,6 +24,7 @@ class astate(object):
             ospath.join(ospath.curdir, "lib"),
             ospath.join(ospath.curdir, "bin"),
         ]
+        self.aargv = ([])
         self.names = ([])
         self.files = ([])
         self.codes = ({})
@@ -36,15 +37,3 @@ class astate(object):
         self.memory = mem()
         #! GC
         self.gcroot = None
-
-############################             ###############
-#    STACK    #   VALUE    #             #     HEAP    # 
-#-------------#------------#             #-------------#
-#      x      #     40     # <---------> #  intobj-40  #
-#      y      #  "hello!"  #             #      |      #
-#      z      #    true    #             #      |      #
-#-------------#------------#             #      v      #
-#      a      #   [1..2]   #             ###############    
-#      b      #     2.2    #
-#      c      #    NULL    #
-############################

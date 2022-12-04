@@ -424,6 +424,7 @@ class parser(object):
             ast_type.VOID_T, "...", self.raw_iden())
     
     def t_array(self):
+        _start = self.lookahead
         _array = self.raw_iden()
 
         #! '['
@@ -435,9 +436,10 @@ class parser(object):
         #! ']'
 
         return expr_ast(
-            ast_type.ARRAY_T, "...", _array, _internal)
+            ast_type.ARRAY_T, self.d_location(_start), _array, _internal)
     
     def t_fn(self):
+        _start = self.lookahead
         _fn = self.raw_iden()
 
         #! '['
@@ -449,9 +451,10 @@ class parser(object):
         #! ']'
 
         return expr_ast(
-            ast_type.FN_T, "...", _fn, _return)
+            ast_type.FN_T, self.d_location(_start), _fn, _return)
     
     def t_map(self):
+        _start = self.lookahead
         _map = self.raw_iden()
 
         #! '['
@@ -468,7 +471,7 @@ class parser(object):
         #! ']'
 
         return expr_ast(
-            ast_type.MAP_T, "...", _map, _key_type, _val_type)
+            ast_type.MAP_T, self.d_location(_start), _map, _key_type, _val_type)
     
     def t_user(self):
         return expr_ast(

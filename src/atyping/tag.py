@@ -21,9 +21,11 @@ class tag_t(object):
     def isboolean(self):return False
     def isnull(self):return False
     def isarray(self):return False
-    def isfunction(self): return False
+    def isfunction(self):return False
+    def isnativefunction(self):return False
     def ismap(self):return False
-    def isuserdefined(self):return False
+    def istype(self):return False
+    def iserror(self):return False
 
     #! ======== operation =======
     """ If its not overridden, then the operator is not applicable for its operand(s).

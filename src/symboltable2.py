@@ -185,25 +185,26 @@ class SymbolTable(HashTable):
         _datatype  ,
         _isglobal  ,
         _isconstant,
+        _site      ,
     ):
         #! check bottom
         _top = self.childnodes.peek() if not self.childnodes.isempty() else self
         
         #! insert
-        _top.put(_varname, variabletable(_varname, _offset, _datatype, _isglobal, _isconstant))
+        _top.put(_varname, variabletable(_varname, _offset, _datatype, _isglobal, _isconstant, _site))
     
     def insert_fun(self,
         _funcname  ,
         _offset    ,
-        _isnative  ,
         _datatype  ,
         _retrtype  ,
+        _site      ,
     ):
         #! check bottom
         _top = self.childnodes.peek() if not self.childnodes.isempty() else self
         
         #! insert
-        _top.put(_funcname, functiontable(_funcname, _offset, _isnative, _datatype, _retrtype))
+        _top.put(_funcname, functiontable(_funcname, _offset, _datatype, _retrtype, _site))
 
     def lookup(self, _key):
         #! check bottom
@@ -251,22 +252,19 @@ class functiontable(typetable):
     """ Function table for atom.
     """
 
-    def __init__(self, _funcname, _offset, _isnative, _datatype, _retrtype):
+    def __init__(self, _funcname, _offset, _datatype, _retrtype, _site):
         super().__init__()
         self.funcname   = _funcname
         self.offset     = _offset
-        self.isnative   = _isnative
         self.datatype   = _datatype
         self.retrtype   = _retrtype
+        self.site       = _site
     
     def get_name(self):
         return self.funcname
     
     def get_offset(self):
         return self.offset
-    
-    def is_native(self):
-        return self.isnative
     
     def get_returntype(self):
         return self.retrtype
@@ -279,6 +277,9 @@ class functiontable(typetable):
     
     def is_constant(self):
         return True
+    
+    def get_site(self):
+        return self.site
 
 
 
@@ -286,13 +287,14 @@ class variabletable(typetable):
     """ Variable table for atom.
     """
 
-    def __init__(self, _varname, _offset, _datatype, _isglobal, _isconstant):
+    def __init__(self, _varname, _offset, _datatype, _isglobal, _isconstant, _site):
         super().__init__()
         self.varname    = _varname
         self.offset     = _offset
         self.datatype   = _datatype
         self.isglobal   = _isglobal
         self.isconstant = _isconstant
+        self.site       = _site
     
     def get_name(self):
         return self.varname
@@ -308,6 +310,9 @@ class variabletable(typetable):
     
     def is_constant(self):
         return self.isconstant
+    
+    def get_site(self):
+        return self.site
 
 #! END
 

@@ -229,7 +229,7 @@ class generator(object):
                 _current = self.tstack.peek()
 
                 #! current
-                _arrtype = self.tstack.popp() if  not _arrtype else _arrtype
+                _arrtype = self.tstack.popp()
 
                 #! internal
                 _arrtype = _arrtype.elementtype
@@ -292,7 +292,7 @@ class generator(object):
             _functype = self.tstack.popp()
 
             #! check if callable
-            if  not _functype.isfunction():
+            if  not (_functype.isfunction() or _functype.isnativefunction()):
                 error.raise_tracked(error_category.CompileError, "%s is not a callable type." % _functype.repr(), _node.site)
 
             #! check parameter count
@@ -313,13 +313,19 @@ class generator(object):
                 _typeN = self.tstack.popp()
 
                 #! match type
-                if  not _functype.parameters[_index][1].matches(_typeN):
+                if  not _functype.parameters[::-1][_index][1].matches(_typeN):
                     error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[_index][0], _functype.parameters[_index][1].repr(), _typeN.repr()), _node.site)
 
                 _index += 1
             
             #! opcode
-            emit_opcode(self, call_function, len(_node.get(1)))
+            if  _functype.isnativefunction():
+                #! emit
+                emit_opcode(self, call_native, len(_node.get(1)))
+
+            else:
+                #! emit
+                emit_opcode(self, call_function, len(_node.get(1)))
         
     
     def ast_unary_op(self, _node):
@@ -337,14 +343,14 @@ class generator(object):
         _rhs = self.tstack.popp()
 
         #! default
-        _operation = operation.BAD_OP
+        _operation = operation.op_error_t()
 
         if  _op == "~":
             #! op result
             _operation = _rhs.bitnot()
 
             #! emit int type
-            push_ttable(self, integer_t())
+            push_ttable(self, _operation)
 
             #! opcode
             emit_opcode(self, bit_not)
@@ -354,7 +360,7 @@ class generator(object):
             _operation = _rhs.lognot()
 
             #! emit int type
-            push_ttable(self, boolean_t())
+            push_ttable(self, _operation)
 
             #! opcode
             emit_opcode(self, log_not)
@@ -363,43 +369,32 @@ class generator(object):
             #! op result
             _operation = _rhs.pos()
 
-            match _operation:
-                case operation.INT_OP:
-                    #! emit int type
-                    push_ttable(self, integer_t())
+            #! emit int type
+            push_ttable(self, _operation)
 
-                    #! opcode
-                    emit_opcode(self, intpos)
-                
-                case operation.FLOAT_OP:
-                    #! emit int type
-                    push_ttable(self, float_t())
-
-                    #! opcode
-                    emit_opcode(self, fltpos)
+            #! opcode
+            if  _operation.isint():
+                emit_opcode(self, intpos)
+            
+            elif _operation.isfloat():
+                emit_opcode(self, fltpos)
 
         
         elif _op == "-":
             #! op result
             _operation = _rhs.neg()
 
+            #! emit int type
+            push_ttable(self, _operation)
+
             #! opcode
-            match _operation:
-                case operation.INT_OP:
-                    #! emit int type
-                    push_ttable(self, integer_t())
+            if  _operation.isint():
+                emit_opcode(self, intneg)
+            
+            elif _operation.isfloat():
+                emit_opcode(self, fltneg)
 
-                    #! opcode
-                    emit_opcode(self, intneg)
-                
-                case operation.FLOAT_OP:
-                    #! emit int type
-                    push_ttable(self, float_t())
-
-                    #! opcode
-                    emit_opcode(self, fltneg)
-
-        if  _operation == operation.BAD_OP:
+        if  _operation.iserror():
             error.raise_tracked(error_category.CompileError, "invalid operation %s %s." % (_op, _rhs.repr()), _node.site)
 
         self.nstlvl -= 1
@@ -420,7 +415,7 @@ class generator(object):
         _rhs = self.tstack.peek()
 
         #! default
-        _operation = operation.BAD_OP
+        _operation = operation.op_error_t()
 
         if  _op == "*":
             #! op result
@@ -429,7 +424,7 @@ class generator(object):
             #! opcode
             emit_opcode(self, array_pushall)
         
-        if  _operation == operation.BAD_OP:
+        if  _operation.iserror():
             error.raise_tracked(error_category.CompileError, "cannot unpack %s." % _rhs.repr(), _node.site)
 
 
@@ -450,50 +445,42 @@ class generator(object):
         _rhs = self.tstack.popp()
 
         #! default
-        _operation = operation.BAD_OP
+        _operation = operation.op_error_t()
 
         if  _op == "^^":
             #! op result
             _operation = _lhs.pow(_rhs)
 
+            #! emit int|float type
+            push_ttable(self, _operation)
+
             #! opcode
-            match _operation:
-                case operation.INT_OP  :
-                    #! emit int type
-                    push_ttable(self, integer_t())
+            if  _operation.isint():
+                emit_opcode(self, intpow)
 
-                    emit_opcode(self, intpow)
-
-                case operation.FLOAT_OP:
-                    #! emit float type
-                    push_ttable(self, float_t())
-
-                    emit_opcode(self, fltpow)
+            elif _operation.isfloat():
+                emit_opcode(self, fltpow)
 
         elif _op == "*":
             #! op result
             _operation = _lhs.mul(_rhs)
 
+            #! emit int|float type
+            push_ttable(self, _operation)
+
             #! opcode
-            match _operation:
-                case operation.INT_OP  :
-                    #! emit int type
-                    push_ttable(self, integer_t())
+            if  _operation.isint():
+                emit_opcode(self, intmul)
 
-                    emit_opcode(self, intmul)
-
-                case operation.FLOAT_OP:
-                    #! emit float type
-                    push_ttable(self, float_t())
-
-                    emit_opcode(self, fltmul)
+            elif _operation.isfloat():
+                emit_opcode(self, fltmul)
 
         elif _op == "/":
             #! op result
             _operation = _lhs.div(_rhs)
 
             #! emit float type
-            push_ttable(self, float_t())
+            push_ttable(self, _operation)
 
             #! opcode
             emit_opcode(self, quotient)
@@ -503,68 +490,53 @@ class generator(object):
             #! op result
             _operation = _lhs.mod(_rhs)
 
+            #! emit int|float type
+            push_ttable(self, _operation)
+
             #! opcode
-            match _operation:
-                case operation.INT_OP  :
-                    #! emit int type
-                    push_ttable(self, integer_t())
+            if  _operation.isint():
+                emit_opcode(self, intrem)
 
-                    emit_opcode(self, intrem)
-
-                case operation.FLOAT_OP:
-                    #! emit float type
-                    push_ttable(self,float_t())
-
-                    emit_opcode(self, fltrem)
+            elif _operation.isfloat():
+                emit_opcode(self, fltrem)
 
         elif _op == "+":
             #! op result
             _operation = _lhs.add(_rhs)
 
+            #! emit int|float|str type
+            push_ttable(self, _operation)
+
             #! opcode
-            match _operation:
-                case operation.INT_OP  :
-                    #! emit int type
-                    push_ttable(self, integer_t())
+            if  _operation.isint():
+                emit_opcode(self, intadd)
 
-                    emit_opcode(self, intadd)
-
-                case operation.FLOAT_OP:
-                    #! emit float type
-                    push_ttable(self, float_t())
-
-                    emit_opcode(self, fltadd)
-                
-                case operation.STR_OP:
-                    #! emit str type
-                    push_ttable(self, string_t())
-
-                    emit_opcode(self, concat)
+            elif _operation.isfloat():
+                emit_opcode(self, fltadd)
+            
+            elif _operation.isstring():
+                emit_opcode(self, concat)
         
         elif _op == "-":
             #! op result
             _operation = _lhs.sub(_rhs)
 
+            #! emit float type
+            push_ttable(self, _operation)
+
             #! opcode
-            match _operation:
-                case operation.INT_OP  :
-                    #! emit int type
-                    push_ttable(self, integer_t())
+            if  _operation.isint():
+                emit_opcode(self, intsub)
 
-                    emit_opcode(self, intsub)
-
-                case operation.FLOAT_OP:
-                    #! emit float type
-                    push_ttable(self, float_t())
-                    
-                    emit_opcode(self, fltsub)
+            elif _operation.isfloat():
+                emit_opcode(self, fltsub)
         
         elif _op == "<<" or _op == ">>":
             #! op result
             _operation = _lhs.shift(_rhs)
 
             #! emit int type
-            push_ttable(self, integer_t())
+            push_ttable(self, _operation)
 
             #! opcode
             if  _op == "<<":
@@ -581,7 +553,7 @@ class generator(object):
             _operation = _lhs.relational(_rhs)
 
             #! emit bool type
-            push_ttable(self, boolean_t())
+            push_ttable(self, _operation)
 
             #! opcode
             if  _op == "<":
@@ -601,7 +573,7 @@ class generator(object):
             _operation = _lhs.equality(_rhs)
 
             #! emit bool type
-            push_ttable(self, boolean_t())
+            push_ttable(self, _operation)
 
             #! opcode
             if  _lhs.isint() and _rhs.isint():
@@ -634,7 +606,7 @@ class generator(object):
             _operation = _lhs.bitwise(_rhs)
 
             #! emit int type
-            push_ttable(self, integer_t())
+            push_ttable(self, _operation)
 
             #! opcode
             if  _op == "&":
@@ -647,7 +619,7 @@ class generator(object):
                 emit_opcode(self, bitor)
 
 
-        if  _operation == operation.BAD_OP:
+        if  _operation.iserror():
             error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.site)
 
         self.nstlvl -= 1
@@ -735,10 +707,10 @@ class generator(object):
         self.symtbl.endscope()
 
         #! datatype
-        _datatype = fn_t(_returntype, len(_parameters), _parameters)
+        _datatype = nativefn_t(_returntype, len(_parameters), _parameters)
 
         #! register
-        self.symtbl.insert_fun(_node.get(2), self.offset, True,  _datatype, _returntype)
+        self.symtbl.insert_fun(_node.get(2), self.offset, _datatype, _returntype, _node.site)
 
         #! validate
         _modinfo = getbuiltin(_mod)
@@ -756,6 +728,15 @@ class generator(object):
         #! check if meta matches
         if  not _meta.matches(_datatype):
             error.raise_tracked(error_category.CompileError, "function data not matched \"%s\" and \"%s\"." %  (_meta.repr(), _datatype.repr()), _node.site)
+
+        #! val opcode
+        emit_opcode(self, load_mod_funpntr, _mod, _node.get(2))
+
+        #! var opcode
+        emit_opcode(self, store_global, _node.get(2), self.offset)
+
+        #! end
+        self.offset += 1
 
 
     def ast_function(self, _node):
@@ -802,7 +783,7 @@ class generator(object):
             emit_opcode(self, store_fast, _each_param[0], self.offset)
 
             #! register
-            self.symtbl.insert_var(_each_param[0], self.offset, _vtype, False, False)
+            self.symtbl.insert_var(_each_param[0], self.offset, _vtype, False, False, _node.site)
 
             self.offset += 1
             #! end
@@ -831,7 +812,7 @@ class generator(object):
         self.bcodes = _old_bcodes
 
         #! register
-        self.symtbl.insert_fun(_node.get(1), self.offset, False, fn_t(self.currentfunctiontype, len(_parameters), _parameters), self.currentfunctiontype)
+        self.symtbl.insert_fun(_node.get(1), self.offset, fn_t(self.currentfunctiontype, len(_parameters), _parameters), self.currentfunctiontype, _node.site)
 
         #! unset current function
         self.currentfunctiontype =\
@@ -874,7 +855,7 @@ class generator(object):
             emit_opcode(self, store_global, _variable[0], self.offset)
 
             #! register
-            self.symtbl.insert_var(_variable[0], self.offset, _vtype, True, False)
+            self.symtbl.insert_var(_variable[0], self.offset, _vtype, True, False, _node.site)
 
             self.offset += 1
             #! end
@@ -902,7 +883,7 @@ class generator(object):
             emit_opcode(self, store_local, _variable[0], self.offset)
 
             #! register
-            self.symtbl.insert_var(_variable[0], self.offset, _vtype, False, False)
+            self.symtbl.insert_var(_variable[0], self.offset, _vtype, False, False, _node.site)
 
             self.offset += 1
             #! end
@@ -935,7 +916,7 @@ class generator(object):
             emit_opcode(self, _opcode, _variable[0], self.offset)
 
             #! register
-            self.symtbl.insert_var(_variable[0], self.offset, _vtype, _is_global, True)
+            self.symtbl.insert_var(_variable[0], self.offset, _vtype, _is_global, True, _node.site)
 
             self.offset += 1
             #! end
@@ -975,10 +956,6 @@ class generator(object):
         #! opcode
         emit_opcode(self, pop_top)
 
-    def ast_source(self, _node):
-        for _each_node in _node.get(0):
-            self.visit(_each_node)
-
 class codegen(generator):
     """ Analyzer and byte-code like generator for atom.
 
@@ -1014,12 +991,57 @@ class codegen(generator):
                 self.visit(_each_node)
         #! end
     
+    def ast_source(self, _node):
+        for _each_node in _node.get(0):
+            self.visit(_each_node)
+        
+        #! add main
+        self.ensure_main_function()
+    
+    def ensure_main_function(self):
+        #! call main
+        if  not self.symtbl.contains("main"):
+            error.raise_untracked(error_category.CompileError, "main function is not defined!")
+        
+        _main = self.symtbl.lookup("main")
+
+        if  not _main.get_datatype().isfunction():
+            error.raise_tracked(error_category.CompileError, "main is not a user defined function.", _main.get_site())
+        
+        #! load function
+        emit_opcode(self, load_funpntr, "main", _main.get_offset())
+
+        #! make type
+        _required_main = fn_t(any_t(), 1, [("args", array_t(string_t()))])
+
+        #! check if valid main
+        if  not _required_main.matches(_main.get_datatype()):
+            error.raise_tracked(error_category.CompileError, "invalid main function, required %s, got %s." % (_required_main.repr(), _main.get_datatype().repr()), _main.get_site())
+
+        #! make args
+        for _args in self.state.aargv[::-1]:
+            #! emit arg as string
+            emit_opcode(self, sload, _args)
+        
+        #! make it as array
+        emit_opcode(self, build_array, len(self.state.aargv))
+
+        #! call
+        emit_opcode(self, call_function, 1)
+
+        #! add return
+        emit_opcode(self, return_control)
+    
+    
     def generate(self):
         #! compile each child node
         self.visit(self.gparser.parse())
 
         #! set program code
         self.state.codes["program"] = self.bcodes
+
+        for i in self.bcodes:
+            print(i)
 
         #! end
         return self.bcodes

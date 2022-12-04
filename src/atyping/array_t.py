@@ -1,6 +1,5 @@
 from . import type_names
 from . import nonprimitive_t
-from . import operation
 
 class array_t(nonprimitive_t):
     """ Array compiletime tag.
@@ -26,5 +25,5 @@ class array_t(nonprimitive_t):
     #! ==== array specific op ====
 
     def unpack(self):
-        return operation.ARRAY_UNPACK
+        return self
     

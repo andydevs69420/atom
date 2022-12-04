@@ -1,5 +1,6 @@
 from aframe import frame
 from aobjects import *
+from abuiltins.getter import getbuiltin
 from mem import *
 
 
@@ -44,6 +45,15 @@ class virtualmachine(object):
     
         #! push to opstack
         push_operand(self, _flt)
+
+    def sload(self, _bytecode_chunk):
+        _str =\
+        astring(_bytecode_chunk[2])
+
+        atom_object_New(self.state, _str)
+    
+        #! push to opstack
+        push_operand(self, _str)
     
     def nload(self, _bytecode_chunk):
         _null =\
@@ -53,10 +63,20 @@ class virtualmachine(object):
     
         #! push to opstack
         push_operand(self, _null)
+    
 
     def load_funpntr(self, _bytecode_chunk):
         _funpntr =\
         afun(_bytecode_chunk[2])
+
+        atom_object_New(self.state, _funpntr)
+    
+        #! push to opstack
+        push_operand(self, _funpntr)
+    
+    def load_mod_funpntr(self, _bytecode_chunk):
+        _funpntr =\
+        anativefun(_bytecode_chunk[2], _bytecode_chunk[3])
 
         atom_object_New(self.state, _funpntr)
     
@@ -84,6 +104,45 @@ class virtualmachine(object):
         push_operand(self, _object)
     
 
+    def build_array(self, _bytecode_chunk):
+        print("Last", _bytecode_chunk)
+        _popsize = _bytecode_chunk[2]
+
+        #! temp
+        _arr = []
+
+        #! appended inorder
+        for _r in range(_popsize):_arr.insert(0, popp_operand(self))
+
+        _new_arr = aarray(*_arr)
+
+        atom_object_New(self.state, _new_arr)
+
+        #! push to opstack
+        push_operand(self, _new_arr)
+    
+    def array_pushall(self, _bytecode_chunk):
+        #! pop extenssion
+        _extension = popp_operand(self)
+
+        #! pop array
+        _array = popp_operand(self)
+        _array.pushall(_extension)
+
+        #! pushback
+        push_operand(self, _array)
+    
+    def array_push(self, _bytecode_chunk):
+        #! pop element
+        _newelem = popp_operand(self)
+
+        #! pop array
+        _array = popp_operand(self)
+        _array.push(_newelem)
+
+        #! pushback
+        push_operand(self, _array)
+
     def call_function(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
 
@@ -105,6 +164,28 @@ class virtualmachine(object):
 
         for i in self.state.codes[_funpntr.funpntr]:
             print(i)
+    
+    def call_native(self, _bytecode_chunk):
+        _popsize = _bytecode_chunk[2]
+
+        #! params
+        _param = []
+
+        #! appended inorder
+        for _r in range(_popsize): _param.append(popp_operand(self))
+
+        _funpntr =\
+        popp_operand(self)
+
+        _fun = getbuiltin(_funpntr.modpntr).get(_funpntr.funpntr)
+
+        _return = _fun(self.state, *_param)
+
+        #! store
+        atom_object_New(self.state, _return)
+
+        #! push to opstack
+        push_operand(self, _return)
     
     def return_control(self, _bytecode_chunk):
         self.state.stack.popp()
@@ -256,6 +337,22 @@ class virtualmachine(object):
 
         _new =\
         afloat(_lhs.raw + _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    def concat(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        astring(_lhs.raw + _rhs.raw)
 
         #! store
         atom_object_New(self.state, _new)

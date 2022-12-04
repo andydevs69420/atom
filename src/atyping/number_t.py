@@ -10,92 +10,92 @@ class number_t(primitive_t):
 
     def pos(self):
         if  self.isint():
-            return operation.INT_OP
+            return operation.op_integer_t()
 
         elif self.isfloat():
-            return operation.FLOAT_OP
+            return operation.op_float_t()
         
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
     
     def neg(self):
         if  self.isint():
-            return operation.INT_OP
+            return operation.op_integer_t()
 
         elif self.isfloat():
-            return operation.FLOAT_OP
+            return operation.op_float_t()
         
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
     
     #! ============= arithmetic =============
 
     def pow(self, _rhs):
         if  self.isint() and _rhs.isint():
-            return operation.INT_OP
+            return operation.op_integer_t()
 
         elif self.isfloat() or _rhs.isfloat():
-            return operation.FLOAT_OP
+            return operation.op_float_t()
         
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
 
     def mul(self, _rhs):
         if  self.isint() and _rhs.isint():
-            return operation.INT_OP
+            return operation.op_integer_t()
 
         elif self.isfloat() or _rhs.isfloat():
-            return operation.FLOAT_OP
+            return operation.op_float_t()
         
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
     
     def div(self, _rhs):
         if  self.isint() or _rhs.isfloat():
-            return operation.FLOAT_OP
+            return operation.op_float_t()
 
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
     
     def mod(self, _rhs):
         if  self.isint() and _rhs.isint():
-            return operation.INT_OP
+            return operation.op_integer_t()
 
         elif self.isfloat() or _rhs.isfloat():
-            return operation.FLOAT_OP
+            return operation.op_float_t()
         
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
 
     def add(self, _rhs):
         if  self.isint() and _rhs.isint():
-            return operation.INT_OP
+            return operation.op_integer_t()
 
         elif self.isfloat() or _rhs.isfloat():
-            return operation.FLOAT_OP
+            return operation.op_float_t()
         
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
     
     def sub(self, _rhs):
         if  self.isint() and _rhs.isint():
-            return operation.INT_OP
+            return operation.op_integer_t()
 
         elif self.isfloat() or _rhs.isfloat():
-            return operation.FLOAT_OP
+            return operation.op_float_t()
         
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
     
 
     #! ========= relational group ==========
     
     def relational(self, _rhs):
         if  _rhs.isprimitive():
-            return operation.BOOL_OP
+            return operation.op_boolean_t()
 
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
     
     
 
@@ -103,8 +103,8 @@ class number_t(primitive_t):
 
     def equality(self, _rhs):
         if  _rhs.isprimitive():
-            return operation.BOOL_OP
+            return operation.op_boolean_t()
 
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
 

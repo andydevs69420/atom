@@ -7,5 +7,5 @@ class type_t(nonprimitive_t):
     def __init__(self, _subtypes):
         super().__init__()
     
-    def isuserdefined(self):
+    def istype(self):
         return True

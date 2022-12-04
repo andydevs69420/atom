@@ -160,7 +160,7 @@ class lexer(object):
             
             if  len(_token.value) >= 3: # > 2
                 #! convert
-                _token.value = str(int(_token.value))
+                _token.value = str(eval(_token.value))
 
                 #! end
                 return _token

@@ -11,6 +11,5 @@ class afloat(aobject):
     def __str__(self):
         return "%f" % self.raw
 
-    def __get__(self):
-        return self.raw
-
+    def __repr__(self):
+        return self.__str__()

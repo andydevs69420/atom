@@ -27,4 +27,4 @@ class map_t(nonprimitive_t):
     #! ==== map specific op ====
     
     def unpack(self):
-        return operation.MAP_UNPACK
+        return self

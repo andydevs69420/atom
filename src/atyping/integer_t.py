@@ -10,6 +10,13 @@ class integer_t(number_t):
         super().__init__()
         self.name = type_names.INT
     
+    def __new__(_cls):
+        if  not hasattr(_cls, "instance"):
+            _cls.instance = super(integer_t, _cls).__new__(_cls)
+        
+        #! end
+        return _cls.instance
+    
     def repr(self):
         return self.name
     
@@ -22,18 +29,18 @@ class integer_t(number_t):
     #! ==== integer specific op ====
 
     def bitnot(self):
-        return operation.INT_OP
+        return operation.op_integer_t()
 
     def shift(self, _rhs):
         if  _rhs.isint() or _rhs.isboolean():
-            return operation.INT_OP
+            return operation.op_integer_t()
         
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()
     
     def bitwise(self, _rhs):
         if  _rhs.isint() or _rhs.isboolean():
-            return operation.INT_OP
+            return operation.op_integer_t()
         
         #! end
-        return operation.BAD_OP
+        return operation.op_error_t()

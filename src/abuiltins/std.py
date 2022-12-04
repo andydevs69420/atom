@@ -5,12 +5,16 @@ class std:
 
     metadata = ({
 
-        "printf": fn_t(null_t() , 2, [
+        "printf": nativefn_t(null_t() , 2, [
             ("_format", string_t()), 
             ("_format_args", array_t(any_t()))
         ]), 
 
-        "readl" : fn_t(string_t(), 1, [
+        "print": nativefn_t(null_t() , 1, [
+            ("_string", any_t()), 
+        ]), 
+
+        "readl" : nativefn_t(string_t(), 1, [
             ("_message", string_t())
         ])
     })
@@ -29,6 +33,9 @@ class std:
         match _attribute:
             case "printf":
                 return std.printf
+            
+            case "print":
+                return std.print
 
             case "readl":
                 return std.readl
@@ -42,6 +49,12 @@ class std:
         ...
 
     @staticmethod
+    def print(_state, _format):
+        print(_format)
+        return anull()
+
+    @staticmethod
     def readl(_state, _message):
         ...
+        return astring(input(_message.raw))
 

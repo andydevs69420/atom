@@ -10,6 +10,13 @@ class null_t(primitive_t):
         super().__init__()
         self.name = type_names.NULL
     
+    def __new__(_cls):
+        if  not hasattr(_cls, "instance"):
+            _cls.instance = super(null_t, _cls).__new__(_cls)
+        
+        #! end
+        return _cls.instance
+    
     def repr(self):
         return self.name
     

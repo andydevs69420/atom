@@ -9,7 +9,10 @@ class afun(aobject):
         self.funpntr = _funname
     
     def __str__(self):
-        return "<function %s(...)/>" % self.funpntr
+        return "[FUNCTION %s]" % self.funpntr
+    
+    def __repr__(self):
+        return self.__str__()
 
     def __get__(self):
         return self.funpntr

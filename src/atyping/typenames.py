@@ -10,6 +10,10 @@ class type_names:
     VOID   = "void"
     ARRAY  = "array"
     FN     = "fn"
+    NATIVEFN = "nativefn"
     MAP    = "map"
     TYPE   = "type"
+    USER   = "user"
+    ERROR  = "error"
+
 
