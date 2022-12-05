@@ -10,3 +10,8 @@ src/atyping__pycache__/**
 src/aobjects/__pycache__/
 src/aobjects/__pycache__/**
 
+src/aobjects/base/__pycache__/
+src/aobjects/base/__pycache__/**
+
+src/abuiltins/__pycache__/
+src/abuiltins/__pycache__/**
