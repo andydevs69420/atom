@@ -1,20 +1,22 @@
 #! comment
 #! another comment!
-#! asdasd
 
-import [std];
-
-print(STDERRID);
+import [std, ooplike];
 
 
-wrap _array:array[int] push(_x:any) print(_array);
+wrap _array:array[str] push(_element:str) _array + _element ;
 
-[1, 2,3].push!(200);
+fun[int] add(_a:int, _b:int) 
+{
+    return _a + _b;
+}
 
 fun[int] main(_args:array[str])
 {   
-    const x = [1, 2, 3, *[4, 5, 6], *[7,8,9], "adsasdasda", 10, 11, 12];
-    print(x);
+    const y = {};
+    print(y);
+    print(add(1, 3));
+    print(  _args  );
     return 0x0;
 }
 

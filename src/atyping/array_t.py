@@ -1,5 +1,6 @@
 from . import type_names
 from . import nonprimitive_t
+from . import operation
 
 class array_t(nonprimitive_t):
     """ Array compiletime tag.
@@ -11,7 +12,7 @@ class array_t(nonprimitive_t):
         self.elementtype = _elementtype
     
     def qualname(self):
-        return self.name
+        return self.name + "_of_" + self.elementtype.qualname()
 
     def repr(self):
         return self.name + "[" + self.elementtype.repr() + "]"
@@ -20,7 +21,7 @@ class array_t(nonprimitive_t):
         if  not _rhs.isarray():
             return False
 
-        return self.elementtype.matches(_rhs.elementtype) or self.elementtype.isany()
+        return self.elementtype.matches(_rhs.elementtype)
     
     def isarray(self):
         return True
@@ -29,4 +30,11 @@ class array_t(nonprimitive_t):
 
     def unpack(self):
         return self
+    
+    def add(self, _rhs):
+        if  (self.matches(_rhs) or self.elementtype.matches(_rhs)):
+            return self
+
+        #! end
+        return operation.op_error_t()
     

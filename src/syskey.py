@@ -1,7 +1,17 @@
 
 
 class keywords:
+    #! typing keywords
+    INT_T    = "int"
+    FLOAT_T  = "float"
+    STRING_T = "string"
+    BOOL_T   = "bool"
+    VOID_T   = "void"
+    ARRAY_T  = "array"
+    FN_T     = "fn"
+    MAP_T    = "map"
 
+    #!
     TRUE   = "true"
     FALSE  = "false"
     NULL   = "null"

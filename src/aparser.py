@@ -301,6 +301,50 @@ class parser(object):
 
         return (_var, _val)
     
+    def list_native_parameter(self):
+        """ List of native parameters.
+
+            Returns
+            -------
+            tuple
+        """
+        _start = self.lookahead
+        _list  = []
+
+        _param = self.native_parameter()
+        if not _param: return tuple(_list)
+
+        _list.append(_param)
+
+        while self.check_both(token_type.SYMBOL, ","):
+            #! ','
+            self.expect_t(token_type.SYMBOL)
+
+            #! check
+            if  not self.check_t(token_type.IDENTIFIER):
+                error.raise_tracked(error_category.ParseError, "unexpected end of parameters after \"%s\"." % self.previous.value, self.d_location(_start))
+
+            _list.append(self.native_parameter())
+        
+        #! end
+        return tuple(_list)
+    
+    def native_parameter(self):
+        if  not self.check_t(token_type.IDENTIFIER):
+            return None
+        
+        #! param name
+        _identifier = self.raw_iden()
+
+        #! ':'
+        self.expect_both(token_type.SYMBOL, ":")
+
+        #! "datatype"
+        _datatype = self.native_datatype()
+
+        #!
+        return (_identifier, _datatype)
+    
     def list_parameter(self):
         """ List of parameters.
 
@@ -345,13 +389,39 @@ class parser(object):
         #!
         return (_identifier, _datatype)
 
-    def datatype(self):
+    def native_datatype(self):
         """ Use keywords from typing to ensure proper spelling.
 
             No void.
         """
         if  self.check_both(token_type.IDENTIFIER, type_names.ANY  ):
             return self.t_any()
+        if  self.check_both(token_type.IDENTIFIER, type_names.INT  ):
+            return self.t_int()
+        if  self.check_both(token_type.IDENTIFIER, type_names.FLOAT):
+            return self.t_flt()
+        if  self.check_both(token_type.IDENTIFIER, type_names.STR  ):
+            return self.t_str()
+        if  self.check_both(token_type.IDENTIFIER, type_names.BOOL ):
+            return self.t_bool()
+        #! leave null for void
+        if  self.check_both(token_type.IDENTIFIER, type_names.ARRAY):
+            return self.t_array_native()
+        if  self.check_both(token_type.IDENTIFIER, type_names.FN   ):
+            return self.t_fn_native()
+        if  self.check_both(token_type.IDENTIFIER, type_names.MAP  ):
+            return self.t_map_native()
+        #! end
+        return self.t_user()
+    
+    def datatype(self):
+        """ Use keywords from typing to ensure proper spelling.
+
+            No void.
+        """
+        if  self.check_both(token_type.IDENTIFIER, type_names.ANY  ):
+            #! disallow any
+            return self.t_any_invalid()
         if  self.check_both(token_type.IDENTIFIER, type_names.INT  ):
             return self.t_int()
         if  self.check_both(token_type.IDENTIFIER, type_names.FLOAT):
@@ -370,62 +440,132 @@ class parser(object):
         #! end
         return self.t_user()
     
+    def native_returntype(self):
+        """ Use keywords from typing to ensure proper spelling.
+
+            With void.
+        """
+        #! allow void when return.
+        if  self.check_both(token_type.IDENTIFIER, type_names.VOID):
+            return self.t_void()
+    
+        #! end
+        return self.native_datatype()
+    
     def returntype(self):
         """ Use keywords from typing to ensure proper spelling.
 
             With void.
         """
-        if  self.check_both(token_type.IDENTIFIER, type_names.INT  ):
-            return self.t_int()
-        if  self.check_both(token_type.IDENTIFIER, type_names.FLOAT):
-            return self.t_flt()
-        if  self.check_both(token_type.IDENTIFIER, type_names.STR  ):
-            return self.t_str()
-        if  self.check_both(token_type.IDENTIFIER, type_names.BOOL ):
-            return self.t_bool()
-        if  self.check_both(token_type.IDENTIFIER, type_names.VOID ):
+        #! allow void when return.
+        if  self.check_both(token_type.IDENTIFIER, type_names.VOID):
             return self.t_void()
-        if  self.check_both(token_type.IDENTIFIER, type_names.ARRAY):
-            return self.t_array()
-        if  self.check_both(token_type.IDENTIFIER, type_names.FN   ):
-            return self.t_fn()
-        if  self.check_both(token_type.IDENTIFIER, type_names.MAP  ):
-            return self.t_map()
     
         #! end
-        return self.t_user()
+        return self.datatype()
 
     def t_any(self):
+        _any = self.lookahead.value
+
+        #! "any"
+        self.expect_both(token_type.IDENTIFIER, type_names.ANY)
+
         return expr_ast(
-            ast_type.ANY_T, "...", self.raw_iden())
+            ast_type.ANY_T, "...", _any)
+        
+    def t_any_invalid(self):
+        _start = self.lookahead
+        error.raise_tracked(error_category.ParseError, "invalid use of \"any\" type tag.", self.d_location(_start))
 
     def t_int(self):
+        _int = self.lookahead.value
+
+        #! "int"
+        self.expect_both(token_type.IDENTIFIER, type_names.INT)
+
         return expr_ast(
-            ast_type.INT_T, "...", self.raw_iden())
+            ast_type.INT_T, "...", _int)
     
     def t_flt(self):
+        _float = self.lookahead.value
+
+        #! "float"
+        self.expect_both(token_type.IDENTIFIER, type_names.FLOAT)
+
         return expr_ast(
-            ast_type.FLT_T, "...", self.raw_iden())
+            ast_type.FLT_T, "...", _float)
     
     def t_str(self):
+        _str = self.lookahead.value
+
+        #! "str"
+        self.expect_both(token_type.IDENTIFIER, type_names.STR)
+
         return expr_ast(
-            ast_type.STR_T, "...", self.raw_iden())
+            ast_type.STR_T, "...", _str)
     
     def t_bool(self):
+        _bool = self.lookahead.value
+
+        #! "bool"
+        self.expect_both(token_type.IDENTIFIER, type_names.BOOL)
+
         return expr_ast(
-            ast_type.BOOL_T, "...", self.raw_iden())
-    
-    def t_bool(self):
-        return expr_ast(
-            ast_type.BOOL_T, "...", self.raw_iden())
+            ast_type.BOOL_T, "...", _bool)
     
     def t_void(self):
+        _void = self.lookahead.value
+
+        #! "void"
+        self.expect_both(token_type.IDENTIFIER, type_names.VOID)
+
         return expr_ast(
-            ast_type.VOID_T, "...", self.raw_iden())
-    
-    def t_array(self):
+            ast_type.VOID_T, "...", _void)
+
+    def t_array_native(self):
+        """ Native typing for array.
+
+            Syntax
+            ------
+            "array" '[' native_datatype ']' ;
+
+            Returns
+            -------
+            ast
+        """
         _start = self.lookahead
-        _array = self.raw_iden()
+        _array = _start.value
+
+        #! "array"
+        self.expect_both(token_type.IDENTIFIER, type_names.ARRAY)
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _internal = self.native_datatype()
+
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        return expr_ast(
+            ast_type.ARRAY_T, self.d_location(_start), _array, _internal)
+
+    def t_array(self):
+        """ Regular typing for array.
+
+            Syntax
+            ------
+            "array" '[' datatype ']' ;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _array = _start.value
+
+        #! "array"
+        self.expect_both(token_type.IDENTIFIER, type_names.ARRAY)
 
         #! '['
         self.expect_both(token_type.SYMBOL, "[")
@@ -438,9 +578,51 @@ class parser(object):
         return expr_ast(
             ast_type.ARRAY_T, self.d_location(_start), _array, _internal)
     
-    def t_fn(self):
+    def t_fn_native(self):
+        """ Native typing for function.
+
+            Syntax
+            ------
+            "fn" '[' native_datatype ']' ;
+
+            Returns
+            -------
+            ast
+        """
         _start = self.lookahead
-        _fn = self.raw_iden()
+        _fn    = _start.value
+
+        #! "fn"
+        self.expect_both(token_type.IDENTIFIER, type_names.FN)
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _return = self.native_datatype()
+
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        return expr_ast(
+            ast_type.FN_T, self.d_location(_start), _fn, _return)
+
+    def t_fn(self):
+        """ Regular typing for function.
+
+            Syntax
+            ------
+            "fn" '[' datatype ']' ;
+
+            Returns
+            -------
+            ast
+        """
+
+        _start = self.lookahead
+        _fn    = _start.value
+
+        #! "fn"
+        self.expect_both(token_type.IDENTIFIER, type_names.FN)
 
         #! '['
         self.expect_both(token_type.SYMBOL, "[")
@@ -453,9 +635,55 @@ class parser(object):
         return expr_ast(
             ast_type.FN_T, self.d_location(_start), _fn, _return)
     
-    def t_map(self):
+    def t_map_native(self):
+        """ Native typing for map.
+
+            Syntax
+            ------
+            "map" '[' native_datatype ':' native_datatype ']' ;
+
+            Returns
+            -------
+            ast
+        """
         _start = self.lookahead
-        _map = self.raw_iden()
+        _map   = _start.value
+
+        #! "map"
+        self.expect_both(token_type.IDENTIFIER, type_names.MAP)
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _key_type = self.native_datatype()
+
+        #! ':'
+        self.expect_both(token_type.SYMBOL, ":")
+
+        _val_type = self.native_datatype()
+
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        return expr_ast(
+            ast_type.MAP_T, self.d_location(_start), _map, _key_type, _val_type)
+
+    def t_map(self):
+        """ Regular typing for map.
+
+            Syntax
+            ------
+            "map" '[' datatype ':' datatype ']' ;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _map   = _start.value
+
+        #! "map"
+        self.expect_both(token_type.IDENTIFIER, type_names.MAP)
 
         #! '['
         self.expect_both(token_type.SYMBOL, "[")
@@ -613,14 +841,12 @@ class parser(object):
             -------
             ast
         """
-        _ref = self.lookahead
-
-        #! ref
-        self.expect_t(token_type.IDENTIFIER)
+        _start = self.lookahead
+        _ref   = self.raw_iden()
 
         #! end
         return expr_ast(
-            ast_type.REF, self.d_location(_ref), _ref.value)
+            ast_type.REF, self.d_location(_start), _ref)
     
     def array_expr(self):
         """ ARRAY expression.
@@ -673,7 +899,6 @@ class parser(object):
             ast_type.MAP, self.d_location(_start), _elements)
     
 
-
     def member(self):
         _start = self.lookahead
         _node  = self.atom()
@@ -705,9 +930,12 @@ class parser(object):
                 _node = expr_ast(
                     ast_type.ELEMENT, self.d_location(_start), _node, _expr)
             
-            elif  self.check_both(token_type.SYMBOL, "!"):
+            elif self.check_both(token_type.SYMBOL, "!"):
                 #! '!'
                 self.expect_both(token_type.SYMBOL, "!")
+
+                #! wrapper name
+                _name = self.raw_iden()
 
                 #! '('
                 self.expect_both(token_type.SYMBOL, "(")
@@ -718,7 +946,7 @@ class parser(object):
                 #! ')'
 
                 _node = expr_ast(
-                    ast_type.CALL_WRAPPER, self.d_location(_start), _node, _params)
+                    ast_type.CALL_WRAPPER, self.d_location(_start), _node, _name, _params)
 
             
             elif self.check_both(token_type.SYMBOL, "("):
@@ -735,6 +963,7 @@ class parser(object):
         
         #! end
         return _node
+    
 
     def unary_op(self):
         _start = self.lookahead
@@ -1301,7 +1530,7 @@ class parser(object):
         #! '('
         self.expect_both(token_type.SYMBOL, "(")
 
-        _parameters = self.list_parameter()
+        _parameters = self.list_native_parameter()
     
         self.expect_both(token_type.SYMBOL, ")")
         #! ')'

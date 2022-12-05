@@ -6,3 +6,4 @@ from .anull import anull
 from .aarray import aarray
 from .afun import afun
 from .anativefun import anativefun
+from .amap import amap

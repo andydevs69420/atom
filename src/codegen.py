@@ -223,26 +223,24 @@ class generator(object):
                 #! =========================
                 _hasunpack = True
                 
-                #! visit each element
+                #! unpack element
                 self.visit(_elem)
 
                 #! virtual current
-                _current = self.tstack.peek()
+                _current = self.tstack.popp()
 
                 #! current
-                _arrtype = self.tstack.popp()
+                _arrtype = _current.internal if not _arrtype else _arrtype
 
-                #! internal
-                _arrtype = self.tstack.popp() if not _arrtype else _arrtype
                 
             else:
                 self.visit(_elem)
 
                 #! virtual current
-                _current = self.tstack.peek()
+                _current = self.tstack.popp()
 
                 #! current
-                _arrtype = self.tstack.popp() if not _arrtype else _arrtype
+                _arrtype = _current if not _arrtype else _arrtype
             
                 if  _hasunpack:
                     #! opcode
@@ -272,12 +270,169 @@ class generator(object):
         #! array type
         push_ttable(self, array_t(_arrtype))
     
+    def ast_map(self, _node):
+        _keytype = None
+        _valtype = None
+        _element = _node.get(0)[::1]
+        _mapsize = 0
+        _hasunpack = False
 
-    def ast_call_wrapper(self):
+        while _mapsize < len(_element):
+            #! element
+            _elem = _element[_mapsize]
+            _currentk = ...
+            _currentv = ...
+
+            if  _elem.type == ast_type.UNARY_UNPACK:
+                #! build array before unpack
+                #! opcode
+                if  not _hasunpack:
+                    emit_opcode(self, build_map, _mapsize)
+
+                #! =========================
+                _hasunpack = True
+                
+                #! unpack element
+                self.visit(_elem)
+
+                #! virtual current key
+                _currentk = self.tstack.peek().keytype
+                #! virtual current val
+                _currentv = self.tstack.popp().valtype
+
+                #! current key
+                _keytype = _currentk if not _keytype else _keytype
+
+                #! current val
+                _valtype = _currentv if not _valtype else _valtype
+
+                
+            else:
+                #! visit val
+                self.visit(_elem[1])
+
+                #! visit key
+                self.visit(_elem[0])
+
+                #! virtual current key
+                _currentk = self.tstack.popp()
+
+                #! virtual current val
+                _currentv = self.tstack.popp()
+
+                #! current key
+                _keytype = _currentk if not _keytype else _keytype
+
+                #! current val
+                _valtype = _currentv if not _valtype else _valtype
+            
+                if  _hasunpack:
+                    #! opcode
+                    emit_opcode(self, array_push)
+            
+            _arrsize += 1
+
+            if  not _keytype.matches(_currentk):
+                #! array of any
+                push_ttable(self, any_t())
+
+                #! set as array element type
+                _keytype = self.tstack.popp()
+            
+            if  not _valtype.matches(_currentv):
+                #! array of any
+                push_ttable(self, any_t())
+
+                #! set as array element type
+                _valtype = self.tstack.popp()
+
+    
+        if  not _hasunpack:
+            #! opcode
+            emit_opcode(self, build_map, _mapsize)
+        
+        if  _mapsize <= 0:
+            #! val of any
+            push_ttable(self, any_t())
+
+            #! key of any
+            push_ttable(self, any_t())
+
+            #! set as map element key type
+            _keytype = self.tstack.popp()
+
+            #! set as map element val type
+            _valtype = self.tstack.popp()
+
+        #! array type
+        push_ttable(self, map_t(_keytype, _valtype))
+
+    def ast_call_wrapper(self, _node):
         """ 
-             $0         $1
-            object  parameters
+             $0      $1      $2
+            object  name  parameters
         """
+        #! wrap name
+        _name = _node.get(1)
+        
+        #! compile object
+        self.visit(_node.get(0))
+
+        #! type 
+        _dtype = self.tstack.popp()
+
+        _wrapper = _dtype.qualname() + "." + _name
+        
+        #! check wrapper
+        if  not self.symtbl.contains(_wrapper):
+            error.raise_tracked(error_category.CompileError, "wrapper function \"%s\" for type %s is not defined." % (_name, _dtype.repr()), _node.site)
+
+        _info  = self.symtbl.lookup(_wrapper)
+
+        #! datatype
+        _functype = _info.get_datatype()
+
+        #! check if callable
+        if  not _functype.isfunction():
+            error.raise_tracked(error_category.CompileError, "%s is not a callable type." % _functype.repr(), _node.site)
+
+        #! check parameter count
+        if  _functype.paramcount != (len(_node.get(2)) + 1):
+            error.raise_tracked(error_category.CompileError, "%s requires %d argument, got %d." % (_wrapper, _functype.paramcount - 1, len(_node.get(2))), _node.site)
+        
+        #! emit return type
+        push_ttable(self, _functype.returntype)
+
+        #! load function
+        emit_opcode(self, load_global, _wrapper, _info.get_offset())
+
+        #! rotate param
+        emit_opcode(self, rot1)
+
+        _index = 0
+
+        _recieve_param = _node.get(2)
+        _rquired_param = _functype.parameters[1:]
+
+        #! check every arguments
+        for _each_param in _recieve_param[::-1]:
+
+            #! visit param
+            self.visit(_each_param)
+
+            _typeN = self.tstack.popp()
+
+            #! match type
+            if  not _rquired_param[_index][1].matches(_typeN):
+                error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_rquired_param[_index][0], _rquired_param[_index][1].repr(), _typeN.repr()), _node.site)
+
+            _index += 1
+
+            #! rotate until last
+            emit_opcode(self, rot1)
+        
+        #! emit
+        emit_opcode(self, call_function, len(_node.get(2)) + 1)
         
 
     def ast_call(self, _node):
@@ -285,55 +440,47 @@ class generator(object):
              $0         $1
             object  parameters
         """
-        
-        #! "name" (..., ..., ...)
-        if  _node.get(0).type == ast_type.ATTRIBUTE:
+        #! visit object
+        self.visit(_node.get(0))
 
-           ...
+        #! datatype
+        _functype = self.tstack.popp()
 
+        #! check if callable
+        if  not (_functype.isfunction() or _functype.isnativefunction()):
+            error.raise_tracked(error_category.CompileError, "%s is not a callable type." % _functype.repr(), _node.site)
+
+        #! check parameter count
+        if  _functype.paramcount != len(_node.get(1)):
+            error.raise_tracked(error_category.CompileError, "requires %d argument, got %d." % (_functype.paramcount, len(_node.get(1))), _node.site)
+
+        #! emit return type
+        push_ttable(self, _functype.returntype)
+
+        _index = 0
+
+        #! check every arguments
+        for _each_param in _node.get(1)[::-1]:
+
+            #! visit param
+            self.visit(_each_param)
+
+            _typeN = self.tstack.popp()
+
+            #! match type
+            if  not _functype.parameters[::-1][_index][1].matches(_typeN):
+                error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[_index][0], _functype.parameters[_index][1].repr(), _typeN.repr()), _node.site)
+
+            _index += 1
         
+        #! opcode
+        if  _functype.isnativefunction():
+            #! emit
+            emit_opcode(self, call_native, len(_node.get(1)))
+
         else:
-            #! visit object
-            self.visit(_node.get(0))
-
-            #! datatype
-            _functype = self.tstack.popp()
-
-            #! check if callable
-            if  not (_functype.isfunction() or _functype.isnativefunction()):
-                error.raise_tracked(error_category.CompileError, "%s is not a callable type." % _functype.repr(), _node.site)
-
-            #! check parameter count
-            if  _functype.paramcount != len(_node.get(1)):
-                error.raise_tracked(error_category.CompileError, "requires %d argument, got %d." % (_functype.paramcount, len(_node.get(1))), _node.site)
-
-            #! emit return type
-            push_ttable(self, _functype.returntype)
-
-            _index = 0
-
-            #! check every arguments
-            for _each_param in _node.get(1)[::-1]:
-
-                #! visit param
-                self.visit(_each_param)
-
-                _typeN = self.tstack.popp()
-
-                #! match type
-                if  not _functype.parameters[::-1][_index][1].matches(_typeN):
-                    error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[_index][0], _functype.parameters[_index][1].repr(), _typeN.repr()), _node.site)
-
-                _index += 1
-            
-            #! opcode
-            if  _functype.isnativefunction():
-                #! emit
-                emit_opcode(self, call_native, len(_node.get(1)))
-
-            else:
-                #! emit
-                emit_opcode(self, call_function, len(_node.get(1)))
+            #! emit
+            emit_opcode(self, call_function, len(_node.get(1)))
         
     
     def ast_unary_op(self, _node):
@@ -524,6 +671,17 @@ class generator(object):
             
             elif _operation.isstring():
                 emit_opcode(self, concat)
+            
+            elif _operation.isarray():
+                #! rotate array
+                emit_opcode(self, rot1)
+
+                #! push or extend opcode
+                if  not _rhs.isarray():
+                    emit_opcode(self, array_push)
+
+                else:
+                    emit_opcode(self, array_pushall)
         
         elif _op == "-":
             #! op result
@@ -1113,17 +1271,17 @@ class codegen(generator):
             error.raise_tracked(error_category.CompileError, "main is not a user defined function.", _main.get_site())
         
         #! load function
-        emit_opcode(self, load_funpntr, "main", _main.get_offset())
+        emit_opcode(self, load_global, "main", _main.get_offset())
 
         #! make type
-        _required_main = fn_t(any_t(), 1, [("args", array_t(string_t()))])
+        _required_main = fn_t(integer_t(), 1, [("args", array_t(string_t()))])
 
         #! check if valid main
         if  not _required_main.matches(_main.get_datatype()):
             error.raise_tracked(error_category.CompileError, "invalid main function, required %s, got %s." % (_required_main.repr(), _main.get_datatype().repr()), _main.get_site())
 
         #! make args
-        for _args in self.state.aargv[::-1]:
+        for _args in self.state.aargv:
             #! emit arg as string
             emit_opcode(self, sload, _args)
         

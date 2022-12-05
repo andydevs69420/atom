@@ -22,6 +22,10 @@ array_push = "array_push"
 array_pushall = "array_pushall"
 
 
+build_map = "build_map"
+map_put   = "map_put"
+map_merge = "map_merge"
+
 call_function = "call_function"
 call_native = "call_native"
 call_method = "call_method"
@@ -84,6 +88,9 @@ bitor  = "bitor"
 store_global = "store_global"
 store_local  = "store_local"
 store_fast   = "store_fast"
+
+rot1 = "rot1"
+
 
 pop_top = "pop_top"
 

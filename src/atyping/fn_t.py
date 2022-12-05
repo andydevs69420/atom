@@ -13,6 +13,9 @@ class fn_t(nonprimitive_t):
         self.paramcount = _paramcount
         self.parameters = _parameters
     
+    def qualname(self):
+        return self.name
+    
     def repr(self):
         _param = ""
         for _p in range(self.paramcount):

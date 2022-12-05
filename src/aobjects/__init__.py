@@ -6,3 +6,4 @@ from .base import anull
 from .base import aarray
 from .base import afun
 from .base import anativefun
+from .base import amap

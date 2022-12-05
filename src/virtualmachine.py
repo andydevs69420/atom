@@ -57,7 +57,7 @@ class virtualmachine(object):
     
     def nload(self, _bytecode_chunk):
         _null =\
-        ainteger(_bytecode_chunk[2])
+        anull()
 
         atom_object_New(self.state, _null)
     
@@ -141,6 +141,22 @@ class virtualmachine(object):
 
         #! pushback
         push_operand(self, _array)
+
+
+    def build_map(self, _bytecode_chunk):
+        _popsize = _bytecode_chunk[2]
+
+        _new_map = amap()
+
+        #! alloc
+        atom_object_New(self.state, _new_map)
+
+        for _r in range(_popsize):
+            _k = popp_operand(self)
+            _v = popp_operand(self)
+            _new_map.put(_k, _v)
+        
+        push_operand(self, _new_map)
 
     def call_function(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
@@ -393,6 +409,13 @@ class virtualmachine(object):
         #! push to opstack
         push_operand(self, _new)
 
+    def rot1(self, _bytecode_chunk):
+        _top = popp_operand(self)
+        _bot = popp_operand(self)
+
+        push_operand(self, _top)
+        push_operand(self, _bot)
+
     def store_global(self, _bytecode_chunk):
         _offset = _bytecode_chunk[3]
 
@@ -455,9 +478,6 @@ class virtualmachine(object):
 
             #! next
             _top.ipointer += 1
-
-            if  _top.ipointer >= len(_top.instructions):
-                break
 
         #! end
         return 0x00
