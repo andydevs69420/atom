@@ -14,6 +14,8 @@ def push_operand(_cls, _aobject):
 def popp_operand(_cls):
     return _cls.state.oprnd.popp()
 
+def peek_operand(_cls):
+    return _cls.state.oprnd.peek()
 
 
 class virtualmachine(object):
@@ -121,7 +123,7 @@ class virtualmachine(object):
         push_operand(self, _new_arr)
     
     def array_pushall(self, _bytecode_chunk):
-        #! pop extenssion
+        #! pop extension
         _extension = popp_operand(self)
 
         #! pop array
@@ -157,6 +159,29 @@ class virtualmachine(object):
             _new_map.put(_k, _v)
         
         push_operand(self, _new_map)
+    
+    def map_put(self, _bytecode_chunk):
+        #! pop element
+        _newelemk = popp_operand(self)
+        _newelemv = popp_operand(self)
+
+        #! pop map
+        _map = popp_operand(self)
+        _map.put(_newelemk, _newelemv)
+
+        #! pushback
+        push_operand(self, _map)
+
+    def map_merge(self, _bytecode_chunk):
+        #! pop extension
+        _extension = popp_operand(self)
+
+        #! pop map
+        _map = popp_operand(self)
+        _map.merge(_extension)
+
+        #! pushback
+        push_operand(self, _map)
 
     def call_function(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
@@ -408,6 +433,10 @@ class virtualmachine(object):
 
         #! push to opstack
         push_operand(self, _new)
+
+    def dup_top(self, _bytecode_chunk):
+        #! cuplicate top
+        push_operand(self, peek_operand(self))
 
     def rot1(self, _bytecode_chunk):
         _top = popp_operand(self)

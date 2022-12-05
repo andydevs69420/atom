@@ -31,3 +31,10 @@ class map_t(nonprimitive_t):
     
     def unpack(self):
         return self
+    
+    def add(self, _rhs):
+        if  self.matches(_rhs):
+            return self
+
+        #! end
+        return operation.op_error_t()

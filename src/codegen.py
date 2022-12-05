@@ -689,6 +689,12 @@ class generator(object):
 
                 else:
                     emit_opcode(self, array_pushall)
+            
+            elif _operation.ismap():
+                #! rotate array
+                emit_opcode(self, rot1)
+
+                emit_opcode(self, map_merge)
         
         elif _op == "-":
             #! op result
@@ -839,6 +845,48 @@ class generator(object):
 
         self.nstlvl -= 1
         #! end
+    
+
+    def ast_simple_ass(self, _node):
+        """
+             $0    $1   $2
+            _lhs  _op  _rhs
+        """
+        self.nstlvl += 1
+        if  self.nstlvl >= MAX_NESTING_LEVEL:
+            error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
+
+        
+        _op = _node.get(1)
+        self.visit(_node.get(2)) # rhs
+
+        #! just use peek here, because assignment is an expression
+        _rhs = self.tstack.peek()
+
+        _lhs = _node.get(0)
+
+        if  _lhs.type == ast_type.REF:
+
+            #! check if exist
+            if  not self.symtbl.contains(_lhs.get(0)):
+                error.raise_tracked(error_category.CompileError, "%s is not defined." % _lhs.get(0), _node.site)
+            
+            _info = self.symtbl.lookup(_lhs.get(0))
+
+            if  _info.is_constant():
+                error.raise_tracked(error_category.CompileError, "assignment of constant variable \"%s\"." % _lhs.get(0), _node.site)
+            
+            #! update datatype
+            _info.datatype = _rhs
+        
+            #! duplicate value
+            emit_opcode(self, dup_top)
+
+            #! opcode
+            emit_opcode(self, store_global if _info.is_global() else store_local, _info.get_name(), _info.get_offset())
+
+        self.nstlvl -= 1
+        #! end
 
     #! ========== compound statement ==========
 
@@ -904,6 +952,13 @@ class generator(object):
         
         if  not self.functionhasreturntype and not self.currentfunctiontype.matches(null_t()):
             error.raise_tracked(error_category.CompileError, "function \"%s\" has no visible return." %  _node.get(1), _node.site)
+
+        if  self.currentfunctiontype.matches(null_t()):
+            #! emit virtual null
+            emit_opcode(self, nload, None)
+
+            #! add return
+            emit_opcode(self, return_control)
 
         #! end func scope
         self.symtbl.endscope()

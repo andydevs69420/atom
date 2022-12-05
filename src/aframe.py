@@ -12,10 +12,11 @@ class frame(object):
 
 
     def set(self, _offset, _value):
-        if  len(self.value) - 1 > _offset:
+        #! end
+        if  _offset < len(self.value):
             self.value[_offset] = _value
             return
-        #! end
+        #! append
         self.value.append(_value)
     
     def get(self, _offset):

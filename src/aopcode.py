@@ -89,6 +89,7 @@ store_global = "store_global"
 store_local  = "store_local"
 store_fast   = "store_fast"
 
+dup_top = "dup_top"
 rot1 = "rot1"
 
 

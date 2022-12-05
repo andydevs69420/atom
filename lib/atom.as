@@ -3,21 +3,27 @@
 
 import [std, ooplike];
 
-
 wrap _array:array[str] push(_element:str) _array + _element ;
 
-fun[int] add(_a:int, _b:int) 
-{
-    return _a + _b;
-}
 
 fun[int] main(_args:array[str])
 {   
-    const y = [*[1,2,3]];
-    print(y);
-    print(add(1, 3));
-    print(  _args  );
-    return 0x0;
+    let x = 200;
+
+    x = 200000;
+
+    print(x);
+    print(_args);
+
+    let v = 2;
+
+    print(v);
+
+    v = 10;
+    print(v);
+
+    return 0;
 }
+
 
 
