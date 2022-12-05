@@ -884,6 +884,25 @@ class generator(object):
 
             #! opcode
             emit_opcode(self, store_global if _info.is_global() else store_local, _info.get_name(), _info.get_offset())
+        
+        elif _lhs.type == ast_type.ELEMENT:
+            #! lhs[??] = rhs
+
+            #! compile element
+            self.visit(_lhs.get(1))
+
+            _element_type = self.tstack.popp()
+
+            #! compile object
+            self.visit(_lhs.get(0))
+
+            _objtype = self.tstack.popp()
+
+            #! check if subscriptable
+            if  not (_objtype.isarray() or _objtype.ismap()):
+                error.raise_tracked(error_category.CompileError, "%s is not subscriptable." % _objtype.repr(), _node.site)
+
+
 
         self.nstlvl -= 1
         #! end
