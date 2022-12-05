@@ -861,7 +861,7 @@ class generator(object):
         self.visit(_node.get(2)) # rhs
 
         #! just use peek here, because assignment is an expression
-        _rhs = self.tstack.peek()
+        _rhstype = self.tstack.peek()
 
         _lhs = _node.get(0)
 
@@ -877,7 +877,7 @@ class generator(object):
                 error.raise_tracked(error_category.CompileError, "assignment of constant variable \"%s\"." % _lhs.get(0), _node.site)
             
             #! update datatype
-            _info.datatype = _rhs
+            _info.datatype = _rhstype
         
             #! duplicate value
             emit_opcode(self, dup_top)
@@ -899,7 +899,22 @@ class generator(object):
             _objtype = self.tstack.popp()
 
             #! check if subscriptable
-            if  not (_objtype.isarray() or _objtype.ismap()):
+            if  _objtype.isarray():
+                #! verify index
+                if  not _element_type.isint():
+                    error.raise_tracked(error_category.CompileError, "array index should be int, got %s." % _element_type.repr(), _node.site)
+
+                #! check if element type matches
+                if  not _objtype.elementtype.matches(_rhstype):
+                    error.raise_tracked(error_category.CompileError, "element type mismatch. expected %s, got %s." % (_objtype.elementtype.repr(), _rhstype.repr()), _node.site)
+
+                #! opcode
+                emit_opcode(self, array_set)
+            
+            elif _objtype.ismap():
+                ...
+
+            else:
                 error.raise_tracked(error_category.CompileError, "%s is not subscriptable." % _objtype.repr(), _node.site)
 
 
@@ -1355,7 +1370,7 @@ class codegen(generator):
         emit_opcode(self, load_global, "main", _main.get_offset())
 
         #! make type
-        _required_main = fn_t(integer_t(), 1, [("args", array_t(string_t()))])
+        _required_main = fn_t(integer_t(), 1, [("_args", array_t(string_t()))])
 
         #! check if valid main
         if  not _required_main.matches(_main.get_datatype()):

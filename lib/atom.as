@@ -5,25 +5,22 @@ import [std, ooplike];
 
 wrap _array:array[str] push(_element:str) _array + _element ;
 
-
-
 fun[int] main(_args:array[str])
 {   
-    let x = 200;
-
-    x = 200000;
+    let x = 100;
+        x = 900;
 
     print(x);
     print(_args);
 
-    let v = 2;
+    const v = 2;
 
     print(v);
 
-    v = 10;
+    v =  100;
     print(v);
 
-    x[2] = 2;
+    [1,2,3][2] = "asdasd";
 
     return 0;
 }

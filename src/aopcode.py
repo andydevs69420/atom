@@ -20,6 +20,7 @@ load_local  = "load_local"
 build_array = "build_array"
 array_push = "array_push"
 array_pushall = "array_pushall"
+array_set = "array_set"
 
 
 build_map = "build_map"
