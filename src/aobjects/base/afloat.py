@@ -8,6 +8,9 @@ class afloat(aobject):
         super().__init__()
         self.raw = _rawflt
     
+    def objecthash(self):
+        return self.hash(self.__str__())
+    
     def __str__(self):
         return "%f" % self.raw
 

@@ -230,7 +230,7 @@ class generator(object):
                 _current = self.tstack.popp()
 
                 #! current
-                _arrtype = _current.internal if not _arrtype else _arrtype
+                _arrtype = _current.elementtype if not _arrtype else _arrtype
 
                 
             else:
@@ -283,7 +283,7 @@ class generator(object):
             _currentk = ...
             _currentv = ...
 
-            if  _elem.type == ast_type.UNARY_UNPACK:
+            if  _elem[0].type == ast_type.UNARY_UNPACK:
                 #! build array before unpack
                 #! opcode
                 if  not _hasunpack:
@@ -293,7 +293,7 @@ class generator(object):
                 _hasunpack = True
                 
                 #! unpack element
-                self.visit(_elem)
+                self.visit(_elem[0])
 
                 #! virtual current key
                 _currentk = self.tstack.peek().keytype
@@ -328,9 +328,9 @@ class generator(object):
             
                 if  _hasunpack:
                     #! opcode
-                    emit_opcode(self, array_push)
+                    emit_opcode(self, map_put)
             
-            _arrsize += 1
+            _mapsize += 1
 
             if  not _keytype.matches(_currentk):
                 #! array of any
@@ -578,6 +578,13 @@ class generator(object):
 
             #! opcode
             emit_opcode(self, array_pushall)
+        
+        elif _op == "**":
+            #! op result
+            _operation = _rhs.unpack()
+
+            #! opcode
+            emit_opcode(self, map_merge)
         
         if  _operation.iserror():
             error.raise_tracked(error_category.CompileError, "cannot unpack %s." % _rhs.repr(), _node.site)

@@ -8,6 +8,9 @@ class astring(aobject):
         super().__init__()
         self.raw = _rawstr
     
+    def objecthash(self):
+        return self.hash(self.raw)
+
     def __str__(self):
         return "%s" % self.raw
     

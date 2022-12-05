@@ -13,7 +13,7 @@ fun[int] add(_a:int, _b:int)
 
 fun[int] main(_args:array[str])
 {   
-    const y = {};
+    const y = [*[1,2,3]];
     print(y);
     print(add(1, 3));
     print(  _args  );

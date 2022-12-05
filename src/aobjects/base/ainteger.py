@@ -8,6 +8,9 @@ class ainteger(aobject):
         super().__init__()
         self.raw = _rawint
     
+    def hash(self, _key):
+        return self.hash(self.raw)
+    
     def __str__(self):
         return "%d" % self.raw
     

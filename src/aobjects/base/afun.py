@@ -8,6 +8,9 @@ class afun(aobject):
         super().__init__()
         self.funpntr = _funname
     
+    def objecthash(self):
+        return self.hash(self.funpntr)
+
     def __str__(self):
         return "[FUNCTION %s]" % self.funpntr
     

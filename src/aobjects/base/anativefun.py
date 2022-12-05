@@ -9,6 +9,9 @@ class anativefun(aobject):
         self.modpntr = _modname
         self.funpntr = _funname
     
+    def hash(self, _key):
+        return self.hash(self.modpntr) + self.hash(self.funpntr)
+    
     def __str__(self):
         return "[NATIVE FUNCTION %s.__%s]" % (self.modpntr, self.funpntr)
     

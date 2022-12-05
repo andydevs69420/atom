@@ -248,6 +248,9 @@ class parser(object):
         return tuple(_lists)
     
     def key_value_pair(self):
+        if  self.check_both(token_type.SYMBOL, "**"):
+            return (self.non_nullable_expr(), None)
+
         _key = self.nullable_expr()
 
         #! is null?
@@ -861,6 +864,8 @@ class parser(object):
         """
         _start = self.lookahead
 
+        self.enter(context.ARRAY)
+
         #! '['
         self.expect_both(token_type.SYMBOL, "[")
 
@@ -868,6 +873,8 @@ class parser(object):
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
+
+        self.leave(context.ARRAY)
 
         #! end
         return expr_ast(
@@ -886,6 +893,8 @@ class parser(object):
         """
         _start = self.lookahead
 
+        self.enter(context.MAP)
+
         #! '{'
         self.expect_both(token_type.SYMBOL, "{")
 
@@ -893,6 +902,8 @@ class parser(object):
         
         self.expect_both(token_type.SYMBOL, "}")
         #! '}'
+
+        self.leave(context.MAP)
 
         #! end
         return expr_ast(
@@ -984,8 +995,25 @@ class parser(object):
                 ast_type.UNARY_OP, self.d_location(_start), _opt, _rhs)
         
         #! unpack
-        if  self.check_both(token_type.SYMBOL, "*" ) or\
-            self.check_both(token_type.SYMBOL, "**"):
+        if  self.check_both(token_type.SYMBOL, "*" ):
+
+            if  not self.under(context.ARRAY, True):
+                error.raise_tracked(error_category.ParseError, "cannot unpack here.", self.d_location(_start))
+
+            _opt = self.lookahead.value
+            self.expect_t(token_type.SYMBOL)
+
+            _rhs = self.unary_op()
+            if  not _rhs:
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+
+            return expr_ast(
+                ast_type.UNARY_UNPACK, self.d_location(_start), _opt, _rhs)
+        
+        if  self.check_both(token_type.SYMBOL, "**"):
+
+            if  not self.under(context.MAP, True):
+                error.raise_tracked(error_category.ParseError, "cannot unpack here.", self.d_location(_start))
 
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
