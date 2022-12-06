@@ -154,6 +154,32 @@ class virtualmachine(object):
 
         #! pushback
         push_operand(self, _array)
+    
+    def array_get(self, _bytecode_chunk):
+        #! pop array
+        _array = popp_operand(self)
+
+        #! pop element
+        _element = popp_operand(self)
+
+        #! FIXME: CATCH array out of bounds
+
+        push_operand(self, _array.subscript(_element))
+    
+    def array_set(self, _bytecode_chunk):
+        #! pop array
+        _array = popp_operand(self)
+
+        #! pop element
+        _element = popp_operand(self)
+
+        #! new value
+        _value = popp_operand(self)
+
+        #! FIXME: CATCH array out of bounds
+
+        #! set index
+        _array.set_index(_element, _value)
 
 
     def build_map(self, _bytecode_chunk):
@@ -193,6 +219,17 @@ class virtualmachine(object):
 
         #! pushback
         push_operand(self, _map)
+    
+    def map_get(self, _bytecode_chunk):
+        #! pop map
+        _map = popp_operand(self)
+
+        #! pop element
+        _key = popp_operand(self)
+
+        #! FIXME: CATCH key error
+
+        push_operand(self, _map.get(_key))
     
     def map_set(self, _bytecode_chunk):
         #! pop map
@@ -503,6 +540,106 @@ class virtualmachine(object):
 
         _new =\
         afloat(_lhs.raw - _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    #! ======== shift ========
+
+    def lshift(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        ainteger(_lhs.raw << _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    def rshift(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        ainteger(_lhs.raw >> _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    #! ====== relational ======
+
+    def comlt(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        aboolean(_lhs.raw < _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    def comlte(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        aboolean(_lhs.raw <= _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    def comgt(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        aboolean(_lhs.raw > _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    def comgte(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        aboolean(_lhs.raw >= _rhs.raw)
 
         #! store
         atom_object_New(self.state, _new)

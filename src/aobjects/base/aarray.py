@@ -13,6 +13,12 @@ class aarray(aobject):
     def pushall(self, _array):
         self.array.extend(_array.array)
     
+    def subscript(self, _int_index):
+        return self.array[_int_index.raw]
+
+    def set_index(self, _int_index, _aobject_value):
+        self.array[_int_index.raw] = _aobject_value
+    
     def objecthash(self):
         return sum([*[_obj.objecthash() for _obj in self.array]])
     

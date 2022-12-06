@@ -12,29 +12,24 @@ struct Person, Employee
 }
 
 struct Boss
-{   name:str;
-    age:int;
+{   
+    name:str;
+    age :int;
 }
 
 fun[int] main(_args:array[str])
-{   
-    const x = Person("Andy", 1000);
+{   const x = Person  ("Andy"    , 45);
     const y = Employee("Marielle", 23);
-   
-    print(x);
-    print(y);
+    const z = [1, 2, 3, 4];
 
-    x.name = y.name;
-    y.age  = x.age;
+    const mapp = {z: 2000};
+    print(mapp);
+    z + 1000;
+    print(mapp);
+    z[4] = 0;
+    print(mapp[z]);
 
-    print(x);
-    print(y);
-
-    print({[1,2,3]: 2, [1,2,3,4]: 3, {1:2}:4});
-
-    const z = [1,2,3];
-
-    print(z[2]);
+    print(x == x);
 
     return 2;
 }

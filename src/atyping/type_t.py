@@ -1,5 +1,6 @@
 from . import type_names
 from . import nonprimitive_t
+from . import operation
 
 class type_t(nonprimitive_t):
     """ Type compiletime flag.
@@ -60,5 +61,8 @@ class type_t(nonprimitive_t):
             if  _attr[0] == _attrib:
                 return _attr[1]
     
-    def __str__(self) -> str:
-        return "type %s" % self.typename
+    def equality(self, _rhs):
+        if  _rhs.istype():
+            return operation.op_boolean_t()
+
+        return operation.op_error_t()

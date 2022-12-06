@@ -1,7 +1,7 @@
 
 from . import type_names
 from . import nonprimitive_t
-
+from . import operation
 
 
 class instance_t(nonprimitive_t):
@@ -24,6 +24,12 @@ class instance_t(nonprimitive_t):
     
     def isinstance(self):
         return True
+    
+    def equality(self, _rhs):
+        if  _rhs.istype():
+            return operation.op_boolean_t()
+
+        return operation.op_error_t()
 
 
 
