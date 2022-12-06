@@ -13,7 +13,7 @@ class type_names:
     NATIVEFN = "nativefn"
     MAP    = "map"
     TYPE   = "type"
-    USER   = "user"
+    # INSTANCE = PROVIDED BY BUILDER
     ERROR  = "error"
 
 

@@ -17,9 +17,6 @@ class integer_t(number_t):
         #! end
         return _cls.instance
     
-    def qualname(self):
-        return self.name
-    
     def repr(self):
         return self.name
     

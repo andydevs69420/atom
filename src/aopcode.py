@@ -13,6 +13,7 @@ nload  = "nload"
 
 load_funpntr = "load_funpntr"
 load_mod_funpntr = "load_mod_funpntr"
+load_typepntr = "load_typepntr"
 
 load_global = "load_global"
 load_local  = "load_local"
@@ -20,16 +21,24 @@ load_local  = "load_local"
 build_array = "build_array"
 array_push = "array_push"
 array_pushall = "array_pushall"
+array_get = "array_get"
 array_set = "array_set"
 
 
 build_map = "build_map"
 map_put   = "map_put"
 map_merge = "map_merge"
+map_get = "map_get"
+map_set = "map_set"
+
+
+make_aobject = "make_aobject"
+get_attribute = "get_attribute"
+set_attribute = "set_attribute"
 
 call_function = "call_function"
 call_native = "call_native"
-call_method = "call_method"
+call_type = "call_type"
 
 return_control = "return_control"
 

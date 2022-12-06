@@ -9,16 +9,14 @@ class anativefun(aobject):
         self.modpntr = _modname
         self.funpntr = _funname
     
-    def hash(self, _key):
-        return self.hash(self.modpntr) + self.hash(self.funpntr)
+    def objecthash(self):
+        return (self.hash(self.modpntr) + self.hash(self.funpntr))
     
     def __str__(self):
-        return "[NATIVE FUNCTION %s.__%s]" % (self.modpntr, self.funpntr)
+        return "<native function %s.%s(...) at atom memory index %s/>" % (self.modpntr, self.funpntr, hex(self.offset.offset))
     
     def __repr__(self):
         return self.__str__()
 
-    def __get__(self):
-        return self.funpntr
 
 

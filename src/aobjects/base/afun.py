@@ -12,12 +12,8 @@ class afun(aobject):
         return self.hash(self.funpntr)
 
     def __str__(self):
-        return "[FUNCTION %s]" % self.funpntr
+        return "<function %s(...) at atom memory index %s/>" % (self.funpntr, hex(self.offset.offset))
     
     def __repr__(self):
         return self.__str__()
-
-    def __get__(self):
-        return self.funpntr
-
 

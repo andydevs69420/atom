@@ -10,9 +10,6 @@ class error_t(nonprimitive_t):
         super().__init__()
         self.name = type_names.ERROR
     
-    def qualname(self):
-        return self.name
-    
     def repr(self):
         return self.name
     

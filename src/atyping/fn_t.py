@@ -3,7 +3,7 @@ from . import nonprimitive_t
 
 
 class fn_t(nonprimitive_t):
-    """ Array compiletime tag.
+    """ Function compiletime tag.
     """
 
     def __init__(self, _returntype, _paramcount, _parameters):
@@ -12,10 +12,7 @@ class fn_t(nonprimitive_t):
         self.returntype = _returntype
         self.paramcount = _paramcount
         self.parameters = _parameters
-    
-    def qualname(self):
-        return self.name
-    
+        
     def repr(self):
         _param = ""
         for _p in range(self.paramcount):

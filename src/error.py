@@ -4,12 +4,13 @@ from sys import (stderr, exit)
 
 class error_category(Enum):
 
-    IOError      = 0x00
-    FileNotFound = 0x01
-    LexicalError = 0x02
-    ParseError   = 0x03
-    SematicError = 0x04
-    CompileError = 0x05
+    IOError       = 0x00
+    FileNotFound  = 0x01
+    LexicalError  = 0x02
+    ParseError    = 0x03
+    SemanticError = 0x04
+    CompileError  = 0x05
+    RuntimeError  = 0x06
 
 class error:
 

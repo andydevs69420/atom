@@ -7,3 +7,5 @@ from .base import aarray
 from .base import afun
 from .base import anativefun
 from .base import amap
+from .base import atype
+from .base import ainstance

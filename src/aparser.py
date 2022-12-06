@@ -998,7 +998,7 @@ class parser(object):
         if  self.check_both(token_type.SYMBOL, "*" ):
 
             if  not self.under(context.ARRAY, True):
-                error.raise_tracked(error_category.ParseError, "cannot unpack here.", self.d_location(_start))
+                error.raise_tracked(error_category.SemanticError, "cannot unpack here.", self.d_location(_start))
 
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
@@ -1013,7 +1013,7 @@ class parser(object):
         if  self.check_both(token_type.SYMBOL, "**"):
 
             if  not self.under(context.MAP, True):
-                error.raise_tracked(error_category.ParseError, "cannot unpack here.", self.d_location(_start))
+                error.raise_tracked(error_category.SemanticError, "cannot unpack here.", self.d_location(_start))
 
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
@@ -1336,6 +1336,8 @@ class parser(object):
         """
         if  self.check_both(token_type.IDENTIFIER, keywords.FUN):
             return self.function()
+        if  self.check_both(token_type.IDENTIFIER, keywords.STRUCT):
+            return self.struct()
         #! end
         return self.simple_stmnt()
 
@@ -1382,7 +1384,7 @@ class parser(object):
         self.leave(context.FUNCTION)
 
         if  not self.under(context.GLOBAL, True):
-            error.raise_tracked(error_category.SematicError, "function declairation should be done globally!", self.d_location(_start))
+            error.raise_tracked(error_category.SemanticError, "function declairation should be done globally!", self.d_location(_start))
 
         #! end
         return stmnt_ast(
@@ -1413,6 +1415,66 @@ class parser(object):
 
         #! end
         return tuple(_body)
+    
+    def struct(self):
+        """ STRUCT declairation.
+
+            Syntax
+            ------
+            "struct" list_idn '{' struct_body '}' ;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        #! "struct"
+        self.expect_both(token_type.IDENTIFIER, keywords.STRUCT)
+
+        _subtypes = self.list_idn()
+
+        #! '{'
+        self.expect_both(token_type.SYMBOL, "{")
+
+        _body = self.struct_body()
+
+        self.expect_both(token_type.SYMBOL, "}")
+        #! '}'
+
+        if  not self.under(context.GLOBAL, True):
+            error.raise_tracked(error_category.SemanticError, "struct declairation should be done globally!", self.d_location(_start))
+
+        return stmnt_ast(
+            ast_type.STRUCT, self.d_location(_start), _subtypes, _body)
+    
+    def struct_body(self):
+        _body = []
+
+        _memberN = self.struct_member()
+
+        while _memberN:
+            _body.append(_memberN)
+
+            #! ';'
+            self.expect_both(token_type.SYMBOL, ";")
+            
+            #! next
+            _memberN = self.struct_member()
+        
+        return tuple(_body)
+    
+    def struct_member(self):
+        if  not self.check_t(token_type.IDENTIFIER):
+            return None
+        
+        _name = self.raw_iden()
+
+        #! ':'
+        self.expect_both(token_type.SYMBOL, ":")
+
+        _type = self.datatype()
+
+        return (_name, _type)
 
     def simple_stmnt(self):
         """ SIMPLE statement.
@@ -1465,7 +1527,7 @@ class parser(object):
         #! ']'
 
         if  not self.under(context.GLOBAL, True):
-            error.raise_tracked(error_category.SematicError, "cannot declaire imports here!", self.d_location(_start))
+            error.raise_tracked(error_category.SemanticError, "cannot declaire imports here!", self.d_location(_start))
 
         _locsite = self.d_location(_start)
 
@@ -1506,7 +1568,7 @@ class parser(object):
         _expr = self.non_nullable_expr()
 
         if  not self.under(context.GLOBAL, True):
-            error.raise_tracked(error_category.SematicError, "function wrapper declairation should be done globally!", self.d_location(_start))
+            error.raise_tracked(error_category.SemanticError, "function wrapper declairation should be done globally!", self.d_location(_start))
 
         _locsite = self.d_location(_start)
 
@@ -1570,7 +1632,7 @@ class parser(object):
         self.leave(context.FUNCTION)
 
         if  not self.under(context.GLOBAL, True):
-            error.raise_tracked(error_category.SematicError, "function prototype declairation should be done globally!", self.d_location(_start))
+            error.raise_tracked(error_category.SemanticError, "function prototype declairation should be done globally!", self.d_location(_start))
 
         #! end
         return stmnt_ast(
@@ -1587,7 +1649,7 @@ class parser(object):
         _ended = self.d_location(_start)
 
         if  not self.under(context.GLOBAL, True):
-            error.raise_tracked(error_category.SematicError, "cannot use \"var\" to declaire variables here!", _ended)
+            error.raise_tracked(error_category.SemanticError, "cannot use \"var\" to declaire variables here!", _ended)
 
         self.expect_both(token_type.SYMBOL, ";")
         #! ';'
@@ -1607,7 +1669,7 @@ class parser(object):
         _ended = self.d_location(_start)
 
         if  not self.under(context.LOCAL, False):
-            error.raise_tracked(error_category.SematicError, "cannot use \"let\" to declaire variables here!", _ended)
+            error.raise_tracked(error_category.SemanticError, "cannot use \"let\" to declaire variables here!", _ended)
 
         self.expect_both(token_type.SYMBOL, ";")
         #! ';'

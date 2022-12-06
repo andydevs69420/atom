@@ -35,4 +35,3 @@ fun[str] readl(_message:str);
 #! syntax: const toint = atoi("123");
 #! native::std
 #! fun[std] itoa(_int:int);
-

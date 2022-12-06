@@ -23,7 +23,7 @@ class LinkedList(Node):
     def append(self, _key, _val):
         _head = self
         while _head:
-            if  _head.nkey == _key:
+            if  _head.nkey.objecthash() == _key.objecthash():
                 #! update
                 _head.nval  = _val
                 return
@@ -36,7 +36,7 @@ class LinkedList(Node):
 
 
 class HashMap(object):
-    """ HashTable base.
+    """ HashMap base.
     """
 
     LOAD_FACTOR = 0.75
@@ -54,7 +54,7 @@ class HashMap(object):
         if  self.__bucket[_index]:
             #! collision
             self.__bucket[_index].append(_key, _value)
-
+           
             #! end
             return
 
@@ -66,11 +66,11 @@ class HashMap(object):
     
 
     def get(self, _key):
-        _headt = self.__bucket[self._key.objecthash() % self.__htsize]
+        _headt = self.__bucket[_key.objecthash() % self.__htsize]
 
         while _headt:
             #! check
-            if _headt.nkey == _key: return _headt.nval
+            if _headt.nkey.objecthash() == _key.objecthash(): return _headt.nval
 
             #! next
             _headt = _headt.tail
@@ -87,7 +87,7 @@ class HashMap(object):
 
         while _head:
             #! check
-            if _head.nkey == _key: return True
+            if _head.nkey.objecthash() == _key.objecthash(): return True
 
             #! next
             _head = _head.tail
@@ -171,7 +171,7 @@ class aobject(HashMap):
     def objecthash(self):
         _hash = 0
         for _k, _v in zip(self.keys(), self.values()):
-            _hash  = (_hash * 31) + (_k.objecthash() + _v.objecthash())
+            _hash  = (((_hash << 5) - _hash) + (_k.objecthash() + _v.objecthash()))
             _hash |= 0
 
         return _hash

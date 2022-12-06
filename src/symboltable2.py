@@ -205,6 +205,19 @@ class SymbolTable(HashTable):
         
         #! insert
         _top.put(_funcname, functiontable(_funcname, _offset, _datatype, _retrtype, _site))
+    
+    def insert_struct(self,
+        _structname ,
+        _offset     ,
+        _datatype   ,
+        _site       ,
+    ):
+        #! check bottom
+        _top = self.childnodes.peek() if not self.childnodes.isempty() else self
+        
+        #! insert
+        _top.put(_structname, structtable(_structname, _offset, _datatype, _site))
+
 
     def lookup(self, _key):
         #! check bottom
@@ -281,6 +294,35 @@ class functiontable(typetable):
     def get_site(self):
         return self.site
 
+
+class structtable(typetable):
+    """ struct table for atom.
+    """
+
+    def __init__(self, _structname, _offset, _datatype, _site):
+        super().__init__()
+        self.structname = _structname
+        self.offset     = _offset
+        self.datatype   = _datatype
+        self.site       = _site
+    
+    def get_name(self):
+        return self.varname
+    
+    def get_offset(self):
+        return self.offset
+
+    def get_datatype(self):
+        return self.datatype
+    
+    def is_global(self):
+        return True
+    
+    def is_constant(self):
+        return True
+    
+    def get_site(self):
+        return self.site
 
 
 class variabletable(typetable):

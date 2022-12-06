@@ -2,7 +2,7 @@ from aframe import frame
 from aobjects import *
 from abuiltins.getter import getbuiltin
 from mem import *
-
+from error import (error_category, error)
 
 
 TOP    = -1
@@ -76,6 +76,7 @@ class virtualmachine(object):
         #! push to opstack
         push_operand(self, _funpntr)
     
+
     def load_mod_funpntr(self, _bytecode_chunk):
         _funpntr =\
         anativefun(_bytecode_chunk[2], _bytecode_chunk[3])
@@ -84,6 +85,16 @@ class virtualmachine(object):
     
         #! push to opstack
         push_operand(self, _funpntr)
+    
+    def load_typepntr(self, _bytecode_chunk):
+        _typepntr =\
+        atype(_bytecode_chunk[2])
+
+        atom_object_New(self.state, _typepntr)
+    
+        #! push to opstack
+        push_operand(self, _typepntr)
+
     
     def load_global(self, _bytecode_chunk):
         _offset = _bytecode_chunk[3]
@@ -115,7 +126,7 @@ class virtualmachine(object):
         #! appended inorder
         for _r in range(_popsize):_arr.append(popp_operand(self))
 
-        _new_arr = aarray(*_arr[::-1])
+        _new_arr = aarray(*_arr)
 
         atom_object_New(self.state, _new_arr)
 
@@ -182,28 +193,46 @@ class virtualmachine(object):
 
         #! pushback
         push_operand(self, _map)
+    
+    def map_set(self, _bytecode_chunk):
+        #! pop map
+        _map = popp_operand(self)
 
-    def call_function(self, _bytecode_chunk):
-        _popsize = _bytecode_chunk[2]
+        _map.put(popp_operand(self), popp_operand(self))
+    
+    def make_aobject(self, _bytecode_chunk):
+        _popsize = _bytecode_chunk[3]
 
-        #! params
-        _tmp = []
+        _object = ainstance(_bytecode_chunk[2])
 
-        #! appended inorder
-        for _r in range(_popsize): _tmp.append(popp_operand(self))
+        #! alloc
+        atom_object_New(self.state, _object)
 
-        _funpntr =\
-        popp_operand(self)
+        for _r in range(_popsize):
+            _k = popp_operand(self)
+            _v = popp_operand(self)
+            _object.put(_k, _v)
 
+        #! push to operand
+        push_operand(self, _object)
+    
+    def get_attribute(self, _bytecode_chunk):
+        #! pop attrib
+        _attrib = popp_operand(self)
 
-        #! pushback
-        for _r in range(_popsize): push_operand(self, _tmp.pop())
+        #! pop obect
+        _object = popp_operand(self)
+        
+        #! push
+        push_operand(self, _object.get(_attrib))
+    
+    def set_attribute(self, _bytecode_chunk):
+        #! pop attrib
+        _attrib = popp_operand(self)
 
-        #! push program frame
-        self.state.stack.push(frame(self.state.codes[_funpntr.funpntr]))
-
-        for i in self.state.codes[_funpntr.funpntr]:
-            print(i)
+        #! pop obect
+        _object = popp_operand(self)
+        _object.put(_attrib, popp_operand(self))
     
     def call_native(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
@@ -226,7 +255,50 @@ class virtualmachine(object):
 
         #! push to opstack
         push_operand(self, _return)
-    
+
+    def call_function(self, _bytecode_chunk):
+        _popsize = _bytecode_chunk[2]
+
+        #! params
+        _tmp = []
+
+        #! appended inorder
+        for _r in range(_popsize): _tmp.append(popp_operand(self))
+
+        _funpntr =\
+        popp_operand(self)
+
+        #! pushback
+        for _r in range(_popsize): push_operand(self, _tmp.pop())
+
+        #! push program frame
+        self.state.stack.push(frame(self.state.codes[_funpntr.funpntr]))
+
+        for i in self.state.codes[_funpntr.funpntr]:
+            print(i)
+        
+    def call_type(self, _bytecode_chunk):
+        _popsize = _bytecode_chunk[2]
+
+        #! params
+        _tmp = []
+
+        #! appended inorder
+        for _r in range(_popsize): _tmp.append(popp_operand(self))
+
+        _typepntr =\
+        popp_operand(self)
+
+        #! pushback
+        for _r in range(_popsize): push_operand(self, _tmp.pop())
+
+        #! push program frame
+        self.state.stack.push(frame(self.state.codes[_typepntr.typepntr]))
+
+        for i in self.state.codes[_typepntr.typepntr]:
+            print(i)
+
+
     def return_control(self, _bytecode_chunk):
         self.state.stack.popp()
     
@@ -310,6 +382,8 @@ class virtualmachine(object):
         _new =\
         afloat(_lhs.raw / _rhs.raw)
 
+        #! FIXME: zero division error
+
         #! store
         atom_object_New(self.state, _new)
 
@@ -327,6 +401,8 @@ class virtualmachine(object):
 
         _new =\
         ainteger(_lhs.raw % _rhs.raw)
+
+        #! FIXME: zero division error
 
         #! store
         atom_object_New(self.state, _new)
@@ -499,6 +575,7 @@ class virtualmachine(object):
         #! push program frame
         self.state.stack.push(frame(self.state.codes["program"]))
 
+        # try:
         while not self.state.stack.isempty():
             _top = self.state.stack.peek()
 
@@ -507,6 +584,15 @@ class virtualmachine(object):
 
             #! next
             _top.ipointer += 1
+
+        # except:
+        #     error.raise_untracked(error_category.RuntimeError, "internal virtualmachine error...")
+
+        #! program ok!!!
+        print("Program finished with exit code %s..." % popp_operand(self).__repr__())
+
+        #! debug!!
+        assert self.state.oprnd.isempty(), "not all operand is popped out!!"
 
         #! end
         return 0x00

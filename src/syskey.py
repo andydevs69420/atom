@@ -17,6 +17,7 @@ class keywords:
     NULL   = "null"
     NATIVE = "native"
     FUN    = "fun"
+    STRUCT = "struct"
     WRAP   = "wrap"
     IMPORT = "import"
     CONST  = "const"

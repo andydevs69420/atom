@@ -1,5 +1,3 @@
-
-
 from stack import stack
 from readf import (file_isfile, read_file)
 from aparser import parser
@@ -40,7 +38,8 @@ class generator(object):
         self.bcodes = []
         self.nstlvl = 0
         self.typlvl = 0
-        
+
+        self.currentstructnumber   = 0
         self.currentfunctiontype   = None
         self.functionhasreturntype = False
 
@@ -205,7 +204,7 @@ class generator(object):
 
     def ast_array(self, _node):
         _arrtype = None
-        _element = _node.get(0)[::1]
+        _element = _node.get(0)[::-1]
         _arrsize = 0
         _hasunpack = False
 
@@ -273,7 +272,7 @@ class generator(object):
     def ast_map(self, _node):
         _keytype = None
         _valtype = None
-        _element = _node.get(0)[::1]
+        _element = _node.get(0)[::-1]
         _mapsize = 0
         _hasunpack = False
 
@@ -367,6 +366,84 @@ class generator(object):
         #! array type
         push_ttable(self, map_t(_keytype, _valtype))
 
+    def ast_attribute(self, _node):
+        """ 
+             $0         $1
+            object  attribute
+        """
+        #! visit object
+        self.visit(_node.get(0))
+
+        #! type
+        _dtype = self.tstack.popp()
+
+        if  not self.symtbl.contains(_dtype.repr()):
+            error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
+
+        #! structtable
+        _info = self.symtbl.lookup(_dtype.repr())
+
+        _type = _info.get_datatype()
+
+        if  not _type.istype():
+            error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
+        
+        if  not _type.hasAttribute(_node.get(1)):
+            error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
+
+        _attribtype = _type.getAttribute(_node.get(1))
+
+        #! emit attribute type
+        push_ttable(self, _attribtype)
+
+        #! push attribute as string
+        emit_opcode(self, sload, _node.get(1))
+
+        #! get
+        emit_opcode(self, get_attribute)
+    
+    def ast_element(self, _node):
+        """ 
+             $0       $1
+            object  element
+        """
+        #! compile element
+        self.visit(_node.get(1))
+
+        _element_type = self.tstack.popp()
+
+        #! compile object
+        self.visit(_node.get(0))
+
+        _objtype = self.tstack.popp()
+
+        #! check if subscriptable
+        if  _objtype.isarray():
+            #! verify index
+            if  not _element_type.isint():
+                error.raise_tracked(error_category.CompileError, "array index should be int, got %s." % _element_type.repr(), _node.site)
+
+            #! push array element type
+            push_ttable(self, _objtype.elementtype)
+
+            #! opcode
+            emit_opcode(self, array_get)
+        
+        elif _objtype.ismap():
+            #! verify element key
+            if  not _objtype.keytype.matches(_element_type):
+                error.raise_tracked(error_category.CompileError, "%s key should be %s, got %s." % (_objtype.repr(), _objtype.keytype.repr(), _element_type.repr()), _node.site)
+
+            #! push map value type
+            push_ttable(self, _objtype.valtype)
+
+            #! opcode
+            emit_opcode(self, map_get)
+
+        else:
+            error.raise_tracked(error_category.CompileError, "%s is not subscriptable." % _objtype.repr(), _node.site)
+
+
     def ast_call_wrapper(self, _node):
         """ 
              $0      $1      $2
@@ -381,13 +458,13 @@ class generator(object):
         #! type 
         _dtype = self.tstack.popp()
 
-        _wrapper = _dtype.qualname() + "." + _name
+        _wrapper = _dtype.repr() + "." + _name
         
         #! check wrapper
         if  not self.symtbl.contains(_wrapper):
             error.raise_tracked(error_category.CompileError, "wrapper function \"%s\" for type %s is not defined." % (_name, _dtype.repr()), _node.site)
 
-        _info  = self.symtbl.lookup(_wrapper)
+        _info = self.symtbl.lookup(_wrapper)
 
         #! datatype
         _functype = _info.get_datatype()
@@ -447,12 +524,12 @@ class generator(object):
         _functype = self.tstack.popp()
 
         #! check if callable
-        if  not (_functype.isfunction() or _functype.isnativefunction()):
+        if  not (_functype.isfunction() or _functype.isnativefunction() or _functype.istype()):
             error.raise_tracked(error_category.CompileError, "%s is not a callable type." % _functype.repr(), _node.site)
 
         #! check parameter count
         if  _functype.paramcount != len(_node.get(1)):
-            error.raise_tracked(error_category.CompileError, "requires %d argument, got %d." % (_functype.paramcount, len(_node.get(1))), _node.site)
+            error.raise_tracked(error_category.CompileError, "%s requires %d argument, got %d." % (_functype.repr(), _functype.paramcount, len(_node.get(1))), _node.site)
 
         #! emit return type
         push_ttable(self, _functype.returntype)
@@ -469,7 +546,7 @@ class generator(object):
 
             #! match type
             if  not _functype.parameters[::-1][_index][1].matches(_typeN):
-                error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[_index][0], _functype.parameters[_index][1].repr(), _typeN.repr()), _node.site)
+                error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[::-1][_index][0], _functype.parameters[::-1][_index][1].repr(), _typeN.repr()), _node.site)
 
             _index += 1
         
@@ -478,9 +555,13 @@ class generator(object):
             #! emit
             emit_opcode(self, call_native, len(_node.get(1)))
 
-        else:
+        elif _functype.isfunction():
             #! emit
             emit_opcode(self, call_function, len(_node.get(1)))
+
+        else:
+            #! emit
+            emit_opcode(self, call_type, len(_node.get(1)))
         
     
     def ast_unary_op(self, _node):
@@ -888,6 +969,9 @@ class generator(object):
         elif _lhs.type == ast_type.ELEMENT:
             #! lhs[??] = rhs
 
+            #! duplicate value
+            emit_opcode(self, dup_top)
+
             #! compile element
             self.visit(_lhs.get(1))
 
@@ -912,10 +996,56 @@ class generator(object):
                 emit_opcode(self, array_set)
             
             elif _objtype.ismap():
-                ...
+                #! verify element key
+                if  not _objtype.keytype.matches(_element_type):
+                    error.raise_tracked(error_category.CompileError, "%s key should be %s, got %s." % (_objtype.repr(), _objtype.keytype.repr(), _element_type.repr()), _node.site)
+
+                #! check if element type matches
+                if  not _objtype.valtype.matches(_rhstype):
+                    error.raise_tracked(error_category.CompileError, "value type mismatch for %s. expected %s, got %s." % (_objtype.repr(), _objtype.valtype.repr(), _rhstype.repr()), _node.site)
+
+                #! opcode
+                emit_opcode(self, map_set)
 
             else:
                 error.raise_tracked(error_category.CompileError, "%s is not subscriptable." % _objtype.repr(), _node.site)
+
+        elif _lhs.type == ast_type.ATTRIBUTE:
+            #! lhs.attrib
+
+            #! duplicate value
+            emit_opcode(self, dup_top)
+
+            #! visit object
+            self.visit(_lhs.get(0))
+
+            #! type
+            _dtype = self.tstack.popp()
+
+            if  not self.symtbl.contains(_dtype.repr()):
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
+
+            #! structtable
+            _info = self.symtbl.lookup(_dtype.repr())
+
+            _type = _info.get_datatype()
+
+            if  not _type.istype():
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
+            
+            if  not _type.hasAttribute(_lhs.get(1)):
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
+
+            _attribtype = _type.getAttribute(_lhs.get(1))
+
+            if  not _attribtype.matches(_rhstype):
+                error.raise_tracked(error_category.CompileError, "%s.%s requires %s, got %s." % (_dtype.repr(), _lhs.get(1), _attribtype.repr(), _rhstype.repr()), _node.site)
+
+            #! push attribute as string
+            emit_opcode(self, sload, _lhs.get(1))
+
+            #! set
+            emit_opcode(self, set_attribute)
 
 
 
@@ -924,8 +1054,104 @@ class generator(object):
 
     #! ========== compound statement ==========
 
+    def ast_struct(self, _node):
+        """    
+               $0      $1
+            subtypes  body
+        """
+        _old_offset = self.offset
+        _old_bcodes = self.bcodes
+
+        for _each_subtype in _node.get(0):
+
+            #! check if function|struct name is already defined.
+            if  self.symtbl.contains(_each_subtype):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_subtype, _node.site)
+         
+            self.offset = 0
+            self.bcodes = []
+
+            #! make scope
+            self.symtbl.newscope()
+
+            _members = []
+
+            if  len(_node.get(1)) <= 0:
+                error.raise_tracked(error_category.CompileError, "struct \"%s\" has empty body." %  _each_subtype, _node.site)
+
+            for _each_member in _node.get(1):
+
+                #! visit type
+                self.visit(_each_member[1])
+
+                _dtype = self.tstack.popp()
+
+                #! check if parameter is already defined.
+                if  self.symtbl.haslocal(_each_member[0]):
+                    error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_member[0], _node.site)
+
+                #! insert
+                _members.append((_each_member[0], _dtype))
+
+                #! opcode
+                emit_opcode(self, store_fast, _each_member[0], self.offset)
+
+                #! register
+                self.symtbl.insert_var(_each_member[0], self.offset, _dtype, False, False, _node.site)
+
+                self.offset += 1
+                #! end
+
+            for _each_member in _node.get(1)[::-1]:
+                
+                _info = self.symtbl.lookup(_each_member[0])
+
+                #! val
+                emit_opcode(self, load_local, _each_member[0], _info.get_offset())
+
+                #! key
+                emit_opcode(self, sload, _each_member[0])
+        
+            #! make aobject
+            emit_opcode(self, make_aobject, _each_subtype, len(_members))
+
+            #! add return
+            emit_opcode(self, return_control)
+
+            #! leave scope
+            self.symtbl.endscope()
+
+            #! store code
+            self.state.codes[_each_subtype] = self.bcodes
+
+            #! restore
+            self.offset = _old_offset
+            self.bcodes = _old_bcodes
+            
+            #! struct becomes a function
+            _type = type_t(self.currentstructnumber, _each_subtype, instance_t(self.currentstructnumber, _each_subtype), len(_members), _members)
+
+            #! register
+            self.symtbl.insert_struct(_each_subtype, self.offset, _type, _node.site)
+
+            #! val opcode
+            emit_opcode(self, load_typepntr, _each_subtype)
+
+            #! var opcode
+            emit_opcode(self, store_global, _each_subtype, self.offset)
+
+            #! end
+            self.offset += 1
+            _old_offset  = self.offset
+
+        #! increment every struct dec
+        self.currentstructnumber += 1
 
     def ast_function(self, _node):
+        """    
+               $0        $1       $2       $3
+            returntype  name  parameters  body
+        """
         _old_offset = self.offset
         _old_bcodes = self.bcodes
 
@@ -1046,7 +1272,7 @@ class generator(object):
 
         #! name is "datatype + '.' + wrapper_name"
         
-        _name = _ptype0.qualname() + "." + _node.get(1)
+        _name = _ptype0.repr() + "." + _node.get(1)
 
         #! check if function name is already defined.
         if  self.symtbl.contains(_name):
@@ -1377,7 +1603,7 @@ class codegen(generator):
             error.raise_tracked(error_category.CompileError, "invalid main function, required %s, got %s." % (_required_main.repr(), _main.get_datatype().repr()), _main.get_site())
 
         #! make args
-        for _args in self.state.aargv:
+        for _args in self.state.aargv[::-1]:
             #! emit arg as string
             emit_opcode(self, sload, _args)
         

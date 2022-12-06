@@ -31,15 +31,16 @@ class ast_type(Enum):
     SIMPLE_ASS   = 26
     AUGMENT_ASS  = 27
     FUNCTION     = 28
-    IMPORT       = 29
-    FUNCTION_WRAPPER = 30
-    NATIVE_FUNCTION  = 31
-    VAR_STMNT    = 32
-    LET_STMNT    = 33
-    CONST_STMNT  = 34
-    RETURN_STMNT = 35
-    EXPR_STMNT   = 36
-    SOURCE       = 37
+    STRUCT       = 29
+    IMPORT       = 30
+    FUNCTION_WRAPPER = 31
+    NATIVE_FUNCTION  = 32
+    VAR_STMNT    = 33
+    LET_STMNT    = 34
+    CONST_STMNT  = 35
+    RETURN_STMNT = 36
+    EXPR_STMNT   = 37
+    SOURCE       = 38
 
 
 

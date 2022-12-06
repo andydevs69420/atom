@@ -15,4 +15,5 @@ from .fn_t import fn_t
 from .nativefn_t import nativefn_t
 from .map_t import map_t
 from .type_t import type_t
+from .instance_t import instance_t
 from .error_t import error_t

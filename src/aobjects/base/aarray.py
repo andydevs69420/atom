@@ -13,6 +13,9 @@ class aarray(aobject):
     def pushall(self, _array):
         self.array.extend(_array.array)
     
+    def objecthash(self):
+        return sum([*[_obj.objecthash() for _obj in self.array]])
+    
     def __str__(self):
         _fmt = ""
         for _r in range(len(self.array)):

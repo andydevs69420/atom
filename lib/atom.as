@@ -5,24 +5,38 @@ import [std, ooplike];
 
 wrap _array:array[str] push(_element:str) _array + _element ;
 
+struct Person, Employee
+{   
+    name:str;
+    age:int;
+}
+
+struct Boss
+{   name:str;
+    age:int;
+}
+
 fun[int] main(_args:array[str])
 {   
-    let x = 100;
-        x = 900;
+    const x = Person("Andy", 1000);
+    const y = Employee("Marielle", 23);
+   
+    print(x);
+    print(y);
+
+    x.name = y.name;
+    y.age  = x.age;
 
     print(x);
-    print(_args);
+    print(y);
 
-    const v = 2;
+    print({[1,2,3]: 2, [1,2,3,4]: 3, {1:2}:4});
 
-    print(v);
+    const z = [1,2,3];
 
-    v =  100;
-    print(v);
+    print(z[2]);
 
-    [1,2,3][2] = "asdasd";
-
-    return 0;
+    return 2;
 }
 
 

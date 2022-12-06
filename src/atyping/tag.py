@@ -8,7 +8,6 @@ class tag_t(object):
     def __init__(self):
         pass
     
-    def qualname(self):raise NotImplementedError("Holly shake! not overridden.")
     def repr(self):raise NotImplementedError("Holly shake! not overridden.")
     def matches(self, _rhs):raise NotImplementedError("Holly shake! not overridden.")
 
@@ -26,6 +25,7 @@ class tag_t(object):
     def isnativefunction(self):return False
     def ismap(self):return False
     def istype(self):return False
+    def isinstance(self):return False
     def iserror(self):return False
 
     #! ======== operation =======
