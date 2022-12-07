@@ -1,5 +1,6 @@
 from . import type_names
 from . import nonprimitive_t
+from . import operation
 
 
 class fn_t(nonprimitive_t):
@@ -38,3 +39,11 @@ class fn_t(nonprimitive_t):
     
     def isfunction(self):
         return True
+    
+    #! ===== fnction pecific op ======
+
+    def equality(self, _rhs):
+        if  _rhs.isfunction():
+            return operation.op_boolean_t()
+
+        return operation.op_error_t()

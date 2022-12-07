@@ -61,6 +61,8 @@ class type_t(nonprimitive_t):
             if  _attr[0] == _attrib:
                 return _attr[1]
     
+    #! ==== type specific op ====
+
     def equality(self, _rhs):
         if  _rhs.istype():
             return operation.op_boolean_t()

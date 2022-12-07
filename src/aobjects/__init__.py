@@ -9,4 +9,5 @@ from .base import afun
 from .base import anativefun
 from .base import amap
 from .base import atype
+from .base import aenum
 from .base import ainstance

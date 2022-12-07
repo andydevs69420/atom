@@ -1,6 +1,6 @@
 from . import type_names
 from . import nonprimitive_t
-
+from . import operation
 
 class nativefn_t(nonprimitive_t):
     """ Array compiletime tag.
@@ -38,3 +38,11 @@ class nativefn_t(nonprimitive_t):
     
     def isnativefunction(self):
         return True
+
+    #! ===== native function specific op =====
+
+    def equality(self, _rhs):
+        if  _rhs.isnativefunction():
+            return operation.op_boolean_t()
+
+        return operation.op_error_t()

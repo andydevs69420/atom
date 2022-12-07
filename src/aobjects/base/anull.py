@@ -4,6 +4,7 @@ class anull(aobject):
 
     def __init__(self):
         super().__init__()
+        self.raw = None
     
     def __new__(_cls):
         if  not hasattr(_cls, "instance"):

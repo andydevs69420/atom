@@ -1,6 +1,6 @@
 from . import type_names
 from . import primitive_t
-
+from .import operation
 
 class boolean_t(primitive_t):
     """ Boolean compiletime tag.
@@ -25,3 +25,14 @@ class boolean_t(primitive_t):
     
     def isboolean(self):
         return True
+    
+    #! ===== boolean specific op =====
+
+    def lognot(self):
+        return operation.op_boolean_t()
+    
+    def equality(self, _rhs):
+        if  _rhs.isboolean():
+            return operation.op_boolean_t()
+
+        return operation.op_error_t()

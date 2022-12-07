@@ -13,5 +13,3 @@ class primitive_t(tag_t):
     def isprimitive(self):
         return True
     
-    def lognot(self):
-        return operation.op_boolean_t()

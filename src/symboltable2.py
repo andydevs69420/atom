@@ -218,6 +218,17 @@ class SymbolTable(HashTable):
         #! insert
         _top.put(_structname, structtable(_structname, _offset, _datatype, _site))
 
+    def insert_enum(self,
+        _enumname ,
+        _offset   ,
+        _datatype ,
+        _site     ,
+    ):
+        #! check bottom
+        _top = self.childnodes.peek() if not self.childnodes.isempty() else self
+        
+        #! insert
+        _top.put(_enumname, enumtable(_enumname, _offset, _datatype, _site))
 
     def lookup(self, _key):
         #! check bottom
@@ -324,6 +335,34 @@ class structtable(typetable):
     def get_site(self):
         return self.site
 
+class enumtable(typetable):
+    """ enum table for atom.
+    """
+
+    def __init__(self, _enumname, _offset, _datatype, _site):
+        super().__init__()
+        self.structname = _enumname
+        self.offset     = _offset
+        self.datatype   = _datatype
+        self.site       = _site
+    
+    def get_name(self):
+        return self.structname
+    
+    def get_offset(self):
+        return self.offset
+
+    def get_datatype(self):
+        return self.datatype
+    
+    def is_global(self):
+        return True
+    
+    def is_constant(self):
+        return True
+    
+    def get_site(self):
+        return self.site
 
 class variabletable(typetable):
     """ Variable table for atom.

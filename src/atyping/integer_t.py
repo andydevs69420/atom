@@ -38,6 +38,12 @@ class integer_t(number_t):
         #! end
         return operation.op_error_t()
     
+    def equality(self, _rhs):
+        if  _rhs.isint():
+            return operation.op_boolean_t()
+
+        return operation.op_error_t()
+    
     def bitwise(self, _rhs):
         if  _rhs.isint() or _rhs.isboolean():
             return operation.op_integer_t()

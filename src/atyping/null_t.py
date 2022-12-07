@@ -1,6 +1,6 @@
 from . import type_names
 from . import primitive_t
-
+from . import operation
 
 class null_t(primitive_t):
     """ Null compiletime flag.
@@ -25,3 +25,14 @@ class null_t(primitive_t):
     
     def isnull(self):
         return True
+    
+    #! ===== null specific op =====
+
+    def lognot(self):
+        return operation.op_boolean_t()
+
+    def equality(self, _rhs):
+        if  _rhs.isnull():
+            return operation.op_boolean_t()
+
+        return operation.op_error_t()

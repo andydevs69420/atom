@@ -13,6 +13,7 @@ class type_names:
     NATIVEFN = "nativefn"
     MAP    = "map"
     TYPE   = "type"
+    ENUM   = "enum"
     # INSTANCE = PROVIDED BY BUILDER
     ERROR  = "error"
 

@@ -32,6 +32,9 @@ map_get = "map_get"
 map_set = "map_set"
 
 
+build_enum = "build_enum"
+get_enum   = "get_enum"
+
 make_aobject = "make_aobject"
 get_attribute = "get_attribute"
 set_attribute = "set_attribute"
@@ -101,7 +104,7 @@ store_fast   = "store_fast"
 
 dup_top = "dup_top"
 rot1 = "rot1"
-
+rot2 = "rot2"
 
 pop_top = "pop_top"
 

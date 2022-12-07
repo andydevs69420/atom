@@ -34,3 +34,9 @@ class string_t(nonprimitive_t):
         
         #! end
         return operation.op_error_t()
+    
+    def equality(self, _rhs):
+        if  _rhs.isstring():
+            return operation.op_boolean_t()
+
+        return operation.op_error_t()

@@ -7,6 +7,27 @@ class number_t(primitive_t):
 
     def __init__(self):
         super().__init__()
+    
+
+    def postfix_inc(self):
+        if  self.isint():
+            return operation.op_integer_t()
+
+        elif self.isfloat():
+            return operation.op_float_t()
+        
+        #! end
+        return operation.op_error_t()
+    
+    def postfix_dec(self):
+        if  self.isint():
+            return operation.op_integer_t()
+
+        elif self.isfloat():
+            return operation.op_float_t()
+        
+        #! end
+        return operation.op_error_t()
 
     def pos(self):
         if  self.isint():
@@ -28,6 +49,26 @@ class number_t(primitive_t):
         #! end
         return operation.op_error_t()
     
+    def prefix_inc(self):
+        if  self.isint():
+            return operation.op_integer_t()
+
+        elif self.isfloat():
+            return operation.op_float_t()
+        
+        #! end
+        return operation.op_error_t()
+    
+    def prefix_dec(self):
+        if  self.isint():
+            return operation.op_integer_t()
+
+        elif self.isfloat():
+            return operation.op_float_t()
+        
+        #! end
+        return operation.op_error_t()
+
     #! ============= arithmetic =============
 
     def pow(self, _rhs):
@@ -97,14 +138,5 @@ class number_t(primitive_t):
         #! end
         return operation.op_error_t()
     
-    
 
-    #! ============= equality =============
-
-    def equality(self, _rhs):
-        if  _rhs.isprimitive():
-            return operation.op_boolean_t()
-
-        #! end
-        return operation.op_error_t()
 

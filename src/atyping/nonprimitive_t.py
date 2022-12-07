@@ -12,7 +12,5 @@ class nonprimitive_t(tag_t):
     """
     def isnonprimitive(self):
         return True
-    
-    def lognot(self):
-        return operation.op_boolean_t()
+
 

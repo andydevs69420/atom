@@ -25,8 +25,10 @@ class instance_t(nonprimitive_t):
     def isinstance(self):
         return True
     
+    #! ==== instance specific op ====
+
     def equality(self, _rhs):
-        if  _rhs.istype():
+        if  _rhs.isinstance():
             return operation.op_boolean_t()
 
         return operation.op_error_t()

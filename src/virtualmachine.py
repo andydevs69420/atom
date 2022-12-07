@@ -57,6 +57,15 @@ class virtualmachine(object):
         #! push to opstack
         push_operand(self, _str)
     
+    def bload(self, _bytecode_chunk):
+        _str =\
+        aboolean(_bytecode_chunk[2])
+
+        atom_object_New(self.state, _str)
+    
+        #! push to opstack
+        push_operand(self, _str)
+    
     def nload(self, _bytecode_chunk):
         _null =\
         anull()
@@ -65,7 +74,6 @@ class virtualmachine(object):
     
         #! push to opstack
         push_operand(self, _null)
-    
 
     def load_funpntr(self, _bytecode_chunk):
         _funpntr =\
@@ -116,6 +124,7 @@ class virtualmachine(object):
         #! push to opstack
         push_operand(self, _object)
     
+    #! ===== array object =====
 
     def build_array(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
@@ -182,6 +191,8 @@ class virtualmachine(object):
         _array.set_index(_element, _value)
 
 
+    #! ====== map object ======
+
     def build_map(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
 
@@ -237,6 +248,8 @@ class virtualmachine(object):
 
         _map.put(popp_operand(self), popp_operand(self))
     
+    #! = struct / object make =
+
     def make_aobject(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[3]
 
@@ -270,6 +283,36 @@ class virtualmachine(object):
         #! pop obect
         _object = popp_operand(self)
         _object.put(_attrib, popp_operand(self))
+
+    #! ===== enum object ======
+
+    def build_enum(self, _bytecode_chunk):
+        _popsize = _bytecode_chunk[3]
+
+        _new_enum = aenum(_bytecode_chunk[2])
+        
+        #! alloc
+        atom_object_New(self.state, _new_enum)
+
+        for _r in range(_popsize):
+            _k = popp_operand(self)
+            _v = popp_operand(self)
+            _new_enum.put(_k, _v)
+
+        #! push operand
+        push_operand(self, _new_enum)
+    
+    def get_enum(self, _bytecode_chunk):
+        #! pop attrib
+        _attrib = popp_operand(self)
+
+        #! pop enum
+        _enum = popp_operand(self)
+        
+        #! push
+        push_operand(self, _enum.get(_attrib))
+    
+    #! ======== call =========
     
     def call_native(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
@@ -339,6 +382,80 @@ class virtualmachine(object):
     def return_control(self, _bytecode_chunk):
         self.state.stack.popp()
     
+    #! ======= unary =========
+
+    def bit_not(self, _bytecode_chunk):
+        _obj =\
+        popp_operand(self)
+
+        _new = ainteger(~_obj.raw)
+
+        #! alloc
+        atom_object_New(self.state, _new)
+
+        #! push
+        push_operand(self, _new)
+
+    def log_not(self, _bytecode_chunk):
+        _obj =\
+        popp_operand(self)
+
+        _new = aboolean(not _obj.raw)
+
+        #! alloc
+        atom_object_New(self.state, _new)
+
+        #! push
+        push_operand(self, _new)
+    
+    def intpos(self, _bytecode_chunk):
+        _obj =\
+        popp_operand(self)
+
+        _new = ainteger(+ _obj.raw)
+
+        #! alloc
+        atom_object_New(self.state, _new)
+
+        #! push
+        push_operand(self, _new)
+
+    def intneg(self, _bytecode_chunk):
+        _obj =\
+        popp_operand(self)
+
+        _new = ainteger(- _obj.raw)
+
+        #! alloc
+        atom_object_New(self.state, _new)
+
+        #! push
+        push_operand(self, _new)
+    
+    def fltpos(self, _bytecode_chunk):
+        _obj =\
+        popp_operand(self)
+
+        _new = afloat(+ _obj.raw)
+
+        #! alloc
+        atom_object_New(self.state, _new)
+
+        #! push
+        push_operand(self, _new)
+
+    def fltneg(self, _bytecode_chunk):
+        _obj =\
+        popp_operand(self)
+
+        _new = afloat(- _obj.raw)
+
+        #! alloc
+        atom_object_New(self.state, _new)
+
+        #! push
+        push_operand(self, _new)
+
     #! ========= pow =========
 
     def intpow(self, _bytecode_chunk):
@@ -464,7 +581,7 @@ class virtualmachine(object):
         push_operand(self, _new)
     
     #! ========= add =========
-    
+
     def intadd(self, _bytecode_chunk):
         _lhs =\
         popp_operand(self)
@@ -514,7 +631,7 @@ class virtualmachine(object):
         push_operand(self, _new)
     
     #! ========= sub =========
-    
+
     def intsub(self, _bytecode_chunk):
         _lhs =\
         popp_operand(self)
@@ -646,6 +763,154 @@ class virtualmachine(object):
 
         #! push to opstack
         push_operand(self, _new)
+    
+    #! ======= equality =======
+
+    def equal_i(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        aboolean(_lhs.raw == _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    def equal_f(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        aboolean(_lhs.raw == _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+
+    def equal_s(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        aboolean(_lhs.raw == _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    def equal_b(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        aboolean(_lhs.raw == _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    def equal_n(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        aboolean(_lhs.raw == _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+
+    def addressof(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        aboolean(_lhs.offset.offset == _rhs.offset.offset)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    #! ======== bitwise =======
+
+    def bitand(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        ainteger(_lhs.raw & _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    def bitxor(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        ainteger(_lhs.raw ^ _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
+    
+    def bitor(self, _bytecode_chunk):
+        _lhs =\
+        popp_operand(self)
+        
+        _rhs =\
+        popp_operand(self)
+
+        _new =\
+        ainteger(_lhs.raw | _rhs.raw)
+
+        #! store
+        atom_object_New(self.state, _new)
+
+        #! push to opstack
+        push_operand(self, _new)
 
     def dup_top(self, _bytecode_chunk):
         #! cuplicate top
@@ -657,6 +922,15 @@ class virtualmachine(object):
 
         push_operand(self, _top)
         push_operand(self, _bot)
+    
+    def rot3(self, _bytecode_chunk):
+        _1st = popp_operand(self)
+        _2nd = popp_operand(self)
+        _3rd = popp_operand(self)
+
+        push_operand(self, _3rd)
+        push_operand(self, _2nd)
+        push_operand(self, _1st)
 
     def store_global(self, _bytecode_chunk):
         _offset = _bytecode_chunk[3]

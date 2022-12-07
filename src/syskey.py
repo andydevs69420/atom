@@ -18,6 +18,9 @@ class keywords:
     NATIVE = "native"
     FUN    = "fun"
     STRUCT = "struct"
+    ENUM   = "enum"
+    IF     = "if"
+
     WRAP   = "wrap"
     IMPORT = "import"
     CONST  = "const"

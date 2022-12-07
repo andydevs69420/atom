@@ -132,6 +132,21 @@ class generator(object):
 
         #! end
         self.typlvl -= 1
+    
+    def ast_type_t(self, _node):
+        """ User defined type.
+        """
+        #! check
+        if  not self.symtbl.contains(_node.get(0)):
+            error.raise_tracked(error_category.CompileError, "type %s is not defined." % _node.get(0), _node.site)
+
+        _info = self.symtbl.lookup(_node.get(0))
+        
+        #! datatype
+        _dtype = _info.get_datatype()
+
+        #! emit type
+        push_ttable(self, _dtype.returntype)
 
     #! =========== CONST VAL ==========
 
@@ -377,30 +392,50 @@ class generator(object):
         #! type
         _dtype = self.tstack.popp()
 
-        if  not self.symtbl.contains(_dtype.repr()):
+        if  _dtype.isenum():
+
+            if  not _dtype.hasAttribute(_node.get(1)):
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
+
+            _attribtype = _dtype.getAttribute(_node.get(1))
+
+            #! emit attribute type
+            push_ttable(self, _attribtype)
+
+            #! push attribute as string
+            emit_opcode(self, sload, _node.get(1))
+
+            #! get
+            emit_opcode(self, get_enum)
+            
+        elif _dtype.isinstance():
+
+            if  not self.symtbl.contains(_dtype.repr()):
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
+
+            #! structtable
+            _info = self.symtbl.lookup(_dtype.repr())
+
+            _type = _info.get_datatype()
+
+            if  not _type.istype():
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
+            
+            if  not _type.hasAttribute(_node.get(1)):
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
+
+            _attribtype = _type.getAttribute(_node.get(1))
+
+            #! emit attribute type
+            push_ttable(self, _attribtype)
+
+            #! push attribute as string
+            emit_opcode(self, sload, _node.get(1))
+
+            #! get
+            emit_opcode(self, get_attribute)
+        else:
             error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
-
-        #! structtable
-        _info = self.symtbl.lookup(_dtype.repr())
-
-        _type = _info.get_datatype()
-
-        if  not _type.istype():
-            error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
-        
-        if  not _type.hasAttribute(_node.get(1)):
-            error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
-
-        _attribtype = _type.getAttribute(_node.get(1))
-
-        #! emit attribute type
-        push_ttable(self, _attribtype)
-
-        #! push attribute as string
-        emit_opcode(self, sload, _node.get(1))
-
-        #! get
-        emit_opcode(self, get_attribute)
     
     def ast_element(self, _node):
         """ 
@@ -562,17 +597,16 @@ class generator(object):
         else:
             #! emit
             emit_opcode(self, call_type, len(_node.get(1)))
-        
     
     def ast_unary_op(self, _node):
         """
-             $0    $1
+             $0   $1
             _op  _rhs
         """
         self.nstlvl += 1
         if  self.nstlvl >= MAX_NESTING_LEVEL:
             error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
-
+        
         _op = _node.get(0)
         self.visit(_node.get(1)) # rhs
 
@@ -597,7 +631,7 @@ class generator(object):
 
             #! emit int type
             push_ttable(self, _operation)
-
+        
             #! opcode
             emit_opcode(self, log_not)
 
@@ -605,7 +639,7 @@ class generator(object):
             #! op result
             _operation = _rhs.pos()
 
-            #! emit int type
+            #! emit int|float type
             push_ttable(self, _operation)
 
             #! opcode
@@ -615,12 +649,11 @@ class generator(object):
             elif _operation.isfloat():
                 emit_opcode(self, fltpos)
 
-        
         elif _op == "-":
             #! op result
             _operation = _rhs.neg()
 
-            #! emit int type
+            #! emit int|float type
             push_ttable(self, _operation)
 
             #! opcode
@@ -629,13 +662,15 @@ class generator(object):
             
             elif _operation.isfloat():
                 emit_opcode(self, fltneg)
+        else:
+            raise
 
         if  _operation.iserror():
             error.raise_tracked(error_category.CompileError, "invalid operation %s %s." % (_op, _rhs.repr()), _node.site)
 
         self.nstlvl -= 1
         #! end
-    
+
     def ast_unary_unpack(self, _node):
         """
              $0    $1
@@ -666,6 +701,8 @@ class generator(object):
 
             #! opcode
             emit_opcode(self, map_merge)
+        else:
+            raise
         
         if  _operation.iserror():
             error.raise_tracked(error_category.CompileError, "cannot unpack %s." % _rhs.repr(), _node.site)
@@ -681,8 +718,12 @@ class generator(object):
             error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
 
         _op = _node.get(1)
-        self.visit(_node.get(2)) # rhs
-        self.visit(_node.get(0)) # lhs
+        
+        #! visit rhs
+        self.visit(_node.get(2))
+        
+        #! visit lhs
+        self.visit(_node.get(0))
 
         _lhs = self.tstack.popp()
         _rhs = self.tstack.popp()
@@ -869,7 +910,7 @@ class generator(object):
             push_ttable(self, _operation)
 
             #! opcode
-            if  _op == "&":
+            if   _op == "&":
                 emit_opcode(self, bitand)
 
             elif _op == "^":
@@ -878,6 +919,8 @@ class generator(object):
             elif _op == "|":
                 emit_opcode(self, bitor)
 
+        else:
+            raise
 
         if  _operation.iserror():
             error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.site)
@@ -937,9 +980,8 @@ class generator(object):
         if  self.nstlvl >= MAX_NESTING_LEVEL:
             error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
 
-        
-        _op = _node.get(1)
-        self.visit(_node.get(2)) # rhs
+        #! right
+        self.visit(_node.get(2))
 
         #! just use peek here, because assignment is an expression
         _rhstype = self.tstack.peek()
@@ -1022,32 +1064,35 @@ class generator(object):
             #! type
             _dtype = self.tstack.popp()
 
-            if  not self.symtbl.contains(_dtype.repr()):
-                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
+            if  _dtype.isinstance():
 
-            #! structtable
-            _info = self.symtbl.lookup(_dtype.repr())
+                if  not self.symtbl.contains(_dtype.repr()):
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
-            _type = _info.get_datatype()
+                #! structtable
+                _info = self.symtbl.lookup(_dtype.repr())
 
-            if  not _type.istype():
-                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
-            
-            if  not _type.hasAttribute(_lhs.get(1)):
-                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
+                _type = _info.get_datatype()
 
-            _attribtype = _type.getAttribute(_lhs.get(1))
+                if  not _type.istype():
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
+                
+                if  not _type.hasAttribute(_lhs.get(1)):
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
-            if  not _attribtype.matches(_rhstype):
-                error.raise_tracked(error_category.CompileError, "%s.%s requires %s, got %s." % (_dtype.repr(), _lhs.get(1), _attribtype.repr(), _rhstype.repr()), _node.site)
+                _attribtype = _type.getAttribute(_lhs.get(1))
 
-            #! push attribute as string
-            emit_opcode(self, sload, _lhs.get(1))
+                if  not _attribtype.matches(_rhstype):
+                    error.raise_tracked(error_category.CompileError, "%s.%s requires %s, got %s." % (_dtype.repr(), _lhs.get(1), _attribtype.repr(), _rhstype.repr()), _node.site)
 
-            #! set
-            emit_opcode(self, set_attribute)
+                #! push attribute as string
+                emit_opcode(self, sload, _lhs.get(1))
 
+                #! set
+                emit_opcode(self, set_attribute)
 
+            else:
+                error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
         self.nstlvl -= 1
         #! end
@@ -1129,7 +1174,7 @@ class generator(object):
             self.bcodes = _old_bcodes
             
             #! struct becomes a function
-            _type = type_t(self.currentstructnumber, _each_subtype, instance_t(self.currentstructnumber, _each_subtype), len(_members), _members)
+            _type = type_t(self.currentstructnumber, _each_subtype, instance_t(self.currentstructnumber, _each_subtype), len(_members), tuple(_members))
 
             #! register
             self.symtbl.insert_struct(_each_subtype, self.offset, _type, _node.site)
@@ -1246,10 +1291,69 @@ class generator(object):
         #! end
         self.offset += 1
 
+    def ast_enum(self, _node):
+        """    
+               $0      $1
+            subtypes  body
+        """
+        if  self.symtbl.contains(_node.get(0)):
+            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(0), _node.site)
+
+        #! new scope
+        self.symtbl.newscope()
+
+        _type = None
+
+        _member = []
+        _virtual_offset = int(self.offset)
+        for _each_member in _node.get(1)[::-1]:
+            #! visit value
+            self.visit(_each_member[1])
+
+            _current = self.tstack.popp()
+
+            _type = _current if not _type else _type
+
+            if  self.symtbl.haslocal(_each_member[0]):
+                error.raise_tracked(error_category.CompileError, "an enum member \"%s\" has already been decalaired." % _each_member[0], _node.site);
+            
+            if  not _type.matches(_current):
+                error.raise_tracked(error_category.CompileError, "enum value data types are not unique.", _node.site)
+
+            _member.append((_each_member[0], _type))
+
+            #! make member as string
+            emit_opcode(self, sload, _each_member[0])
+
+            #! register
+            self.symtbl.insert_var(_each_member[0], _virtual_offset, _type, False, False, _node.site)
+
+            #! end
+            _virtual_offset += 1
+        
+        #! build enum
+        emit_opcode(self, build_enum, _node.get(0), len(_node.get(1)))
+
+        #! store enum
+        emit_opcode(self, store_global, _node.get(0), self.offset)
+
+        #! end scope
+        self.symtbl.endscope()
+        
+        #! register
+        self.symtbl.insert_enum(_node.get(0), self.offset, enum_t(_type, tuple(_member)), _node.site)
+
+        #!end
+        self.offset += 1
+        
 
     #! =========== simple statement ===========
 
     def ast_function_wrapper(self, _node):
+        """    
+                $0          $1          $2     $3
+            wraptype   wrapper_name   params return
+        """
         _old_offset = self.offset
         _old_bcodes = self.bcodes
 
@@ -1346,6 +1450,10 @@ class generator(object):
         self.offset += 1
 
     def ast_native_function(self, _node):
+        """    
+            $0        $1          $2       $3     $4
+            mod   returntype  func_name  params  body
+        """
         _parameters = []
 
         #! target mod
@@ -1620,6 +1728,8 @@ class codegen(generator):
     def generate(self):
         #! compile each child node
         self.visit(self.gparser.parse())
+
+        assert self.tstack.isempty(), "Not all type in stack has been popped out!"
 
         #! set program code
         self.state.codes["program"] = self.bcodes

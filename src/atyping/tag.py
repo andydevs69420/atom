@@ -25,16 +25,21 @@ class tag_t(object):
     def isnativefunction(self):return False
     def ismap(self):return False
     def istype(self):return False
+    def isenum(self):return False
     def isinstance(self):return False
     def iserror(self):return False
 
     #! ======== operation =======
     """ If its not overridden, then the operator is not applicable for its operand(s).
     """
+    def postfix_inc(self):return operation.op_error_t()
+    def postfix_dec(self):return operation.op_error_t()
     def bitnot(self):return operation.op_error_t()
     def lognot(self):return operation.op_error_t()
     def pos(self):return operation.op_error_t()
     def neg(self):return operation.op_error_t()
+    def prefix_inc(self):return operation.op_error_t()
+    def prefix_dec(self):return operation.op_error_t()
     def unpack(self):return operation.op_error_t()
     def pow(self, _rhs):return operation.op_error_t()
     def mul(self, _rhs):return operation.op_error_t()

@@ -706,7 +706,7 @@ class parser(object):
     
     def t_user(self):
         return expr_ast(
-            ast_type.TYPE_T, "...", self.raw_iden())
+            ast_type.TYPE_T, self.d_location(self.lookahead), self.raw_iden())
     
     def atom(self):
         """ ATOM
@@ -974,15 +974,14 @@ class parser(object):
         
         #! end
         return _node
-    
 
     def unary_op(self):
         _start = self.lookahead
 
-        if  self.check_both(token_type.SYMBOL, "~") or\
-            self.check_both(token_type.SYMBOL, "!") or\
-            self.check_both(token_type.SYMBOL, "+") or\
-            self.check_both(token_type.SYMBOL, "-"):
+        if  self.check_both(token_type.SYMBOL, "~" ) or\
+            self.check_both(token_type.SYMBOL, "!" ) or\
+            self.check_both(token_type.SYMBOL, "+" ) or\
+            self.check_both(token_type.SYMBOL, "-" ):
 
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
@@ -1338,6 +1337,10 @@ class parser(object):
             return self.function()
         if  self.check_both(token_type.IDENTIFIER, keywords.STRUCT):
             return self.struct()
+        if  self.check_both(token_type.IDENTIFIER, keywords.ENUM):
+            return self.enum()
+        if  self.check_both(token_type.IDENTIFIER, keywords.IF):
+            return self.if_stmnt()
         #! end
         return self.simple_stmnt()
 
@@ -1475,6 +1478,88 @@ class parser(object):
         _type = self.datatype()
 
         return (_name, _type)
+    
+
+    def enum(self):
+        """ ENUM statement.
+
+            Syntax
+            ------
+            "enum" raw_iden '{' enum_body '}' ;
+        
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        #! "enum"
+        self.expect_both(token_type.IDENTIFIER, keywords.ENUM)
+
+        _enumname = self.raw_iden()
+
+        #! '{'
+        self.expect_both(token_type.SYMBOL, "{")
+
+        _enumbody = self.enum_body()
+
+        self.expect_both(token_type.SYMBOL, "}")
+        #! '}'
+
+        if  not self.under(context.GLOBAL, True):
+            error.raise_tracked(error_category.SemanticError, "enum declairation should be done globally!", self.d_location(_start))
+
+        return stmnt_ast(
+            ast_type.ENUM, self.d_location(_start), _enumname, _enumbody)
+
+    
+    def enum_body(self):
+        _start = self.lookahead
+        _body  = []
+
+        _memberN = self.enum_member()
+        if not _memberN:return tuple(_body)
+
+        _body.append(_memberN)
+
+        while self.check_both(token_type.SYMBOL, ","):
+            #! ','
+            self.expect_t(token_type.SYMBOL)
+
+            if  not self.check_t(token_type.IDENTIFIER):
+                error.raise_tracked(error_category.SemanticError, "unexpected end of enum member.", self.d_location(_start))
+            
+            #! next
+            _body.append(self.enum_member())
+
+        return tuple(_body)
+    
+    def enum_member(self):
+        if  not self.check_t(token_type.IDENTIFIER):
+            return None
+        
+        _member = self.raw_iden()
+
+        #! '='
+        self.expect_both(token_type.SYMBOL, "=")
+
+        _value = self.non_nullable_expr()
+
+        return (_member, _value)
+    
+    def if_stmnt(self):
+        #! "if"
+        self.expect_both(token_type.IDENTIFIER, keywords.IF)
+
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        
+
+        #! ')'
+        self.expect_both(token_type.SYMBOL, ")")
+
+
+
 
     def simple_stmnt(self):
         """ SIMPLE statement.
