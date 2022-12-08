@@ -1625,7 +1625,7 @@ class generator(object):
                 return
         
         #! end
-        self.for_using_regular_condition()
+        self.for_using_regular_condition(_node)
     
     def for_logic_and(self, _node):
         """ For using logical and.
@@ -1744,7 +1744,7 @@ class generator(object):
             error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be a boolean type, got %s." % (_op, _rhs_type.repr()), _node.get(1).site)
 
         _if_true__jump_to_statement =\
-        emit_opcode(self, pop_jump_if_false, TARGET)
+        emit_opcode(self, pop_jump_if_true, TARGET)
 
 
         #! compile lhs
@@ -1901,7 +1901,7 @@ class generator(object):
         #! must evaluate to true.
         #! if any operand produces false, 
         #! then the condition is false.
-        #! so jump to else without evaluating lhs.
+        #! so jump to end while without evaluating lhs.
         _if_false__jump_to_endwhile =\
         emit_opcode(self, pop_jump_if_false, TARGET)
         
@@ -1916,7 +1916,7 @@ class generator(object):
             error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
 
         #! if lhs evaluates to false for
-        #! both operand. jump to else
+        #! both operand. jump to end while
         _to_endwhile =\
         emit_opcode(self, pop_jump_if_false, TARGET)
         
@@ -1980,7 +1980,7 @@ class generator(object):
             error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
 
         #! if lhs evaluates to false for
-        #! both operand. jump to else
+        #! both operand. jump to end while
         _to_endwhile =\
         emit_opcode(self, pop_jump_if_false, TARGET)
         
@@ -2052,6 +2052,191 @@ class generator(object):
         #! remove local break
         self.breaks.pop()
     
+    def ast_dowhile_stmnt(self, _node):
+        """  
+              $0    $1
+            _body _cond
+        """
+        if  _node.get(1).type == ast_type.SHORTC_OP:
+            #! check op
+            if  _node.get(1).get(1) == "&&":
+                self.dowhile_logic_and(_node)
+
+            else:
+                self.dowhile_logic_or(_node)
+        else:
+            self.dowhile_using_normal_condition(_node)
+    
+    def dowhile_logic_and(self, _node):
+        _condtition = _node.get(1)
+        _op = _condtition.get(1)
+
+        _loop_begin = get_byteoff(self)
+
+        #! init starts and breaks
+        _breaks = []
+        self.loops .append(_loop_begin)
+        self.breaks.append(_breaks)
+
+        #! compile body
+        self.visit(_node.get(0))
+
+        #! NOTE: body|statement does not emit type, so do not pop.
+
+        #! compile rhs
+        self.visit(_condtition.get(2))
+
+        _rhs_type = self.tstack.popp()
+
+        #! check rhs type
+        if  not _rhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condtition.site)
+
+        #! when logical and(&&). both operands
+        #! must evaluate to true.
+        #! if any operand produces false, 
+        #! then the condition is false.
+        #! so jump to end do while without evaluating lhs.
+        _if_false__jump_to_enddowhile =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+        
+        #! compile lhs
+        self.visit(_condtition.get(0))
+
+        _lhs_type = self.tstack.popp()
+
+        #! check lhs type
+        if  not _lhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
+
+        #! if lhs evaluates to false for
+        #! both operand. jump to end do while
+        _to_enddowhile =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+        
+        #! jumpto begin loop
+        emit_opcode(self, jump_to, _loop_begin)
+
+        #! END DO WHILE
+        _if_false__jump_to_enddowhile[2] = get_byteoff(self)
+        _to_enddowhile[2] = get_byteoff(self)
+
+        #! remove loop start
+        self.loops.pop()
+
+        #! jump here
+        for _each_brk in _breaks:
+            #! set target here!
+            _each_brk[2] = get_byteoff(self)
+
+        #! remove local break
+        self.breaks.pop()
+    
+    def dowhile_logic_or(self, _node):
+        _condtition = _node.get(1)
+        _op = _condtition.get(1)
+
+        _loop_begin = get_byteoff(self)
+
+        #! init starts and breaks
+        _breaks = []
+        self.loops .append(_loop_begin)
+        self.breaks.append(_breaks)
+
+        #! compile body
+        self.visit(_node.get(0))
+
+        #! NOTE: body|statement does not emit type, so do not pop.
+
+        #! compile rhs
+        self.visit(_condtition.get(2))
+
+        _rhs_type = self.tstack.popp()
+
+        #! check rhs type
+        if  not _rhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condtition.site)
+
+        #! when logical and(&&). both operands
+        #! must evaluate to true.
+        #! if any operand produces false, 
+        #! then the condition is false.
+        #! so jump to end do while without evaluating lhs.
+        emit_opcode(self, pop_jump_if_true, _loop_begin)
+        
+        #! compile lhs
+        self.visit(_condtition.get(0))
+
+        _lhs_type = self.tstack.popp()
+
+        #! check lhs type
+        if  not _lhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
+
+        #! if lhs evaluates to false for
+        #! both operand. jump to end do while
+        _to_enddowhile =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+        
+        #! jumpto begin loop
+        emit_opcode(self, jump_to, _loop_begin)
+
+        #! END DO WHILE
+        _to_enddowhile[2] = get_byteoff(self)
+
+        #! remove loop start
+        self.loops.pop()
+
+        #! jump here
+        for _each_brk in _breaks:
+            #! set target here!
+            _each_brk[2] = get_byteoff(self)
+
+        #! remove local break
+        self.breaks.pop()
+    
+    def dowhile_using_normal_condition(self, _node):
+        _loop_begin = get_byteoff(self)
+
+        #! init starts and breaks
+        _breaks = []
+        self.loops .append(_loop_begin)
+        self.breaks.append(_breaks)
+
+        #! compile body
+        self.visit(_node.get(0))
+
+        #! NOTE: body|statement does not emit type, so do not pop.
+
+        #! compile condition 
+        self.visit(_node.get(1))
+
+        _type = self.tstack.popp()
+
+        #! check type
+        if  not _type.isboolean():
+            error.raise_tracked(error_category.CompileError, "while condition must be a boolean type, got %s." % _type.repr(), _node.get(1).site)
+
+        _if_false__jump_to_enddowhile =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+
+        #! jumpto loop begin
+        emit_opcode(self, jump_to, _loop_begin)
+
+        #! END DO WHILE
+        _if_false__jump_to_enddowhile[2] = get_byteoff(self)
+
+        #! remove loop start
+        self.loops.pop()
+
+        #! jump here
+        for _each_brk in _breaks:
+            #! set target here!
+            _each_brk[2] = get_byteoff(self)
+
+        #! remove local break
+        self.breaks.pop()
+
     def ast_block_stmnt(self, _node):
         """   $0
             _body

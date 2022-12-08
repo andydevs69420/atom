@@ -1729,7 +1729,7 @@ class parser(object):
         return stmnt_ast(
             ast_type.WHILE_STMNT, "...", _cond, _stmnt)
     
-    def dowhile_stmnt(self, _node):
+    def dowhile_stmnt(self):
         """ DO WHILE statement.
 
             Syntax|Grammar
@@ -1759,6 +1759,9 @@ class parser(object):
         
         self.expect_both(token_type.SYMBOL, ")")
         #! ')'
+
+        return stmnt_ast(
+            ast_type.DOWHILE_STMNT, "...", _body, _cond)
 
     
     def block_of_stmnt(self):
