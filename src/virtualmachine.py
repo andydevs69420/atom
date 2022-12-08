@@ -964,9 +964,23 @@ class virtualmachine(object):
         #! push to value stack
         self.state.stack.peek().set(_offset, _vvalue.offset)
         
-
     def pop_top(self, _bytecode_chunk):
         popp_operand(self)
+    
+    #! ========= jumps ========
+
+    def pop_jump_if_false(self, _bytecode_chunk):
+        #! pop first before check
+        if  not popp_operand(self).raw:
+            self.state.stack.peek().ipointer = (_bytecode_chunk[2] // 2) - 1
+        
+    def pop_jump_if_true(self, _bytecode_chunk):
+        #! pop first before check
+        if  popp_operand(self).raw:
+            self.state.stack.peek().ipointer = (_bytecode_chunk[2] // 2) - 1
+    
+    def jump_to(self, _bytecode_chunk):
+        self.state.stack.peek().ipointer = (_bytecode_chunk[2] // 2) - 1
     
     #! =========== visitor ===========
     

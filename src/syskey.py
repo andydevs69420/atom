@@ -20,6 +20,9 @@ class keywords:
     STRUCT = "struct"
     ENUM   = "enum"
     IF     = "if"
+    SWITCH = "switch"
+    CASE   = "case"
+    ELSE   = "else"
 
     WRAP   = "wrap"
     IMPORT = "import"
@@ -27,7 +30,6 @@ class keywords:
     VAR    = "var"
     LET    = "let"
     RETURN = "return"
-
 
     @staticmethod
     def is_keyword(_key):
@@ -37,7 +39,6 @@ class keywords:
             if  not (_k.startswith("__") and _k.endswith("__")):
                 if  _v == _key and type(_v) == str:
                     return True
-        
         #! end
         return False
 

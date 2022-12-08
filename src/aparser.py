@@ -528,8 +528,8 @@ class parser(object):
     def t_array_native(self):
         """ Native typing for array.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "array" '[' native_datatype ']' ;
 
             Returns
@@ -556,8 +556,8 @@ class parser(object):
     def t_array(self):
         """ Regular typing for array.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "array" '[' datatype ']' ;
 
             Returns
@@ -584,8 +584,8 @@ class parser(object):
     def t_fn_native(self):
         """ Native typing for function.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "fn" '[' native_datatype ']' ;
 
             Returns
@@ -612,8 +612,8 @@ class parser(object):
     def t_fn(self):
         """ Regular typing for function.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "fn" '[' datatype ']' ;
 
             Returns
@@ -641,8 +641,8 @@ class parser(object):
     def t_map_native(self):
         """ Native typing for map.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "map" '[' native_datatype ':' native_datatype ']' ;
 
             Returns
@@ -674,8 +674,8 @@ class parser(object):
     def t_map(self):
         """ Regular typing for map.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "map" '[' datatype ':' datatype ']' ;
 
             Returns
@@ -771,7 +771,7 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.INT, "...", _int.value)
+            ast_type.INT, self.d_location(_int), _int.value)
 
     def float(self):
         """ FLOAT expr.
@@ -787,7 +787,7 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.FLOAT, "...", _flt.value)
+            ast_type.FLOAT, self.d_location(_flt), _flt.value)
     
     def string(self):
         """ STR expr.
@@ -803,7 +803,7 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.STR, "...", _str.value)
+            ast_type.STR, self.d_location(_str), _str.value)
 
     def boolean(self):
         """ BOOL expr.
@@ -819,7 +819,7 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.BOOL, "...", _bool.value)
+            ast_type.BOOL, self.d_location(_bool), _bool.value)
     
     def null(self):
         """ NULL expr.
@@ -835,7 +835,7 @@ class parser(object):
 
         #! end
         return expr_ast(
-            ast_type.NULL, "...", _null.value)
+            ast_type.NULL, self.d_location(_null), _null.value)
     
     def ref(self):
         """ REFERENCE expr.
@@ -854,8 +854,8 @@ class parser(object):
     def array_expr(self):
         """ ARRAY expression.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             '[' list_expr* ']'
 
             Returns
@@ -883,8 +883,8 @@ class parser(object):
     def map_expr(self):
         """ MAP expression.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             '{' list_key_value_pair '}'
 
             Returns
@@ -1341,14 +1341,16 @@ class parser(object):
             return self.enum()
         if  self.check_both(token_type.IDENTIFIER, keywords.IF):
             return self.if_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.SWITCH):
+            return self.switch_stmnt()
         #! end
         return self.simple_stmnt()
 
     def function(self):
         """ Function declairation.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "fun" '[' returntype ']' raw_iden '(' list_parameters ')' function_body;
 
             Returns
@@ -1422,8 +1424,8 @@ class parser(object):
     def struct(self):
         """ STRUCT declairation.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "struct" list_idn '{' struct_body '}' ;
 
             Returns
@@ -1483,8 +1485,8 @@ class parser(object):
     def enum(self):
         """ ENUM statement.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "enum" raw_iden '{' enum_body '}' ;
         
             Returns
@@ -1547,19 +1549,103 @@ class parser(object):
         return (_member, _value)
     
     def if_stmnt(self):
+        """ IF/ELSE statement.
+
+            Syntax|Grammar
+            --------------
+            "if" '(' non_nullable_expression ')' compound_stmnt ("else" compound_stmnt)? ;
+
+            Returns
+            -------
+            ast
+        """
         #! "if"
         self.expect_both(token_type.IDENTIFIER, keywords.IF)
 
         #! '('
         self.expect_both(token_type.SYMBOL, "(")
 
+        _condition = self.non_nullable_expr()
+
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
+        _statement = self.compound_stmnt()
+
+        #! if no else
+        if  not self.check_both(token_type.IDENTIFIER, keywords.ELSE):
+            return stmnt_ast(
+                ast_type.IF_STMNT, "...", _condition, _statement, None)
+
+        #! if wth else
+        self.expect_both(token_type.IDENTIFIER, keywords.ELSE)
+
+        _else = self.compound_stmnt()
+
+        return stmnt_ast(
+            ast_type.IF_STMNT, "...", _condition, _statement, _else)
+
+    def switch_stmnt(self):
+        #! "switch"
+        self.expect_both(token_type.IDENTIFIER, keywords.SWITCH)
+
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        _condition = self.non_nullable_expr()
+
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
+        #! '{'
+        self.expect_both(token_type.SYMBOL, "{")
+
+        _switch_body = self.switch_body()
+
+        self.expect_both(token_type.SYMBOL, "}")
+        #! '}'
+
+        return stmnt_ast(
+            ast_type.SWITCH_STMNT, "...", _condition, _switch_body)
+    
+    def switch_body(self):
+        """ sequencial.
+            case0:...
+            case1:...
+            case2:...
+            caseN:...
+            else :...
+        """
+        _cases = [[], None]
+        while self.check_both(token_type.IDENTIFIER, keywords.CASE):
+            #! "case"
+            self.expect_both(token_type.IDENTIFIER, keywords.CASE)
+
+            #! case match
+            _match = self.list_expr()
+
+            #! ':'
+            self.expect_both(token_type.SYMBOL, ":")
+
+            #! statement
+            _stmnt = self.compound_stmnt()
+
+            _cases[0].append((_match, _stmnt))
         
 
-        #! ')'
-        self.expect_both(token_type.SYMBOL, ")")
+        if  len(_cases[0]) > 0 and self.check_both(token_type.IDENTIFIER, keywords.ELSE):
+            #! allow "else" when "_cases" is not empty.
+            #! "else"
+            self.expect_both(token_type.IDENTIFIER, keywords.ELSE)
 
+            #! ':'
+            self.expect_both(token_type.SYMBOL, ":")
 
+            #! "else" statement
+            _cases[1] = self.compound_stmnt()
 
+        #! end
+        return tuple(_cases)
 
     def simple_stmnt(self):
         """ SIMPLE statement.
@@ -1590,8 +1676,8 @@ class parser(object):
     def import_stmnt(self):
         """ IMPORT statement.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "import" '[' list_idn ']' ';'
 
             Returns
@@ -1625,8 +1711,8 @@ class parser(object):
     def function_wrapper(self):
         """ Function wrapper
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             "wrap" parameter raw_iden '(' list_parameter ')' non_nullable_expression ;
 
             Returns
@@ -1666,8 +1752,8 @@ class parser(object):
     def native_function_proto(self):
         """ Native function prototype.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             anotation
             "fun" '[' returntype ']' raw_iden '(' list_parameters ')' ';' ;
 
@@ -1797,8 +1883,8 @@ class parser(object):
     def expr_stmnt(self):
         """ EXPRESSION_STATEMENT statement.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             nullable_expr ';'
 
             Returns
@@ -1818,8 +1904,8 @@ class parser(object):
     def source(self):
         """ SOURCE file.
 
-            Syntax
-            ------
+            Syntax|Grammar
+            --------------
             compound_stmnt* EOF
 
             Returns

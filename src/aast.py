@@ -38,14 +38,17 @@ class ast_type(Enum):
     STRUCT        = 33
     FUNCTION_WRAPPER = 34
     ENUM          = 35
-    IMPORT        = 36
-    NATIVE_FUNCTION  = 37
-    VAR_STMNT     = 38
-    LET_STMNT     = 39
-    CONST_STMNT   = 40
-    RETURN_STMNT  = 41
-    EXPR_STMNT    = 42
-    SOURCE        = 43
+    IF_STMNT      = 36
+    SWITCH_STMNT  = 37
+
+    IMPORT        = 100
+    NATIVE_FUNCTION  = 101
+    VAR_STMNT     = 102
+    LET_STMNT     = 103
+    CONST_STMNT   = 104
+    RETURN_STMNT  = 105
+    EXPR_STMNT    = 106
+    SOURCE        = 107
 
 
 

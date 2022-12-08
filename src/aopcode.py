@@ -108,6 +108,10 @@ rot2 = "rot2"
 
 pop_top = "pop_top"
 
+pop_jump_if_false = "pop_jump_if_false"
+pop_jump_if_true = "pop_jump_if_true"
+
 jump_if_false = "jump_if_false"
 jump_if_true = "jump_if_true"
+jump_to = "jump_to"
 

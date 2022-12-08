@@ -649,6 +649,7 @@ class generator(object):
             elif _operation.isfloat():
                 emit_opcode(self, fltpos)
 
+        
         elif _op == "-":
             #! op result
             _operation = _rhs.neg()
@@ -1346,6 +1347,210 @@ class generator(object):
         #!end
         self.offset += 1
         
+    def ast_if_stmnt(self, _node):
+        """ 
+               $0        $1        $2
+            condition  statement  else
+        """
+
+        if  _node.get(0).type == ast_type.SHORTC_OP:
+            self.if_with_short_circuiting(_node)
+        else:
+            self.if_using_normal_condition(_node)
+    
+    def if_with_short_circuiting(self, _node):
+        """ If statement that uses logical (&& or ||) as condition operator.
+        """
+       
+        _condtition = _node.get(0)
+
+        _op = _condtition.get(1)
+
+        #! compile rhs
+        self.visit(_condtition.get(2))
+
+        _rhs_type = self.tstack.popp()
+
+        #! check rhs type
+        if  not _rhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condtition.site)
+
+        _jump_loc = ...
+        if  _op == "&&":
+            #! when logical and(&&). both operands
+            #! must evaluate to true.
+            #! if any operand produces false, 
+            #! then the condition is false.
+            #! so jump to else without evaluating lhs.
+            _jump_loc =\
+            emit_opcode(self, pop_jump_if_false, TARGET)
+        
+        else:
+            #! when logical or(||), atleast 1 operand
+            #! produces true to make the condition satisfiable.
+            #! IF rhs produces true. do not evaluate lhs
+            _jump_loc =\
+            emit_opcode(self, pop_jump_if_true, TARGET)
+
+            #! pop rhs if its true.
+            emit_opcode(self, pop_top)
+        
+        #! compile lhs
+        self.visit(_condtition.get(0))
+
+        _lhs_type = self.tstack.popp()
+
+        #! check lhs type
+        if  not _lhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
+
+        #! if lhs evaluates to false for
+        #! both operand. jump to else
+        _to_else =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+        
+        #! compile statement
+        self.visit(_node.get(1))
+        
+        _jump_to_end = ...
+
+        #! jump to end if has else
+        if  _node.get(2):
+            #! jump to end if
+            _jump_to_end =\
+            emit_opcode(self, jump_to, TARGET)
+
+        #! IF FALSE
+        _jump_loc[2] = get_byteoff(self)
+
+        _to_else[2] = get_byteoff(self)
+
+        #! compile if has else
+        if  _node.get(2):
+            self.visit(_node.get(2))
+
+        #! END IF
+        if  _node.get(2):
+            _jump_to_end[2] = get_byteoff(self)
+    
+    def if_using_normal_condition(self, _node):
+        """ If statement that uses normal expression.
+        """
+
+        #! compile condition
+        self.visit(_node.get(0))
+
+        _cond = self.tstack.popp()
+
+        #! check condition
+        if  not _cond.isboolean():
+            error.raise_tracked(error_category.CompileError, "if condition must be a boolean type, got %s." % _cond.repr(), _node.get(0).site)
+
+        _jump_to_else =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+
+        #! compile statement
+        self.visit(_node.get(1))
+
+        _jump_to_end = ...
+
+        #! jump to end if has else
+        if  _node.get(2):
+            _jump_to_end =\
+            emit_opcode(self, jump_to, TARGET)
+
+        #! jump to else or end if
+        _jump_to_else[2] = get_byteoff(self)
+        
+        #! compile if has else
+        if  _node.get(2):
+            self.visit(_node.get(2))
+
+        #! END IF
+        _jump_to_end[2] = get_byteoff(self)
+
+    def ast_switch_stmnt(self, _node):
+        """ 
+               $0       $1
+            condition  body
+        """
+        _to_end_switch = []
+
+        #! compile condition
+        self.visit(_node.get(0))
+
+        #! cond dtype
+        _condtype = self.tstack.popp()
+
+        _cases = _node.get(1)[0]
+
+        for _case in _cases:
+            
+            _to_case_satement = []
+
+            for _each_expr in _case[0]:
+                #! duplicate switch condition
+                emit_opcode(self, dup_top)
+
+                #! compile each case expression
+                self.visit(_each_expr)
+
+                #! opcode
+                if  _condtype.isint():
+                    emit_opcode(self, equal_i)
+
+                elif _condtype.isfloat():
+                    emit_opcode(self, equal_f)
+                
+                elif _condtype.isstring():
+                    emit_opcode(self, equal_s)
+                
+                elif _condtype.isboolean():
+                    emit_opcode(self, equal_b)
+                
+                elif _condtype.isnull():
+                    emit_opcode(self, equal_n)
+                
+                else:
+                    emit_opcode(self, addressof)
+
+                _expr_type = self.tstack.popp()
+
+                #! add jump
+                _to_case_satement.append(
+                    emit_opcode(self, pop_jump_if_true, TARGET))
+
+                if  not _condtype.matches(_expr_type):
+                    error.raise_tracked(error_category.CompileError, "case expression does not match switch condition switch(%s) != case ..., ..., %s:." % (_condtype.repr(), _expr_type.repr()), _each_expr.site)
+            
+            #! jump to next case
+            _next_case =\
+            emit_opcode(self, jump_to, TARGET)
+
+            for _idx in range(len(_to_case_satement)):
+                #! jump here if match found
+                _to_case_satement[_idx][2] = get_byteoff(self)
+                
+            #! compile case statement
+            self.visit(_case[1])
+
+            #! jump to end
+            _to_end_switch.append(
+                emit_opcode(self, jump_to, TARGET))
+            
+            #! next case
+            _next_case[2] = get_byteoff(self)
+
+        #! compile if has else
+        if  _node.get(1)[1]:
+            self.visit(_node.get(1)[1])
+        
+        for _idx in range(len(_to_end_switch)):
+            #! jump here after case statement executed.
+            _to_end_switch[_idx][2] = get_byteoff(self)
+
+        #! pop switch condition
+        emit_opcode(self, pop_top)
 
     #! =========== simple statement ===========
 
