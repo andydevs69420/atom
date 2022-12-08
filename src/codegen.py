@@ -60,6 +60,8 @@ class generator(object):
     def error(self, _node):
         raise AttributeError("unimplemented node no# %d a.k.a %s!!!" % (_node.type.value, _node.type.name))
     
+    #! ===== LITERAL CONSTANT FOLD ====
+    
     #! ========= DATA TYPING ==========
 
     def ast_any_t(self, _node):
@@ -975,7 +977,6 @@ class generator(object):
 
         self.nstlvl -= 1
         #! end
-    
 
     def ast_simple_ass(self, _node):
         """

@@ -61,15 +61,19 @@ fun[int] main(_args:array[str])
 {   
     let i = 0;
 
-    do {
+    do 
+    {
 
         print(x);
         x = x+1;
 
-    }while(x < 2000)
+        print(myenum);
 
-
+    } while(x < 2000)
 
     if (true) print("hola!");
+
+    print(!false && 100);
+
     return 0b0000011;
 }
