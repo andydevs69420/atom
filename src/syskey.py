@@ -25,6 +25,7 @@ class keywords:
     ELSE     = "else"
     FOR      = "for"
     WHILE    = "while"
+    DO       = "do"
 
     WRAP     = "wrap"
     IMPORT   = "import"

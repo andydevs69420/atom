@@ -1615,7 +1615,187 @@ class generator(object):
               $0    $1    $2    $3
             _init _cond _mutt _stmnt
         """
+        if  _node.get(1):
+            #! check op
+            if  _node.get(1).get(1) == "&&":
+                self.for_logic_and(_node)
+                return
+            elif _node.get(1).get(1) == "||":
+                self.for_logic_or(_node)
+                return
+        
+        #! end
+        self.for_using_regular_condition()
+    
+    def for_logic_and(self, _node):
+        """ For using logical and.
+        """
+        #! if has init
+        if  _node.get(0):
+            #! compile initialize
+            self.visit(_node.get(0))
 
+            #! ignore type
+            self.tstack.popp()
+
+            #! pop initialize
+            emit_opcode(self, pop_top)
+
+        _loop_begin = get_byteoff(self)
+
+        #! init starts and breaks
+        _breaks = []
+        self.loops .append(_loop_begin)
+        self.breaks.append(_breaks)
+
+        #! && operator
+        _op = _node.get(1).get(1)
+
+        #! compile rhs
+        self.visit(_node.get(1).get(2))
+
+        _rhs_type = self.tstack.popp()
+
+        #! check rhs type
+        if  not _rhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be a boolean type, got %s." % (_op, _rhs_type.repr()), _node.get(1).site)
+
+        _if_false__jump_to_endfor =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+
+
+        #! compile lhs
+        self.visit(_node.get(1).get(0))
+
+        _lhs_type = self.tstack.popp()
+
+        #! check rhs type
+        if  not _lhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _node.get(1).site)
+
+        _to_endfor =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+
+        #! compile stmnt|body
+        self.visit(_node.get(3))
+
+        #! NOTE: body|statement does not emit type, so do not pop.
+
+        #! if has mutation
+        if  _node.get(2):
+            #! compile mutation
+            self.visit(_node.get(2))
+
+            #! ignore type
+            self.tstack.popp()
+
+            #! pop mutation
+            emit_opcode(self, pop_top)
+
+        #! jumpto loop begin
+        emit_opcode(self, jump_to, _loop_begin)
+
+        #! END FOR
+        _if_false__jump_to_endfor[2] = get_byteoff(self)
+        _to_endfor[2] = get_byteoff(self)
+        
+        #! remove loop start
+        self.loops.pop()
+
+        #! jump here
+        for _each_brk in _breaks:
+            #! set target here!
+            _each_brk[2] = get_byteoff(self)
+
+        #! remove local break
+        self.breaks.pop()
+    
+    def for_logic_or(self, _node):
+        """ For using logical or.
+        """
+        #! if has init
+        if  _node.get(0):
+            #! compile initialize
+            self.visit(_node.get(0))
+
+            #! ignore type
+            self.tstack.popp()
+
+            #! pop initialize
+            emit_opcode(self, pop_top)
+
+        _loop_begin = get_byteoff(self)
+
+        #! init starts and breaks
+        _breaks = []
+        self.loops .append(_loop_begin)
+        self.breaks.append(_breaks)
+
+        #! && operator
+        _op = _node.get(1).get(1)
+
+        #! compile rhs
+        self.visit(_node.get(1).get(2))
+
+        _rhs_type = self.tstack.popp()
+
+        #! check rhs type
+        if  not _rhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be a boolean type, got %s." % (_op, _rhs_type.repr()), _node.get(1).site)
+
+        _if_true__jump_to_statement =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+
+
+        #! compile lhs
+        self.visit(_node.get(1).get(0))
+
+        _lhs_type = self.tstack.popp()
+
+        #! check rhs type
+        if  not _lhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _node.get(1).site)
+
+        _to_endfor =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+
+        #! jump here!
+        _if_true__jump_to_statement[2] = get_byteoff(self)
+
+        #! compile stmnt|body
+        self.visit(_node.get(3))
+
+        #! NOTE: body|statement does not emit type, so do not pop.
+
+        #! if has mutation
+        if  _node.get(2):
+            #! compile mutation
+            self.visit(_node.get(2))
+
+            #! ignore type
+            self.tstack.popp()
+
+            #! pop mutation
+            emit_opcode(self, pop_top)
+
+        #! jumpto loop begin
+        emit_opcode(self, jump_to, _loop_begin)
+
+        #! END FOR
+        _to_endfor[2] = get_byteoff(self)
+        
+        #! remove loop start
+        self.loops.pop()
+
+        #! jump here
+        for _each_brk in _breaks:
+            #! set target here!
+            _each_brk[2] = get_byteoff(self)
+
+        #! remove local break
+        self.breaks.pop()
+
+    def for_using_regular_condition(self, _node):
         #! if has init
         if  _node.get(0):
             #! compile initialize
@@ -1641,8 +1821,11 @@ class generator(object):
             #! compile condition
             self.visit(_node.get(1))
 
-            #! ignore type
-            self.tstack.popp()
+            _condtype = self.tstack.popp()
+
+            #! check if boolean
+            if  not _condtype.isboolean():
+                error.raise_tracked(error_category.CompileError, "for condition must be a boolean type, got %s." % _condtype.repr(), _node.get(1).site)
 
             _jump_to_end_for =\
             emit_opcode(self, pop_jump_if_false, TARGET)

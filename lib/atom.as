@@ -57,16 +57,19 @@ enum myenum
 var x = 0;
 
 
+
 fun[int] main(_args:array[str])
 {   
-    let vvv = 0;
-    while (!false)
-    {   print(vvv);
-        vvv = vvv + 1;
-        if (vvv >= 2000)
-            break;
+    let flag = true, x = 0;
+    for (;true || false;)
+    {
+        print(x);
+        x = x + 1;
+
+        if (x >= 1000)
+            flag = false;
     }
-    print(vvv);
-    if (!true) print("hola!");
+    
+    if (true) print("hola!");
     return 0b0000011;
 }

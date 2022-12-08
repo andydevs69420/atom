@@ -1347,6 +1347,8 @@ class parser(object):
             return self.for_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.WHILE):
             return self.while_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.DO):
+            return self.dowhile_stmnt()
         if  self.check_both(token_type.SYMBOL, "{"):
             return self.block_of_stmnt()
         #! end
@@ -1726,6 +1728,38 @@ class parser(object):
 
         return stmnt_ast(
             ast_type.WHILE_STMNT, "...", _cond, _stmnt)
+    
+    def dowhile_stmnt(self, _node):
+        """ DO WHILE statement.
+
+            Syntax|Grammar
+            --------------
+            "do" compound_stmnt "while" '(' non_nullable_expr ')' ;
+
+            Returns
+            -------
+            ast
+        """
+        #! "do"
+        self.expect_both(token_type.IDENTIFIER, keywords.DO)
+
+        self.enter(context.LOOP)
+
+        _body = self.compound_stmnt()
+
+        self.leave(context.LOOP)
+
+        #! "while"
+        self.expect_both(token_type.IDENTIFIER, keywords.WHILE)
+
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        _cond = self.non_nullable_expr()
+        
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
     
     def block_of_stmnt(self):
         """ BLOCK OF STATEMENT.

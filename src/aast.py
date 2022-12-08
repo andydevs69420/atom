@@ -42,7 +42,8 @@ class ast_type(Enum):
     SWITCH_STMNT  = 37
     FOR_STMNT     = 38
     WHILE_STMNT   = 39
-    BLOCK_STMNT   = 40
+    DOWHILE_STMNT = 40
+    BLOCK_STMNT   = 41
 
     IMPORT        = 100
     NATIVE_FUNCTION  = 101
