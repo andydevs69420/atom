@@ -27,11 +27,174 @@ def emit_opcode(_cls, _opcode, *_args):
     return _cls.bcodes[-1]
 
 
-class generator(object):
+
+
+class constantevaluator(object):
+
+    def __init__(self):
+        pass
+
+    def visit_evaluator(self, _node):
+        #! make visitor
+        _visitor = getattr(self, "eval_" + _node.type.name.lower(), self.visit_error)
+
+        #! end
+        return _visitor(_node)
+    
+    def visit_error(self, _node):
+        return ...
+
+    def eval_int(self, _node):
+        return (integer_t(), int(_node.get(0)))
+    
+    def eval_float(self, _node):
+        return (float_t(), float(_node.get(0)))
+
+    def eval_str(self, _node):
+        return (string_t() , str(_node.get(0)))
+
+    def eval_bool(self, _node):
+        return (boolean_t(), bool(_node.get(0) == "true"))
+
+    def eval_null(self, _node):
+        return (null_t(), None)
+
+    def eval_binary_op(self, _node):
+        """ 
+             $0   $1    $2
+            _lhs  _op  _rhs
+        """
+        _op = _node.get(1)
+        #! eval rhs
+        _rhs =\
+        self.visit_evaluator(_node.get(2))
+
+        #! eval lhs
+        _lhs =\
+        self.visit_evaluator(_node.get(0))
+
+        if _lhs == ... or _rhs == ...: return ...
+
+        _result = ...
+
+        if  _op == "^^":
+            _result = _lhs[0].mul(_rhs[0])
+
+            if  not _result.iserror():
+                return (_result, _lhs[1] ** _rhs[1])
+
+        if  _op == "*":
+            _result = _lhs[0].mul(_rhs[0])
+
+            if  not _result.iserror():
+                return (_result, _lhs[1] * _rhs[1])
+
+        if  _op == "/":
+            _result = _lhs[0].div(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] * _rhs[1])
+        
+        if  _op == "%":
+            _result = _lhs[0].mod(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] % _rhs[1])
+        
+        if  _op == "+":
+            _result = _lhs[0].add(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] + _rhs[1])
+        
+        if  _op == "-":
+            _result = _lhs[0].sub(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] - _rhs[1])
+        
+        if  _op == "<<":
+            _result = _lhs[0].shift(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] << _rhs[1])
+        
+        if  _op == ">>":
+            _result = _lhs[0].shift(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] >> _rhs[1])
+        
+        if  _op == "<":
+            _result = _lhs[0].relational(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] < _rhs[1])
+        
+        if  _op == "<=":
+            _result = _lhs[0].relational(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] <= _rhs[1])
+        
+        if  _op == ">":
+            _result = _lhs[0].relational(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] > _rhs[1])
+        
+        if  _op == ">=":
+            _result = _lhs[0].relational(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] >= _rhs[1])
+        
+        if  _op == "==":
+            _result = _lhs[0].equality(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] == _rhs[1])
+        
+        if  _op == "!=":
+            _result = _lhs[0].equality(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] != _rhs[1])
+        
+        if  _op == "&":
+            _result = _lhs[0].bitwise(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] & _rhs[1])
+        
+        if  _op == "^":
+            _result = _lhs[0].bitwise(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] ^ _rhs[1])
+        
+        if  _op == "|":
+            _result = _lhs[0].bitwise(_rhs[0])
+            
+            if  not _result.iserror():
+                return (_result, _lhs[1] | _rhs[1])
+        
+        #! let logical && and || be compiled!!!
+        
+        #! end
+        if  _result.iserror():
+            error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs[0].repr(), _op, _rhs[0].repr()), _node.site)
+
+    def try_eval_bin_op(self, _node):
+        return self.visit_evaluator(_node)
+
+
+class generator(constantevaluator):
     """ Base code generator for atom.
     """
 
     def __init__(self):
+        super().__init__()
         self.offset = 0
         self.symtbl = SymbolTable()
         self.tstack = stack(tag_t)
@@ -59,8 +222,6 @@ class generator(object):
     
     def error(self, _node):
         raise AttributeError("unimplemented node no# %d a.k.a %s!!!" % (_node.type.value, _node.type.name))
-    
-    #! ===== LITERAL CONSTANT FOLD ====
     
     #! ========= DATA TYPING ==========
 
@@ -724,6 +885,44 @@ class generator(object):
         self.nstlvl += 1
         if  self.nstlvl >= MAX_NESTING_LEVEL:
             error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
+        
+        _eval =\
+        self.try_eval_bin_op(_node)
+
+        if  _eval != ...:
+            if  _eval[0].isint():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, iload, _eval[1])
+            
+            elif _eval[0].isfloat():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, fload, _eval[1])
+            
+            elif _eval[0].isstring():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, sload, _eval[1])
+
+            elif _eval[0].isboolean():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, bload, _eval[1])
+
+            else:
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, nload, _eval[1])
+            
+            return
+
+        #! === NOT EVALUATED ===
 
         _op = _node.get(1)
         
