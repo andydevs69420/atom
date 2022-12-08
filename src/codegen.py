@@ -39,9 +39,13 @@ class generator(object):
         self.nstlvl = 0
         self.typlvl = 0
 
+        #! struct
         self.currentstructnumber   = 0
+        #! function
         self.currentfunctiontype   = None
         self.functionhasreturntype = False
+        #! loops
+        self.breaks = []
 
     #! =========== VISITOR ===========
     
@@ -1558,6 +1562,9 @@ class generator(object):
             _init _cond _mutt _stmnt
         """
 
+        _breaks = []
+        self.breaks.append(_breaks)
+
         #! if has init
         if  _node.get(0):
             #! compile initialize
@@ -1571,6 +1578,8 @@ class generator(object):
 
         _loop_begin = get_byteoff(self)
 
+        _jump_to_end_for = ...
+
         #! if has condition
         if  _node.get(1):
             #! compile condition
@@ -1579,8 +1588,8 @@ class generator(object):
             #! ignore type
             self.tstack.popp()
 
-        _jump_to_end_for =\
-        emit_opcode(self, pop_jump_if_false, TARGET)
+            _jump_to_end_for =\
+            emit_opcode(self, pop_jump_if_false, TARGET)
 
         #! compile stmnt|body
         self.visit(_node.get(3))
@@ -1602,7 +1611,25 @@ class generator(object):
         emit_opcode(self, jump_to, _loop_begin)
 
         #! END FOR
-        _jump_to_end_for[2] = get_byteoff(self)
+        if  _node.get(1):
+            _jump_to_end_for[2] = get_byteoff(self)
+        
+        #! remove local break
+        self.breaks.pop()
+    
+    def ast_block_stmnt(self, _node):
+        """   $0
+            _body
+        """
+        self.symtbl.newscope()
+        
+        for _each_node in _node.get(0):
+            #! compile node
+            self.visit(_each_node)
+
+            #! NOTE: body|statement does not emit type, so do not pop.
+
+        self.symtbl.endscope()
 
     #! =========== simple statement ===========
 

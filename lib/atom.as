@@ -1,10 +1,7 @@
 #! comment
 #! another comment!
 
-
-
 import[std];
-
 
 enum hello_t {
     a = 2 << 3,
@@ -54,30 +51,22 @@ enum myenum
     a = 1,
     b = 0x02,
     c = 0o03,
-    d = 0b011
+    d = 0b100
 }
 
-var x;
+var x = 0;
 
 
 fun[int] main(_args:array[str])
 {   
-    const p1 = Person("Andy", 404);
-    const e1 = Employee("Marielle", 23);
-    const e2 = Employee("Mark", 50);
-    print(p1);
-    print(e1);
-    const arr = [
-        p1, e1
-    ];
-    print(arr);
-    arr + Tao("Josh", 100);
-
-    for(x = 0; x < 10000; x = x + 1)
-        print(x);
-
+    for(;;)
+    {
+        print(x );
+        x = x + 1;
+    }
+    print(x);
+    print(Tao);
+    print(myenum);
+    print(hello_t);
     return 0b0000011;
 }
-
-
-

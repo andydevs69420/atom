@@ -30,6 +30,7 @@ class keywords:
     CONST  = "const"
     VAR    = "var"
     LET    = "let"
+    BREAK  = "break"
     RETURN = "return"
 
     @staticmethod

@@ -1345,6 +1345,8 @@ class parser(object):
             return self.switch_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.FOR):
             return self.for_stmnt()
+        if  self.check_both(token_type.SYMBOL, "{"):
+            return self.block_of_stmnt()
         #! end
         return self.simple_stmnt()
 
@@ -1681,11 +1683,48 @@ class parser(object):
         self.expect_both(token_type.SYMBOL, ")")
         #! ')'
 
+        self.enter(context.LOOP)
+
         #! body
         _stmnt = self.compound_stmnt()
 
+        self.leave(context.LOOP)
+
         return stmnt_ast(
             ast_type.FOR_STMNT, "...", _init, _cond, _mutt, _stmnt)
+    
+    def block_of_stmnt(self):
+        """ BLOCK OF STATEMENT.
+
+            Syntax|Grammar
+            --------------
+            '{' compound_stmnt* '}'
+
+            Returns
+            -------
+            ast
+        """
+        _body = []
+        
+        self.enter(context.LOCAL)
+        #! '{'
+        self.expect_both(token_type.SYMBOL, "{")
+
+        _stmntN = self.compound_stmnt()
+
+        while _stmntN:
+            #! insert
+            _body.append(_stmntN)
+
+            #! next
+            _stmntN = self.compound_stmnt()
+        
+        self.expect_both(token_type.SYMBOL, "}")
+        #! '}'
+        self.leave(context.LOCAL)
+
+        return stmnt_ast(
+            ast_type.BLOCK_STMNT, "...", tuple(_body))
 
     def simple_stmnt(self):
         """ SIMPLE statement.
@@ -1706,6 +1745,8 @@ class parser(object):
             return self.let_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.CONST):
             return self.const_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.BREAK):
+            return self.break_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.RETURN):
             return self.return_stmnt()
 
@@ -1906,6 +1947,31 @@ class parser(object):
         return stmnt_ast(
             ast_type.CONST_STMNT, _ended, _declaire)
     
+    def break_stmnt(self):
+        """ BREAK statement.
+
+            Syntax|Grammar
+            --------------
+            "break" ';' ;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+
+        #! "break"
+        self.expect_both(token_type.IDENTIFIER, keywords.BREAK)
+
+        if  not self.under(context.LOOP, False):
+            error.raise_tracked(error_category.SemanticError, "invalid \"break\" outside loop.", self.d_location(_start))
+
+        self.expect_both(token_type.SYMBOL, ";")
+        #! ';'
+
+        return stmnt_ast(
+            ast_type.BREAK_STMNT, "...")
+
     def return_stmnt(self):
         _start = self.lookahead
 
@@ -1913,6 +1979,9 @@ class parser(object):
         self.expect_both(token_type.IDENTIFIER, keywords.RETURN)
 
         _expr = self.nullable_expr()
+
+        if  not self.under(context.FUNCTION, False):
+            error.raise_tracked(error_category.SemanticError, "invalid \"return\" outside function.", self.d_location(_start))
 
         self.expect_both(token_type.SYMBOL, ";")
         #! ';'
