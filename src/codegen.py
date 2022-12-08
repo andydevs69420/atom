@@ -1,3 +1,6 @@
+""" Static analyzer and compiler for atom.
+"""
+
 from stack import stack
 from readf import (file_isfile, read_file)
 from aparser import parser
@@ -9,15 +12,10 @@ from aast import ast_type
 from abuiltins.getter import getbuiltin
 
 TARGET = ...
-MAX_NESTING_LEVEL = 255
-MAX_TYPE_NESTING_LEVEL = 10
-
-
 
 def push_ttable(_cls, _type):
     #! push type
     _cls.tstack.generic_push(_type)
-
 
 def get_byteoff(_cls):
     return len(_cls.bcodes) * 2
@@ -27,12 +25,16 @@ def emit_opcode(_cls, _opcode, *_args):
     return _cls.bcodes[-1]
 
 
-
-
 class constantevaluator(object):
+    """ Removes the obvious part of the bytecode.
 
-    def __init__(self):
-        pass
+        ex:
+            let x = 2 + 2;
+
+        produce:
+            0   iload  4
+            2   store_local x 0
+    """
 
     def visit_evaluator(self, _node):
         #! make visitor
@@ -58,6 +60,45 @@ class constantevaluator(object):
 
     def eval_null(self, _node):
         return (null_t(), None)
+    
+    def eval_unary_op(self, _node):
+        """ 
+             $0   $1 
+            _op  _rhs
+        """
+        _op = _node.get(0)
+        #! eval rhs
+        _rhs =\
+        self.visit_evaluator(_node.get(1))
+
+        _result = ...
+
+        if  _op == "~":
+            _result = _rhs[0].bitnot()
+
+            if  not _result.iserror():
+                return (_result, ~ _rhs[1])
+
+        if  _op == "!":
+            _result = _rhs[0].lognot()
+
+            if  not _result.iserror():
+                return (_result, not _rhs[1])
+        
+        if  _op == "+":
+            _result = _rhs[0].pos()
+
+            if  not _result.iserror():
+                return (_result, + _rhs[1])
+        
+        if  _op == "-":
+            _result = _rhs[0].neg()
+
+            if  not _result.iserror():
+                return (_result, - _rhs[1])
+
+        #! end
+        error.raise_tracked(error_category.CompileError, "invalid operation %s %s." % (_op, _rhs[0].repr()), _node.site)
 
     def eval_binary_op(self, _node):
         """ 
@@ -179,13 +220,67 @@ class constantevaluator(object):
             if  not _result.iserror():
                 return (_result, _lhs[1] | _rhs[1])
         
-        #! let logical && and || be compiled!!!
+        if  _op == "&&":
+
+            if  _lhs[1]:
+                return (_rhs[0], _rhs[1])
+
+            else:
+                return (_lhs[0], _lhs[1])
+        
+        if  _op == "||":
+
+            if  _lhs[1]:
+                return (_lhs[0], _lhs[1])
+
+            else:
+                return (_rhs[0], _rhs[1])
         
         #! end
-        if  _result.iserror():
-            error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs[0].repr(), _op, _rhs[0].repr()), _node.site)
+        error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs[0].repr(), _op, _rhs[0].repr()), _node.site)
+
+    def eval_shortc_op(self, _node):
+        """ 
+             $0   $1    $2
+            _lhs  _op  _rhs
+        """
+        _op = _node.get(1)
+        #! eval rhs
+        _rhs =\
+        self.visit_evaluator(_node.get(2))
+
+        #! eval lhs
+        _lhs =\
+        self.visit_evaluator(_node.get(0))
+
+        if _lhs == ... or _rhs == ...: return ...
+
+        if  _op == "&&":
+
+            if  _lhs[1]:
+                return (_rhs[0], _rhs[1])
+
+            else:
+                return (_lhs[0], _lhs[1])
+        
+        if  _op == "||":
+
+            if  _lhs[1]:
+                return (_lhs[0], _lhs[1])
+
+            else:
+                return (_rhs[0], _rhs[1])
+        
+        #! end
+        error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs[0].repr(), _op, _rhs[0].repr()), _node.site)
+    
+    def try_eval_una_op(self, _node):
+        return self.visit_evaluator(_node)
 
     def try_eval_bin_op(self, _node):
+        return self.visit_evaluator(_node)
+    
+    def try_eval_short_op(self, _node):
         return self.visit_evaluator(_node)
 
 
@@ -199,8 +294,6 @@ class generator(constantevaluator):
         self.symtbl = SymbolTable()
         self.tstack = stack(tag_t)
         self.bcodes = []
-        self.nstlvl = 0
-        self.typlvl = 0
 
         #! struct
         self.currentstructnumber   = 0
@@ -250,10 +343,6 @@ class generator(constantevaluator):
         push_ttable(self, null_t())
 
     def ast_array_t(self, _node):
-        self.typlvl += 1
-        if  self.typlvl >= MAX_TYPE_NESTING_LEVEL:
-            error.raise_tracked(error_category.CompileError, "max nesting level for type reached.", _node.site)
-
         #! internal
         self.visit(_node.get(1))
 
@@ -262,14 +351,8 @@ class generator(constantevaluator):
         #! push int type
         push_ttable(self, array_t(_internal))
 
-        #! end
-        self.typlvl -= 1
     
     def ast_fn_t(self, _node):
-        self.typlvl += 1
-        if  self.typlvl >= MAX_TYPE_NESTING_LEVEL:
-            error.raise_tracked(error_category.CompileError, "max nesting level for type reached.", _node.site)
-
         #! return
         self.visit(_node.get(1))
 
@@ -278,14 +361,8 @@ class generator(constantevaluator):
         #! push int type
         push_ttable(self, fn_t(_return))
 
-        #! end
-        self.typlvl -= 1
     
     def ast_map_t(self, _node):
-        self.typlvl += 1
-        if  self.typlvl >= MAX_TYPE_NESTING_LEVEL:
-            error.raise_tracked(error_category.CompileError, "max nesting level for type reached.", _node.site)
-
         #! val type
         self.visit(_node.get(2))
 
@@ -297,9 +374,6 @@ class generator(constantevaluator):
 
         #! push int type
         push_ttable(self, map_t(_key, _val))
-
-        #! end
-        self.typlvl -= 1
     
     def ast_type_t(self, _node):
         """ User defined type.
@@ -771,10 +845,44 @@ class generator(constantevaluator):
              $0   $1
             _op  _rhs
         """
-        self.nstlvl += 1
-        if  self.nstlvl >= MAX_NESTING_LEVEL:
-            error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
-        
+        _eval =\
+        self.try_eval_una_op(_node)
+
+        if  _eval != ...:
+            if  _eval[0].isint():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, iload, _eval[1])
+            
+            elif _eval[0].isfloat():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, fload, _eval[1])
+            
+            elif _eval[0].isstring():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, sload, _eval[1])
+
+            elif _eval[0].isboolean():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, bload, _eval[1])
+
+            else:
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, nload, _eval[1])
+            
+            return
+
+        #! === NOT EVALUATED ===
+
         _op = _node.get(0)
         self.visit(_node.get(1)) # rhs
 
@@ -837,18 +945,11 @@ class generator(constantevaluator):
         if  _operation.iserror():
             error.raise_tracked(error_category.CompileError, "invalid operation %s %s." % (_op, _rhs.repr()), _node.site)
 
-        self.nstlvl -= 1
-        #! end
-
     def ast_unary_unpack(self, _node):
         """
              $0    $1
             _op  _rhs
         """
-        self.nstlvl += 1
-        if  self.nstlvl >= MAX_NESTING_LEVEL:
-            error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
-
         _op = _node.get(0)
         self.visit(_node.get(1)) # rhs
 
@@ -882,10 +983,6 @@ class generator(constantevaluator):
              $0    $1   $2
             _lhs  _op  _rhs
         """
-        self.nstlvl += 1
-        if  self.nstlvl >= MAX_NESTING_LEVEL:
-            error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
-        
         _eval =\
         self.try_eval_bin_op(_node)
 
@@ -1132,17 +1229,48 @@ class generator(constantevaluator):
         if  _operation.iserror():
             error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.site)
 
-        self.nstlvl -= 1
-        #! end
-
     def ast_shortc_op(self, _node):
         """
              $0    $1   $2
             _lhs  _op  _rhs
         """
-        self.nstlvl += 1
-        if  self.nstlvl >= MAX_NESTING_LEVEL:
-            error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
+        _eval =\
+        self.try_eval_short_op(_node)
+        
+        if  _eval != ...:
+            if  _eval[0].isint():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, iload, _eval[1])
+            
+            elif _eval[0].isfloat():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, fload, _eval[1])
+            
+            elif _eval[0].isstring():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, sload, _eval[1])
+
+            elif _eval[0].isboolean():
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, bload, _eval[1])
+
+            else:
+                push_ttable(self, _eval[0])
+
+                #! opcode
+                emit_opcode(self, nload, _eval[1])
+            
+            return
+
+        #! === NOT EVALUATED ===
 
         _target = ...
 
@@ -1174,18 +1302,11 @@ class generator(constantevaluator):
         #! emit as any
         push_ttable(self, any_t())
 
-        self.nstlvl -= 1
-        #! end
-
     def ast_simple_ass(self, _node):
         """
              $0    $1   $2
             _lhs  _op  _rhs
         """
-        self.nstlvl += 1
-        if  self.nstlvl >= MAX_NESTING_LEVEL:
-            error.raise_tracked(error_category.CompileError, "max nesting level for expression reached.", _node.site)
-
         #! right
         self.visit(_node.get(2))
 
@@ -1300,8 +1421,279 @@ class generator(constantevaluator):
             else:
                 error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
-        self.nstlvl -= 1
-        #! end
+#! TODO: simplify simple_assignment and augmented assignment.!!!!!!
+
+    def ast_augment_ass(self, _node):
+        """
+             $0    $1   $2
+            _lhs  _op  _rhs
+        """
+        _op = _node.get(1)
+
+        #! right
+        self.visit(_node.get(2))
+
+        #! left
+        self.visit(_node.get(0))
+
+        _lhs = self.tstack.popp()
+        _rhs = self.tstack.popp()
+
+        #! default
+        _operation = operation.op_error_t()
+
+        if  _op == "^^=":
+            _operation = _lhs.pow(_rhs)
+
+            #! emit int|float type
+            push_ttable(self, _operation)
+
+            if  _operation.isint():
+                #! opcode
+                emit_opcode(self, intpow)
+
+            elif _operation.isfloat():
+                #! opcode
+                emit_opcode(self, fltpow)
+        
+        elif _op == "*=":
+            _operation = _lhs.mul(_rhs)
+
+            #! emit int|float type
+            push_ttable(self, _operation)
+
+            if  _operation.isint():
+                #! opcode
+                emit_opcode(self, intmul)
+
+            elif _operation.isfloat():
+                #! opcode
+                emit_opcode(self, fltmul)
+        
+        elif _op == "/=":
+            _operation = _lhs.div(_rhs)
+
+            emit_opcode(self, quotient)
+        
+        elif _op == "%=":
+            _operation = _lhs.mod(_rhs)
+
+            #! emit int|float type
+            push_ttable(self, _operation)
+
+            if  _operation.isint():
+                #! opcode
+                emit_opcode(self, intrem)
+
+            elif _operation.isfloat():
+                #! opcode
+                emit_opcode(self, fltrem)
+        
+        elif _op == "+=":
+            _operation = _lhs.add(_rhs)
+
+            #! emit int|float type
+            push_ttable(self, _operation)
+
+            if  _operation.isint():
+                #! opcode
+                emit_opcode(self, intadd)
+
+            elif _operation.isfloat():
+                #! opcode
+                emit_opcode(self, fltadd)
+            
+            elif _operation.isstring():
+                #! opcode
+                emit_opcode(self, concat)
+
+            elif _operation.isarray():
+                #! rotate array
+                emit_opcode(self, rot1)
+
+                #! push or extend opcode
+                if  not _rhs.isarray():
+                    emit_opcode(self, array_push)
+
+                else:
+                    emit_opcode(self, array_pushall)
+            
+            elif _operation.ismap():
+                #! rotate array
+                emit_opcode(self, rot1)
+
+                emit_opcode(self, map_merge)
+        
+        elif _op == "-=":
+            _operation = _lhs.sub(_rhs)
+
+            #! emit int|float type
+            push_ttable(self, _operation)
+
+            if  _operation.isint():
+                #! opcode
+                emit_opcode(self, intsub)
+
+            elif _operation.isfloat():
+                #! opcode
+                emit_opcode(self, fltsub)
+        
+        elif _op == "<<=":
+            _operation = _lhs.shift(_rhs)
+
+            #! emit int type
+            push_ttable(self, _operation)
+
+            #! opcode
+            emit_opcode(self, lshift)
+
+        elif _op == ">>=":
+            _operation = _lhs.shift(_rhs)
+
+            #! emit int type
+            push_ttable(self, _operation)
+
+            #! opcode
+            emit_opcode(self, rshift)
+        
+        elif _op == "&":
+            _operation = _lhs.bitwise(_rhs)
+
+            #! emit int type
+            push_ttable(self, _operation)
+
+            #! opcode
+            emit_opcode(self, bitand)
+        
+        elif _op == "^":
+            _operation = _lhs.bitwise(_rhs)
+
+            #! emit int type
+            push_ttable(self, _operation)
+
+            #! opcode
+            emit_opcode(self, bitxor)
+        
+        elif _op == "|":
+            _operation = _lhs.bitwise(_rhs)
+
+            #! emit int type
+            push_ttable(self, _operation)
+
+            #! opcode
+            emit_opcode(self, bitor)
+        
+        if  _operation.iserror():
+            error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs.repr(), _op, _rhs.repr()), _node.site)
+
+        _lhs = _node.get(0)
+        _rhs = self.tstack.peek()
+
+        if  _lhs.type == ast_type.REF:
+
+            #! check if exist
+            if  not self.symtbl.contains(_lhs.get(0)):
+                error.raise_tracked(error_category.CompileError, "%s is not defined." % _lhs.get(0), _node.site)
+            
+            _info = self.symtbl.lookup(_lhs.get(0))
+
+            if  _info.is_constant():
+                error.raise_tracked(error_category.CompileError, "assignment of constant variable \"%s\"." % _lhs.get(0), _node.site)
+            
+            #! update datatype
+            _info.datatype = _rhs
+        
+            #! duplicate value
+            emit_opcode(self, dup_top)
+
+            #! opcode
+            emit_opcode(self, store_global if _info.is_global() else store_local, _info.get_name(), _info.get_offset())
+        
+        elif _lhs.type == ast_type.ELEMENT:
+            #! lhs[??] = rhs
+
+            #! duplicate value
+            emit_opcode(self, dup_top)
+
+            #! compile element
+            self.visit(_lhs.get(1))
+
+            _element_type = self.tstack.popp()
+
+            #! compile object
+            self.visit(_lhs.get(0))
+
+            _objtype = self.tstack.popp()
+
+            #! check if subscriptable
+            if  _objtype.isarray():
+                #! verify index
+                if  not _element_type.isint():
+                    error.raise_tracked(error_category.CompileError, "array index should be int, got %s." % _element_type.repr(), _node.site)
+
+                #! check if element type matches
+                if  not _objtype.elementtype.matches(_rhs):
+                    error.raise_tracked(error_category.CompileError, "element type mismatch. expected %s, got %s." % (_objtype.elementtype.repr(), _rhs.repr()), _node.site)
+
+                #! opcode
+                emit_opcode(self, array_set)
+            
+            elif _objtype.ismap():
+                #! verify element key
+                if  not _objtype.keytype.matches(_element_type):
+                    error.raise_tracked(error_category.CompileError, "%s key should be %s, got %s." % (_objtype.repr(), _objtype.keytype.repr(), _element_type.repr()), _node.site)
+
+                #! check if element type matches
+                if  not _objtype.valtype.matches(_rhs):
+                    error.raise_tracked(error_category.CompileError, "value type mismatch for %s. expected %s, got %s." % (_objtype.repr(), _objtype.valtype.repr(), _rhs.repr()), _node.site)
+
+                #! opcode
+                emit_opcode(self, map_set)
+
+            else:
+                error.raise_tracked(error_category.CompileError, "%s is not subscriptable." % _objtype.repr(), _node.site)
+
+        elif _lhs.type == ast_type.ATTRIBUTE:
+            #! lhs.attrib
+
+            #! duplicate value
+            emit_opcode(self, dup_top)
+
+            #! visit object
+            self.visit(_lhs.get(0))
+
+            #! type
+            _dtype = self.tstack.popp()
+
+            if  _dtype.isinstance():
+
+                if  not self.symtbl.contains(_dtype.repr()):
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
+
+                #! structtable
+                _info = self.symtbl.lookup(_dtype.repr())
+
+                _type = _info.get_datatype()
+
+                if  not _type.istype():
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
+                
+                if  not _type.hasAttribute(_lhs.get(1)):
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
+
+                _attribtype = _type.getAttribute(_lhs.get(1))
+
+                if  not _attribtype.matches(_rhs):
+                    error.raise_tracked(error_category.CompileError, "%s.%s requires %s, got %s." % (_dtype.repr(), _lhs.get(1), _attribtype.repr(), _rhs.repr()), _node.site)
+
+                #! push attribute as string
+                emit_opcode(self, sload, _lhs.get(1))
+
+                #! set
+                emit_opcode(self, set_attribute)
+
+            else:
+                error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
     #! ========== compound statement ==========
 
@@ -1737,6 +2129,9 @@ class generator(constantevaluator):
 
         #! cond dtype
         _condtype = self.tstack.popp()
+
+        if  _condtype.isany():
+            error.raise_tracked(error_category.CompileError, "type of switch condition can't be unknown at compile time.", _node.get(0).site)
 
         _cases = _node.get(1)[0]
 

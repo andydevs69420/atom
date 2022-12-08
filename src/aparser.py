@@ -11,13 +11,48 @@ class parser(object):
     """ Parser for atom.
     """
 
+    MAX_NESTED_EXPR = 255
+    MAX_NESTED_TYPE = 10
+
     def __init__(self, _state):
         self.state     = _state
         self.lexer     = lexer(self.state)
         self.lookahead = self.lexer.getNext()
         self.previous  = self.lexer
         self.context   = []
+        self.nestedtyp = 0
+        self.nestedexp = 0
     
+    #! ======= NESTING CONTROL ========
+
+    def save(self, _type=False):
+        return self.nestedexp if not _type else self.nestedtyp
+    
+    def incr(self, _type=False):
+        if  not _type:
+            self.nestedexp += 1
+            if  self.nestedexp >= parser.MAX_NESTED_EXPR:
+                error.raise_untracked(error_category.ParseError, "too much nesting level for an expression!!!")
+
+        else:
+            self.nestedtyp += 1
+            if  self.nestedtyp >= parser.MAX_NESTED_TYPE:
+                error.raise_untracked(error_category.ParseError, "too much nesting level for a type!!!")
+    
+    def decr(self, _type=False):
+        if  not _type:
+            self.nestedexp -= 1
+
+        else:
+            self.nestedtyp -= 1
+
+    def rest(self, _saved, _type=False):
+        if  _type == False:
+            self.nestedexp = _saved
+        
+        else:
+            self.nestedtyp = _saved
+
     #! =========== CONTEXT  ===========
     def enter(self, _ctx):
         self.context.append(_ctx)
@@ -539,6 +574,9 @@ class parser(object):
         _start = self.lookahead
         _array = _start.value
 
+        #! nesting
+        self.incr(_type=True)
+
         #! "array"
         self.expect_both(token_type.IDENTIFIER, type_names.ARRAY)
 
@@ -549,6 +587,9 @@ class parser(object):
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
+
+        #! terminated
+        self.decr(_type=True)
 
         return expr_ast(
             ast_type.ARRAY_T, self.d_location(_start), _array, _internal)
@@ -567,6 +608,9 @@ class parser(object):
         _start = self.lookahead
         _array = _start.value
 
+        #! nesting
+        self.incr(_type=True)
+
         #! "array"
         self.expect_both(token_type.IDENTIFIER, type_names.ARRAY)
 
@@ -577,6 +621,9 @@ class parser(object):
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
+
+        #! terminted
+        self.decr(_type=True)
 
         return expr_ast(
             ast_type.ARRAY_T, self.d_location(_start), _array, _internal)
@@ -595,6 +642,9 @@ class parser(object):
         _start = self.lookahead
         _fn    = _start.value
 
+        #! nesting
+        self.incr(_type=True)
+
         #! "fn"
         self.expect_both(token_type.IDENTIFIER, type_names.FN)
 
@@ -605,6 +655,9 @@ class parser(object):
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
+
+        #! terminated
+        self.decr(_type=True)
 
         return expr_ast(
             ast_type.FN_T, self.d_location(_start), _fn, _return)
@@ -624,6 +677,9 @@ class parser(object):
         _start = self.lookahead
         _fn    = _start.value
 
+        #! nesting
+        self.incr(_type=True)
+
         #! "fn"
         self.expect_both(token_type.IDENTIFIER, type_names.FN)
 
@@ -634,6 +690,9 @@ class parser(object):
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
+
+        #! terminated
+        self.decr(_type=True)
 
         return expr_ast(
             ast_type.FN_T, self.d_location(_start), _fn, _return)
@@ -652,6 +711,9 @@ class parser(object):
         _start = self.lookahead
         _map   = _start.value
 
+        #! nesting
+        self.incr(_type=True)
+
         #! "map"
         self.expect_both(token_type.IDENTIFIER, type_names.MAP)
 
@@ -667,6 +729,9 @@ class parser(object):
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
+
+        #! terminated
+        self.decr(_type=True)
 
         return expr_ast(
             ast_type.MAP_T, self.d_location(_start), _map, _key_type, _val_type)
@@ -685,6 +750,9 @@ class parser(object):
         _start = self.lookahead
         _map   = _start.value
 
+        #! nesting
+        self.incr(_type=True)
+
         #! "map"
         self.expect_both(token_type.IDENTIFIER, type_names.MAP)
 
@@ -700,6 +768,9 @@ class parser(object):
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
+
+        #! terminated
+        self.decr(_type=True)
 
         return expr_ast(
             ast_type.MAP_T, self.d_location(_start), _map, _key_type, _val_type)
@@ -914,10 +985,18 @@ class parser(object):
         _start = self.lookahead
         _node  = self.atom()
 
+        if not _node: return _node
+
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, ".") or\
               self.check_both(token_type.SYMBOL, "[") or\
               self.check_both(token_type.SYMBOL, "!") or\
               self.check_both(token_type.SYMBOL, "("):
+
+            #! nesting
+            self.incr()
 
             if  self.check_both(token_type.SYMBOL, "."):
                 #! '.'
@@ -972,11 +1051,18 @@ class parser(object):
                 _node = expr_ast(
                     ast_type.CALL, self.d_location(_start), _node, _args)
         
+        #! restore
+        self.rest(_saved)
+
         #! end
         return _node
 
     def unary_op(self):
         _start = self.lookahead
+        _node  = ...
+
+        #! nesting
+        self.incr()
 
         if  self.check_both(token_type.SYMBOL, "~" ) or\
             self.check_both(token_type.SYMBOL, "!" ) or\
@@ -990,11 +1076,11 @@ class parser(object):
             if  not _rhs:
                 error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
 
-            return expr_ast(
+            _node = expr_ast(
                 ast_type.UNARY_OP, self.d_location(_start), _opt, _rhs)
         
         #! unpack
-        if  self.check_both(token_type.SYMBOL, "*" ):
+        elif self.check_both(token_type.SYMBOL, "*" ):
 
             if  not self.under(context.ARRAY, True):
                 error.raise_tracked(error_category.SemanticError, "cannot unpack here.", self.d_location(_start))
@@ -1006,10 +1092,10 @@ class parser(object):
             if  not _rhs:
                 error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
 
-            return expr_ast(
+            _node = expr_ast(
                 ast_type.UNARY_UNPACK, self.d_location(_start), _opt, _rhs)
         
-        if  self.check_both(token_type.SYMBOL, "**"):
+        elif self.check_both(token_type.SYMBOL, "**"):
 
             if  not self.under(context.MAP, True):
                 error.raise_tracked(error_category.SemanticError, "cannot unpack here.", self.d_location(_start))
@@ -1021,11 +1107,17 @@ class parser(object):
             if  not _rhs:
                 error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
 
-            return expr_ast(
+            _node = expr_ast(
                 ast_type.UNARY_UNPACK, self.d_location(_start), _opt, _rhs)
+        
+        else:
+            _node = self.member()
+
+        #! terminated
+        self.decr()
 
         #! end
-        return self.member()
+        return _node
 
     def power(self):
         """ POWER expression.
@@ -1039,8 +1131,14 @@ class parser(object):
 
         if not _node: return _node
 
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, "^^"):
             
+            #! nesting
+            self.incr()
+
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
@@ -1051,6 +1149,9 @@ class parser(object):
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
         
+        #! restore
+        self.rest(_saved)
+
         #! end
         return _node
 
@@ -1066,10 +1167,16 @@ class parser(object):
 
         if not _node: return _node
 
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, "*") or\
               self.check_both(token_type.SYMBOL, "/") or\
               self.check_both(token_type.SYMBOL, "%"):
             
+            #! nesting
+            self.incr()
+
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
@@ -1080,6 +1187,9 @@ class parser(object):
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
         
+        #! restore
+        self.rest(_saved)
+
         #! end
         return _node
 
@@ -1095,8 +1205,14 @@ class parser(object):
 
         if not _node: return _node
 
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, "+") or\
               self.check_both(token_type.SYMBOL, "-"):
+            
+            #! nesting
+            self.incr()
             
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
@@ -1108,6 +1224,9 @@ class parser(object):
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
         
+        #! restore
+        self.rest(_saved)
+
         #! end
         return _node
     
@@ -1123,9 +1242,15 @@ class parser(object):
 
         if not _node: return _node
 
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, "<<") or\
               self.check_both(token_type.SYMBOL, ">>"):
             
+            #! nesting
+            self.incr()
+
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
@@ -1136,6 +1261,9 @@ class parser(object):
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
         
+        #! restore
+        self.rest(_saved)
+
         #! end
         return _node
     
@@ -1151,11 +1279,17 @@ class parser(object):
 
         if not _node: return _node
 
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, "<" ) or\
               self.check_both(token_type.SYMBOL, "<=") or\
               self.check_both(token_type.SYMBOL, ">" ) or\
               self.check_both(token_type.SYMBOL, ">="):
             
+            #! nesting
+            self.incr()
+
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
@@ -1166,6 +1300,9 @@ class parser(object):
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
         
+        #! restore
+        self.rest(_saved)
+
         #! end
         return _node
     
@@ -1181,9 +1318,15 @@ class parser(object):
 
         if not _node: return _node
 
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, "==") or\
               self.check_both(token_type.SYMBOL, "!="):
             
+            #! nesting
+            self.incr()
+
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
@@ -1194,6 +1337,9 @@ class parser(object):
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
         
+        #! restore
+        self.rest(_saved)
+
         #! end
         return _node
     
@@ -1209,10 +1355,16 @@ class parser(object):
 
         if not _node: return _node
 
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, "&") or\
               self.check_both(token_type.SYMBOL, "|") or\
               self.check_both(token_type.SYMBOL, "^"):
             
+            #! nesting
+            self.incr()
+
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
@@ -1223,6 +1375,9 @@ class parser(object):
             _node = expr_ast(
                 ast_type.BINARY_OP, self.d_location(_start), _node, _opt, _rhs)
         
+        #! restore
+        self.rest(_saved)
+
         #! end
         return _node
     
@@ -1238,9 +1393,15 @@ class parser(object):
 
         if not _node: return _node
 
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, "&&") or\
               self.check_both(token_type.SYMBOL, "||"):
             
+            #! nesting
+            self.incr()
+
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
@@ -1251,6 +1412,9 @@ class parser(object):
             _node = expr_ast(
                 ast_type.SHORTC_OP, self.d_location(_start), _node, _opt, _rhs)
         
+        #! restore
+        self.rest(_saved)
+
         #! end
         return _node
     
@@ -1264,8 +1428,16 @@ class parser(object):
         _start = self.lookahead
         _node  = self.short_circuiting()
 
+        if not _node: return _node
+
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, "="):
             
+            #! nesting
+            self.incr()
+
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
@@ -1275,6 +1447,9 @@ class parser(object):
             
             _node = expr_ast(
                 ast_type.SIMPLE_ASS, self.d_location(_start), _node, _opt, _rhs)
+
+        #! restore
+        self.rest(_saved)
 
         #! end
         return _node
@@ -1289,6 +1464,11 @@ class parser(object):
         _start = self.lookahead
         _node  = self.simple_assignment()
 
+        if not _node: return _node
+
+        #! save old
+        _saved = self.save()
+
         while self.check_both(token_type.SYMBOL, "~=" ) or\
               self.check_both(token_type.SYMBOL, "^^=") or\
               self.check_both(token_type.SYMBOL, "*=" ) or\
@@ -1302,6 +1482,9 @@ class parser(object):
               self.check_both(token_type.SYMBOL, "|=" ) or\
               self.check_both(token_type.SYMBOL, "^=" ):
             
+            #! nesting
+            self.incr()
+
             _opt = self.lookahead.value
             self.expect_t(token_type.SYMBOL)
 
@@ -1311,6 +1494,9 @@ class parser(object):
             
             _node = expr_ast(
                 ast_type.AUGMENT_ASS, self.d_location(_start), _node, _opt, _rhs)
+
+        #! restore
+        self.rest(_saved)
 
         #! end
         return _node
@@ -2147,6 +2333,9 @@ class parser(object):
         
         #! leave ctx
         self.leave(context.GLOBAL)
+
+        assert self.nestedtyp <= 0, "uncaught incremental!!!"
+        assert self.nestedexp <= 0, "uncaught incremental!!!"
 
         #! end
         return tuple(_stmnt)

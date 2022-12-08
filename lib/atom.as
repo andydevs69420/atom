@@ -3,10 +3,22 @@
 
 import[std];
 
+struct Pet 
+{
+    name:str;
+    dob:str;
+}
+
 fun[int] main(_args:array[str])
 {   
-    let x = true + 2 * 100;
-   
-    print(2 != 1 + 1);
+    print(true || 3);
+
+    let x = false;
+
+    switch (x || 3) 
+    {
+        case !true, false: print("asdasd");
+    }
+
     return 0b0000011;
 }

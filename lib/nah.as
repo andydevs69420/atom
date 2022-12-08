@@ -72,3 +72,31 @@
 
         #! END IF
         _jump_to_end[2] = get_byteoff(self)
+
+
+
+const mypet = Pet("Milo", "Jan/27/2020");
+
+    print(mypet);
+    print(mypet.name);
+    print(mypet.dob);
+
+    print(mypet);
+
+    let x = 0;
+
+    for (x = 0; x < 10; x += 1)
+    {
+        print(x);
+    }
+
+    switch(2 && 3) {
+
+        case 101, "asdasd": {
+            print("Found!");
+        }
+        case 10, 2:
+            print("Found at case 2!");
+        else:
+            print("Not found!!");
+    }
