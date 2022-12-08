@@ -40,6 +40,7 @@ class ast_type(Enum):
     ENUM          = 35
     IF_STMNT      = 36
     SWITCH_STMNT  = 37
+    FOR_STMNT     = 38
 
     IMPORT        = 100
     NATIVE_FUNCTION  = 101

@@ -49,12 +49,16 @@ struct Person, Employee, Tao
     age:int;
 }
 
-enum myenum {
+enum myenum
+{
     a = 1,
     b = 0x02,
     c = 0o03,
     d = 0b011
 }
+
+var x;
+
 
 fun[int] main(_args:array[str])
 {   
@@ -63,22 +67,16 @@ fun[int] main(_args:array[str])
     const e2 = Employee("Mark", 50);
     print(p1);
     print(e1);
-
     const arr = [
         p1, e1
     ];
-
     print(arr);
-
     arr + Tao("Josh", 100);
 
-    print(arr);
+    for(x = 0; x < 10000; x = x + 1)
+        print(x);
 
-    print(myenum);
-    print(myenum.a);
-    print(myenum.b);
-
-    return 2;
+    return 0b0000011;
 }
 
 

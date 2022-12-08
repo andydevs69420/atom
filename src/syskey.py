@@ -23,6 +23,7 @@ class keywords:
     SWITCH = "switch"
     CASE   = "case"
     ELSE   = "else"
+    FOR    = "for"
 
     WRAP   = "wrap"
     IMPORT = "import"

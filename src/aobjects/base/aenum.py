@@ -9,13 +9,13 @@ class aenum(aobject):
 
     def __str__(self):
         _fmt  = ""
-        _fmt += "enum " + self.enumname + " {\n"
+        _fmt += "enum " + self.enumname + "\n{\n"
         
         _keys = self.keys()
 
         _idx = 0
         for _k, _v in zip(_keys, self.values()):
-            _fmt += "\t" + _k.__str__() + " = " + _v.__repr__()
+            _fmt += "    " + _k.__str__() + " = " + _v.__repr__()
 
             if  _idx < (len(_keys) - 1):
                 _fmt += ", "

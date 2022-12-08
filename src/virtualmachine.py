@@ -978,6 +978,15 @@ class virtualmachine(object):
         #! pop first before check
         if  popp_operand(self).raw:
             self.state.stack.peek().ipointer = (_bytecode_chunk[2] // 2) - 1
+        
+    def jump_if_false(self, _bytecode_chunk):
+        #! peek first before check
+        if  not peek_operand(self).raw:
+            self.state.stack.peek().ipointer = (_bytecode_chunk[2] // 2) - 1
+            return
+        
+        #! pop if not false
+        popp_operand(self)
     
     def jump_to(self, _bytecode_chunk):
         self.state.stack.peek().ipointer = (_bytecode_chunk[2] // 2) - 1

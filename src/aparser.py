@@ -1310,13 +1310,13 @@ class parser(object):
                 error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
             
             _node = expr_ast(
-                ast_type.AUGMENTED_ASS, self.d_location(_start), _node, _opt, _rhs)
+                ast_type.AUGMENT_ASS, self.d_location(_start), _node, _opt, _rhs)
 
         #! end
         return _node
 
     def nullable_expr(self):
-        return self.simple_assignment()
+        return self.augmented_assignment()
     
     def non_nullable_expr(self):
         _node = self.nullable_expr()
@@ -1343,6 +1343,8 @@ class parser(object):
             return self.if_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.SWITCH):
             return self.switch_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.FOR):
+            return self.for_stmnt()
         #! end
         return self.simple_stmnt()
 
@@ -1646,6 +1648,44 @@ class parser(object):
 
         #! end
         return tuple(_cases)
+
+    def for_stmnt(self):
+        """ FOR statement.
+
+            Syntax|Grammar
+            --------------
+            "for" '(' nullable_expression ';' nullable_expression ';' nullable_expression ')' compound_stmnt ;
+
+            Returns
+            -------
+            ast
+        """
+        #! "for"
+        self.expect_both(token_type.IDENTIFIER, keywords.FOR)
+
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        _init = self.nullable_expr()
+
+        #! ';'
+        self.expect_both(token_type.SYMBOL, ";")
+
+        _cond = self.nullable_expr()
+
+        #! ';'
+        self.expect_both(token_type.SYMBOL, ";")
+        
+        _mutt = self.nullable_expr() #! mutation
+        
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
+        #! body
+        _stmnt = self.compound_stmnt()
+
+        return stmnt_ast(
+            ast_type.FOR_STMNT, "...", _init, _cond, _mutt, _stmnt)
 
     def simple_stmnt(self):
         """ SIMPLE statement.

@@ -1551,6 +1551,58 @@ class generator(object):
 
         #! pop switch condition
         emit_opcode(self, pop_top)
+    
+    def ast_for_stmnt(self, _node):
+        """
+              $0    $1    $2    $3
+            _init _cond _mutt _stmnt
+        """
+
+        #! if has init
+        if  _node.get(0):
+            #! compile initialize
+            self.visit(_node.get(0))
+
+            #! ignore type
+            self.tstack.popp()
+
+            #! pop initialize
+            emit_opcode(self, pop_top)
+
+        _loop_begin = get_byteoff(self)
+
+        #! if has condition
+        if  _node.get(1):
+            #! compile condition
+            self.visit(_node.get(1))
+
+            #! ignore type
+            self.tstack.popp()
+
+        _jump_to_end_for =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+
+        #! compile stmnt|body
+        self.visit(_node.get(3))
+
+        #! NOTE: body|statement does not emit type, so do not pop.
+
+        #! if has mutation
+        if  _node.get(2):
+            #! compile mutation
+            self.visit(_node.get(2))
+
+            #! ignore type
+            self.tstack.popp()
+
+            #! pop mutation
+            emit_opcode(self, pop_top)
+
+        #! jumpto loop begin
+        emit_opcode(self, jump_to, _loop_begin)
+
+        #! END FOR
+        _jump_to_end_for[2] = get_byteoff(self)
 
     #! =========== simple statement ===========
 
