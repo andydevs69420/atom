@@ -41,7 +41,8 @@ class ast_type(Enum):
     IF_STMNT      = 36
     SWITCH_STMNT  = 37
     FOR_STMNT     = 38
-    BLOCK_STMNT   = 39
+    WHILE_STMNT   = 39
+    BLOCK_STMNT   = 40
 
     IMPORT        = 100
     NATIVE_FUNCTION  = 101
@@ -49,9 +50,10 @@ class ast_type(Enum):
     LET_STMNT     = 103
     CONST_STMNT   = 104
     BREAK_STMNT   = 105
-    RETURN_STMNT  = 106
-    EXPR_STMNT    = 107
-    SOURCE        = 108
+    CONTINUE_STMNT= 106
+    RETURN_STMNT  = 107
+    EXPR_STMNT    = 108
+    SOURCE        = 109
 
 
 

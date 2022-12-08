@@ -1345,6 +1345,8 @@ class parser(object):
             return self.switch_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.FOR):
             return self.for_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.WHILE):
+            return self.while_stmnt()
         if  self.check_both(token_type.SYMBOL, "{"):
             return self.block_of_stmnt()
         #! end
@@ -1693,6 +1695,38 @@ class parser(object):
         return stmnt_ast(
             ast_type.FOR_STMNT, "...", _init, _cond, _mutt, _stmnt)
     
+    def while_stmnt(self):
+        """ WHILE statement.
+
+            Syntax|Grammar
+            --------------
+            "while" '(' non_nullable_expression ')' compound_stmnt ;
+
+            Returns
+            -------
+            ast
+        """
+        #! "while"
+        self.expect_both(token_type.IDENTIFIER, keywords.WHILE)
+
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        _cond = self.non_nullable_expr()
+        
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
+        self.enter(context.LOOP)
+
+        #! body
+        _stmnt = self.compound_stmnt()
+
+        self.leave(context.LOOP)
+
+        return stmnt_ast(
+            ast_type.WHILE_STMNT, "...", _cond, _stmnt)
+    
     def block_of_stmnt(self):
         """ BLOCK OF STATEMENT.
 
@@ -1747,6 +1781,8 @@ class parser(object):
             return self.const_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.BREAK):
             return self.break_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.CONTINUE):
+            return self.continue_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.RETURN):
             return self.return_stmnt()
 
@@ -1971,6 +2007,31 @@ class parser(object):
 
         return stmnt_ast(
             ast_type.BREAK_STMNT, "...")
+    
+    def continue_stmnt(self):
+        """ CONTINUE statement.
+
+            Syntax|Grammar
+            --------------
+            "continue" ';' ;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+
+        #! "continue"
+        self.expect_both(token_type.IDENTIFIER, keywords.CONTINUE)
+
+        if  not self.under(context.LOOP, False):
+            error.raise_tracked(error_category.SemanticError, "invalid \"continue\" outside loop.", self.d_location(_start))
+
+        self.expect_both(token_type.SYMBOL, ";")
+        #! ';'
+
+        return stmnt_ast(
+            ast_type.CONTINUE_STMNT, "...")
 
     def return_stmnt(self):
         _start = self.lookahead

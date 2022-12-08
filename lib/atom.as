@@ -43,7 +43,7 @@ switch(100)
 struct Person, Employee, Tao
 {   
     name:str;
-    age:int;
+    age :int;
 }
 
 enum myenum
@@ -59,14 +59,14 @@ var x = 0;
 
 fun[int] main(_args:array[str])
 {   
-    for(;;)
-    {
-        print(x );
-        x = x + 1;
+    let vvv = 0;
+    while (!false)
+    {   print(vvv);
+        vvv = vvv + 1;
+        if (vvv >= 2000)
+            break;
     }
-    print(x);
-    print(Tao);
-    print(myenum);
-    print(hello_t);
+    print(vvv);
+    if (!true) print("hola!");
     return 0b0000011;
 }
