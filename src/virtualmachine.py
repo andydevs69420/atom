@@ -3,6 +3,7 @@ from aobjects import *
 from abuiltins.getter import getbuiltin
 from mem import *
 from error import (error_category, error)
+from atyping import (integer_t, signedbyte_t, signedshort_t, signedint_t, signedlong_t, signedbigint_t)
 
 
 TOP    = -1
@@ -18,6 +19,8 @@ def peek_operand(_cls):
     return _cls.state.oprnd.peek()
 
 
+
+
 class virtualmachine(object):
     """ Virtual machine for atom.
     """
@@ -26,6 +29,7 @@ class virtualmachine(object):
 
         #! global state
         self.state = _state
+        self.stacktrace = []
 
 
     #! =========== opcode ============
@@ -39,6 +43,42 @@ class virtualmachine(object):
         #! push to opstack
         push_operand(self, _int)
     
+    def assert_i8(self, _bytecode_chunk):
+        #! get size
+        _result_t = integer_t.auto(peek_operand(self).raw)
+    
+        if  not signedbyte_t().matches(_result_t):
+            error.raise_fromstack(error_category.RuntimeError, "integer underflowed or overflowed, expected i8, got %s." % _result_t.repr(), self.stacktrace)
+           
+    
+    def assert_i16(self, _bytecode_chunk):
+        #! get size
+        _result_t = integer_t.auto(peek_operand(self).raw)
+
+        if  not signedshort_t().matches(_result_t):
+            error.raise_fromstack(error_category.RuntimeError, "integer underflowed or overflowed, expected i8, got %s." % _result_t.repr(), self.stacktrace)
+
+    def assert_i32(self, _bytecode_chunk):
+        #! get size
+        _result_t = integer_t.auto(peek_operand(self).raw)
+
+        if  not signedbigint_t().matches(_result_t):
+            error.raise_fromstack(error_category.RuntimeError, "integer underflowed or overflowed, expected i8, got %s." % _result_t.repr(), self.stacktrace)
+
+    def assert_i64(self, _bytecode_chunk):
+        #! get size
+        _result_t = integer_t.auto(peek_operand(self).raw)
+
+        if  not signedlong_t().matches(_result_t):
+            error.raise_fromstack(error_category.RuntimeError, "integer underflowed or overflowed, expected i8, got %s." % _result_t.repr(), self.stacktrace)
+
+    def assert_i128(self, _bytecode_chunk):
+        #! get size
+        _result_t = integer_t.auto(peek_operand(self).raw)
+
+        if  not signedbigint_t().matches(_result_t):
+            error.raise_fromstack(error_category.RuntimeError, "integer underflowed or overflowed, expected i8, got %s." % _result_t.repr(), self.stacktrace)
+
     def fload(self, _bytecode_chunk):
         _flt =\
         afloat(_bytecode_chunk[2])
@@ -317,6 +357,9 @@ class virtualmachine(object):
     def call_native(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
 
+        #! append
+        self.stacktrace.append(self.state.calls[_bytecode_chunk[3]])
+
         #! params
         _param = []
 
@@ -338,6 +381,9 @@ class virtualmachine(object):
 
     def call_function(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
+        
+        #! append
+        self.stacktrace.append(self.state.calls[_bytecode_chunk[3]])
 
         #! params
         _tmp = []

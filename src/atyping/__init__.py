@@ -6,7 +6,7 @@ from .nonprimitive_t import nonprimitive_t
 from .any_t import any_t
 from .number_t import number_t
 from .integer_t import integer_t, signedbyte_t, signedshort_t, signedint_t, signedlong_t, signedbigint_t
-from .float_t import float_t
+from .float_t import float_t, float32_t, float64_t
 from .string_t import string_t
 from .boolean_t import boolean_t
 from .null_t import null_t

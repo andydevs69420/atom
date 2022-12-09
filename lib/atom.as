@@ -12,13 +12,12 @@ struct Pet
 }
 
 
-fun[int] main(_args:array[str])
+
+fun[i8] add(_a:i8, _b:i8) { return _a * _b; }
+
+fun[i8] main(_args:array[str])
 {   
-
-    print(123e22);
-    print(123 * (10 ^^ 22.0));
-
-    print((2 * 6000) + "asdasd");
-
+    print(Pet("Milo", "Jun"));
+    add(6, 127);
     return 0b0000011;
 }

@@ -20,6 +20,15 @@ class error:
         exit(0x01)
     
     @staticmethod
+    def raise_fromstack(_category, _message, _stack):
+        print("[%s] %s" % (_category.name, _message), file=stderr)
+        for _stck in _stack[::-1]:
+            print(_stck)
+        exit(0x01)
+    
+    @staticmethod
     def raise_tracked(_category, _message, _location):
         print("[%s] %s \n%s" % (_category.name, _message, _location), file=stderr)
         exit(0x01)
+
+    

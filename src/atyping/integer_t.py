@@ -74,6 +74,12 @@ class integer_t(number_t):
     def isint(self):
         return True
     
+    def ismax8(self):return False
+    def ismax16(self):return False
+    def ismax32(self):return False
+    def ismax64(self):return False
+    def ismax128(self):return False
+    
     #! ==== integer specific op ====
 
     def bitnot(self):
@@ -194,6 +200,7 @@ class signedshort_t(integer_t):
     def isshort(self):
         return True
 
+
 class signedint_t(integer_t):
 
     def __init__(self):
@@ -215,6 +222,7 @@ class signedint_t(integer_t):
 
     def isint32(self):
         return True
+
 
 class signedlong_t(integer_t):
 

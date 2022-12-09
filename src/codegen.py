@@ -50,11 +50,27 @@ class constantevaluator(object):
         #! parse
         _integer = int(_node.get(0))
 
+        #! get size
+        _intsize = integer_t.auto(_integer)
+
+        if  _intsize.iserror():
+            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+
         #! make auto int
-        return (integer_t.auto(_integer), _integer)
+        return (_intsize, _integer)
     
     def eval_float(self, _node):
-        return (float_t(), float(_node.get(0)))
+        #! parse
+        _float = float(_node.get(0))
+
+        #! get size
+        _fsize = float_t.auto(_fsize)
+
+        if  _fsize.iserror():
+            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+
+        #! make auto int
+        return (_fsize, _float)
 
     def eval_str(self, _node):
         return (string_t() , str(_node.get(0)))
@@ -126,50 +142,129 @@ class constantevaluator(object):
             _result = _lhs[0].pow(_rhs[0])
 
             if  not _result.iserror():
-                return (_result, _lhs[1] ** _rhs[1])
+                _data = _lhs[1] ** _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                else:
+                    #! get size
+                    if  float_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
 
         if  _op == "*":
             _result = _lhs[0].mul(_rhs[0])
 
             if  not _result.iserror():
-                print(_lhs[1], "*", _rhs[1])
-                return (_result, _lhs[1] * _rhs[1])
+                _data = _lhs[1] * _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                else:
+                    #! get size
+                    if  float_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
 
         if  _op == "/":
             _result = _lhs[0].div(_rhs[0])
             
             if  not _result.iserror():
-                return (_result, _lhs[1] * _rhs[1])
+                _data = _lhs[1] / _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                else:
+                    #! get size
+                    if  float_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
         
         if  _op == "%":
             _result = _lhs[0].mod(_rhs[0])
             
             if  not _result.iserror():
-                return (_result, _lhs[1] % _rhs[1])
+                _data = _lhs[1] % _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                else:
+                    #! get size
+                    if  float_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
         
         if  _op == "+":
             _result = _lhs[0].add(_rhs[0])
             
             if  not _result.iserror():
-                return (_result, _lhs[1] + _rhs[1])
+                _data = _lhs[1] + _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                else:
+                    #! get size
+                    if  float_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
         
         if  _op == "-":
             _result = _lhs[0].sub(_rhs[0])
             
             if  not _result.iserror():
-                return (_result, _lhs[1] - _rhs[1])
+                _data = _lhs[1] - _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                else:
+                    #! get size
+                    if  float_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
         
         if  _op == "<<":
             _result = _lhs[0].shift(_rhs[0])
             
             if  not _result.iserror():
-                return (_result, _lhs[1] << _rhs[1])
+                _data = _lhs[1] << _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
         
         if  _op == ">>":
             _result = _lhs[0].shift(_rhs[0])
             
             if  not _result.iserror():
-                return (_result, _lhs[1] >> _rhs[1])
+                _data = _lhs[1] >> _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
         
         if  _op == "<":
             _result = _lhs[0].relational(_rhs[0])
@@ -211,19 +306,40 @@ class constantevaluator(object):
             _result = _lhs[0].bitwise(_rhs[0])
             
             if  not _result.iserror():
-                return (_result, _lhs[1] & _rhs[1])
+                _data = _lhs[1] & _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
         
         if  _op == "^":
             _result = _lhs[0].bitwise(_rhs[0])
             
             if  not _result.iserror():
-                return (_result, _lhs[1] ^ _rhs[1])
+                _data = _lhs[1] ^ _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
         
         if  _op == "|":
             _result = _lhs[0].bitwise(_rhs[0])
             
             if  not _result.iserror():
-                return (_result, _lhs[1] | _rhs[1])
+                _data = _lhs[1] | _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
         
         #! end
         error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs[0].repr(), _op, _rhs[0].repr()), _node.site)
@@ -301,6 +417,8 @@ class generator(constantevaluator):
         self.loops  = []
         self.breaks = []
 
+        self.callid = 0
+
     #! =========== VISITOR ===========
     
     def visit(self, _node):
@@ -321,7 +439,27 @@ class generator(constantevaluator):
 
     def ast_int_t(self, _node):
         #! push int type
-        push_ttable(self, integer_t())
+        _tname = _node.get(0)
+
+        if  _tname == type_names.I8:
+            push_ttable(self, signedbyte_t())
+            return
+
+        elif _tname == type_names.I16:
+            push_ttable(self, signedshort_t())
+            return
+
+        elif _tname == type_names.I32:
+            push_ttable(self, signedint_t())
+            return
+        
+        elif _tname == type_names.I64:
+            push_ttable(self, signedlong_t())
+            return
+        elif _tname == type_names.I128:
+            push_ttable(self, signedbigint_t())
+            return
+        raise
     
     def ast_float_t(self, _node):
         #! push int type
@@ -390,14 +528,20 @@ class generator(constantevaluator):
     #! =========== CONST VAL ==========
 
     def ast_int(self, _node):
-        #! max is int 64
-        I64 = int(_node.get(0))
+        #! max is int 128
+        I128 = int(_node.get(0))
+
+        #! get size
+        _sze = integer_t.auto(I128)
+
+        if  _sze.iserror():
+            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
 
         #! type
-        push_ttable(self, integer_t.auto(I64))
+        push_ttable(self, _sze)
 
         #! opcode
-        emit_opcode(self, iload, I64)
+        emit_opcode(self, iload, I128)
     
 
     def ast_float(self, _node):
@@ -723,6 +867,10 @@ class generator(constantevaluator):
              $0      $1      $2
             object  name  parameters
         """
+        #! make call
+        self.state.calls[self.callid] = _node.site
+        self.callid += 1
+        
         #! wrap name
         _name = _node.get(1)
         
@@ -732,7 +880,7 @@ class generator(constantevaluator):
         #! type 
         _dtype = self.tstack.popp()
 
-        _wrapper = _dtype.repr() + "." + _name
+        _wrapper = _dtype.qualname() + "." + _name
         
         #! check wrapper
         if  not self.symtbl.contains(_wrapper):
@@ -783,7 +931,7 @@ class generator(constantevaluator):
             emit_opcode(self, rot1)
         
         #! emit
-        emit_opcode(self, call_function, len(_node.get(2)) + 1)
+        emit_opcode(self, call_function, len(_node.get(2)) + 1, self.callid - 1)
         
 
     def ast_call(self, _node):
@@ -791,6 +939,11 @@ class generator(constantevaluator):
              $0         $1
             object  parameters
         """
+
+        #! make call
+        self.state.calls[self.callid] = _node.site
+        self.callid += 1
+
         #! visit object
         self.visit(_node.get(0))
 
@@ -827,15 +980,15 @@ class generator(constantevaluator):
         #! opcode
         if  _functype.isnativefunction():
             #! emit
-            emit_opcode(self, call_native, len(_node.get(1)))
+            emit_opcode(self, call_native, len(_node.get(1)), self.callid - 1)
 
         elif _functype.isfunction():
             #! emit
-            emit_opcode(self, call_function, len(_node.get(1)))
+            emit_opcode(self, call_function, len(_node.get(1)), self.callid - 1)
 
         else:
             #! emit
-            emit_opcode(self, call_type, len(_node.get(1)))
+            emit_opcode(self, call_type, len(_node.get(1)), self.callid - 1)
     
     def ast_unary_op(self, _node):
         """
@@ -2875,7 +3028,7 @@ class generator(constantevaluator):
 
         #! name is "datatype + '.' + wrapper_name"
         
-        _name = _ptype0.repr() + "." + _node.get(1)
+        _name = _ptype0.qualname() + "." + _node.get(1)
 
         #! check if function name is already defined.
         if  self.symtbl.contains(_name):
@@ -2922,6 +3075,9 @@ class generator(constantevaluator):
 
         #! currentreturn
         _returntype = self.tstack.popp()
+
+        #! revalidate type(runtime level)
+        self.type_assert(_returntype)
 
         #! add return
         emit_opcode(self, return_control)
@@ -3140,8 +3296,45 @@ class generator(constantevaluator):
         if  not self.currentfunctiontype.matches(_dtype):
             error.raise_tracked(error_category.CompileError, "expected return type %s, got %s." %  (self.currentfunctiontype.repr(), _dtype.repr()), _node.site)
 
+        #! revalidate type(runtime level)
+        self.type_assert(self.currentfunctiontype)
+
         #! opcode
         emit_opcode(self, return_control)
+    
+    def type_assert(self, _returntype):
+
+        if  _returntype.isint():
+            #! check
+            if  _returntype.isbyte():
+                #! opcode
+                emit_opcode(self, assert_i8)
+
+            elif _returntype.isshort():
+                #! opcode
+                emit_opcode(self, assert_i16)
+            
+            elif _returntype.isint32():
+                #! opcode
+                emit_opcode(self, assert_i32)
+
+            elif _returntype.islong():
+                #! opcode
+                emit_opcode(self, assert_i64)
+            
+            elif _returntype.isbigint():
+                #! opcode
+                emit_opcode(self, assert_i128)
+
+        elif _returntype.isfloat():
+            #! check
+            if  _returntype.isfloat32():
+                #! opcode
+                emit_opcode(self, assert_f32)
+
+            elif _returntype.isfloat64():
+                #! opcode
+                emit_opcode(self, assert_f64)
 
     def ast_expr_stmnt(self, _node):
         #! statement
@@ -3223,8 +3416,12 @@ class codegen(generator):
         #! make it as array
         emit_opcode(self, build_array, len(self.state.aargv))
 
+        #! remap main
+        self.state.calls[self.callid] = _main.site
+        self.callid += 1
+
         #! call
-        emit_opcode(self, call_function, 1)
+        emit_opcode(self, call_function, 1, self.callid - 1)
 
         #! add return
         emit_opcode(self, return_control)

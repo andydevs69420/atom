@@ -7,9 +7,26 @@ def op_pow_div(_lhs, _rhs):
 
         Cast operation as float.
     """
-    if  _lhs.isint() or _lhs.isfloat() or _rhs.isint() or _rhs.isfloat():
-        return operation.op_float_t()
+    if  _lhs.isint() and _rhs.isint():
+        return operation.op_float64_t()
+    
+    elif _lhs.isint() and _rhs.isfloat32():
+        return operation.op_float32_t()
+    
+    elif _lhs.isint() and _rhs.isfloat64():
+        return operation.op_float64_t()
+    #! ====== float =====
+    elif _lhs.isfloat32() and _rhs.isint():
+        return operation.op_float32_t()
 
+    elif _lhs.isfloat32() and _rhs.isfloat32():
+        return operation.op_float32_t()
+    
+    elif _lhs.isfloat32() and _rhs.isfloat64():
+        return operation.op_float64_t()
+    #! ===== double =====
+    elif _lhs.isfloat32() or _rhs.isfloat64():
+        return operation.op_float64_t()
     #! end
     return operation.op_error_t()
 

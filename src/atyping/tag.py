@@ -23,6 +23,8 @@ class tag_t(object):
     def islong(self):return False
     def isbigint(self):return False
     def isfloat(self):return False
+    def isfloat32(self):return False
+    def isfloat64(self):return False
     def isstring(self):return False
     def isboolean(self):return False
     def isnull(self):return False

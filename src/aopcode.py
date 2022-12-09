@@ -6,7 +6,16 @@
 
 #! const
 iload  = "iload"
+assert_i8 = "assert_i8"
+assert_i16 = "assert_i16"
+assert_i32 = "assert_i32"
+assert_i64 = "assert_i64"
+assert_i128 = "assert_i128"
+
 fload  = "fload"
+assert_f32 = "assert_f32"
+assert_f64 = "assert_f64"
+
 sload  = "sload"
 bload  = "bload"
 nload  = "nload"

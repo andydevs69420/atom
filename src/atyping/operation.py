@@ -42,6 +42,16 @@ class operation:
         return float_t()
     
     @staticmethod
+    def op_float32_t():
+        from . import float32_t
+        return float32_t()
+    
+    @staticmethod
+    def op_float64_t():
+        from . import float64_t
+        return float64_t()
+    
+    @staticmethod
     def op_string_t():
         from . import string_t
         return string_t()

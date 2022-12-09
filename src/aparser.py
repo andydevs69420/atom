@@ -460,10 +460,28 @@ class parser(object):
         if  self.check_both(token_type.IDENTIFIER, type_names.ANY  ):
             #! disallow any
             return self.t_any_invalid()
-        if  self.check_both(token_type.IDENTIFIER, type_names.INT  ):
-            return self.t_int()
-        if  self.check_both(token_type.IDENTIFIER, type_names.FLOAT):
-            return self.t_flt()
+        # if  self.check_both(token_type.IDENTIFIER, type_names.INT  ):
+        #     return self.t_int()
+
+        if  self.check_both(token_type.IDENTIFIER, type_names.I8   ):
+            return self.t_int8()
+        if  self.check_both(token_type.IDENTIFIER, type_names.I16  ):
+            return self.t_int16()
+        if  self.check_both(token_type.IDENTIFIER, type_names.I32  ):
+            return self.t_int32()
+        if  self.check_both(token_type.IDENTIFIER, type_names.I64  ):
+            return self.t_int64()
+        if  self.check_both(token_type.IDENTIFIER, type_names.I128 ):
+            return self.t_int128()
+
+        # if  self.check_both(token_type.IDENTIFIER, type_names.FLOAT):
+        #     return self.t_flt()
+
+        if  self.check_both(token_type.IDENTIFIER, type_names.F32  ):
+            return self.t_flt32()
+        if  self.check_both(token_type.IDENTIFIER, type_names.F64  ):
+            return self.t_flt64()
+
         if  self.check_both(token_type.IDENTIFIER, type_names.STR  ):
             return self.t_str()
         if  self.check_both(token_type.IDENTIFIER, type_names.BOOL ):
@@ -515,23 +533,68 @@ class parser(object):
         _start = self.lookahead
         error.raise_tracked(error_category.ParseError, "invalid use of \"any\" type tag.", self.d_location(_start))
 
-    def t_int(self):
+    def t_int8(self):
         _int = self.lookahead.value
 
-        #! "int"
-        self.expect_both(token_type.IDENTIFIER, type_names.INT)
+        #! "int8"
+        self.expect_both(token_type.IDENTIFIER, type_names.I8)
 
         return expr_ast(
             ast_type.INT_T, "...", _int)
     
-    def t_flt(self):
-        _float = self.lookahead.value
+    def t_int16(self):
+        _int = self.lookahead.value
 
-        #! "float"
-        self.expect_both(token_type.IDENTIFIER, type_names.FLOAT)
+        #! "int16"
+        self.expect_both(token_type.IDENTIFIER, type_names.I16)
 
         return expr_ast(
-            ast_type.FLT_T, "...", _float)
+            ast_type.INT_T, "...", _int)
+    
+    def t_int32(self):
+        _int = self.lookahead.value
+
+        #! "int32"
+        self.expect_both(token_type.IDENTIFIER, type_names.I32)
+
+        return expr_ast(
+            ast_type.INT_T, "...", _int)
+    
+    def t_int64(self):
+        _int = self.lookahead.value
+
+        #! "int64"
+        self.expect_both(token_type.IDENTIFIER, type_names.I64)
+
+        return expr_ast(
+            ast_type.INT_T, "...", _int)
+    
+    def t_int128(self):
+        _int = self.lookahead.value
+
+        #! "int128"
+        self.expect_both(token_type.IDENTIFIER, type_names.I128)
+
+        return expr_ast(
+            ast_type.INT_T, "...", _int)
+    
+    def t_flt32(self):
+        _float = self.lookahead.value
+
+        #! "float32"
+        self.expect_both(token_type.IDENTIFIER, type_names.F32)
+
+        return expr_ast(
+            ast_type.FLOAT_T, "...", _float)
+    
+    def t_flt64(self):
+        _float = self.lookahead.value
+
+        #! "float64"
+        self.expect_both(token_type.IDENTIFIER, type_names.F64)
+
+        return expr_ast(
+            ast_type.FLOAT_T, "...", _float)
     
     def t_str(self):
         _str = self.lookahead.value
