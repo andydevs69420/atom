@@ -47,7 +47,11 @@ class constantevaluator(object):
         return ...
 
     def eval_int(self, _node):
-        return (integer_t(), int(_node.get(0)))
+        #! parse
+        _integer = int(_node.get(0))
+
+        #! make auto int
+        return (integer_t.auto(_integer), _integer)
     
     def eval_float(self, _node):
         return (float_t(), float(_node.get(0)))
@@ -119,7 +123,7 @@ class constantevaluator(object):
         _result = ...
 
         if  _op == "^^":
-            _result = _lhs[0].mul(_rhs[0])
+            _result = _lhs[0].pow(_rhs[0])
 
             if  not _result.iserror():
                 return (_result, _lhs[1] ** _rhs[1])
@@ -128,6 +132,7 @@ class constantevaluator(object):
             _result = _lhs[0].mul(_rhs[0])
 
             if  not _result.iserror():
+                print(_lhs[1], "*", _rhs[1])
                 return (_result, _lhs[1] * _rhs[1])
 
         if  _op == "/":
@@ -220,22 +225,6 @@ class constantevaluator(object):
             if  not _result.iserror():
                 return (_result, _lhs[1] | _rhs[1])
         
-        if  _op == "&&":
-
-            if  _lhs[1]:
-                return (_rhs[0], _rhs[1])
-
-            else:
-                return (_lhs[0], _lhs[1])
-        
-        if  _op == "||":
-
-            if  _lhs[1]:
-                return (_lhs[0], _lhs[1])
-
-            else:
-                return (_rhs[0], _rhs[1])
-        
         #! end
         error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs[0].repr(), _op, _rhs[0].repr()), _node.site)
 
@@ -283,6 +272,14 @@ class constantevaluator(object):
     def try_eval_short_op(self, _node):
         return self.visit_evaluator(_node)
 
+
+class interfacebuilder(constantevaluator):
+
+    def __init__(self):
+        super().__init__()
+    
+    def makeinterface(self, _node):
+        ...
 
 class generator(constantevaluator):
     """ Base code generator for atom.
@@ -397,7 +394,7 @@ class generator(constantevaluator):
         I64 = int(_node.get(0))
 
         #! type
-        push_ttable(self, integer_t())
+        push_ttable(self, integer_t.auto(I64))
 
         #! opcode
         emit_opcode(self, iload, I64)
@@ -939,6 +936,7 @@ class generator(constantevaluator):
             
             elif _operation.isfloat():
                 emit_opcode(self, fltneg)
+
         else:
             raise
 
@@ -1295,12 +1293,14 @@ class generator(constantevaluator):
         _target[2] = get_byteoff(self)
 
         #! rhs
+        _rhs =\
         self.tstack.popp() 
         #! lhs
+        _lhs =\
         self.tstack.popp()
 
         #! emit as any
-        push_ttable(self, any_t())
+        push_ttable(self, _lhs if _lhs.matches(_rhs) else any_t())
 
     def ast_simple_ass(self, _node):
         """

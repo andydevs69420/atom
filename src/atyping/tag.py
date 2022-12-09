@@ -8,6 +8,7 @@ class tag_t(object):
     def __init__(self):
         pass
     
+    def qualname(self):raise NotImplementedError("Holly shake! not overridden.")
     def repr(self):raise NotImplementedError("Holly shake! not overridden.")
     def matches(self, _rhs):raise NotImplementedError("Holly shake! not overridden.")
 
@@ -16,6 +17,11 @@ class tag_t(object):
     def isnonprimitive(self): False
     def isany(self):return False
     def isint(self):return False
+    def isbyte(self):return False
+    def isshort(self):return False
+    def isint32(self):return False
+    def islong(self):return False
+    def isbigint(self):return False
     def isfloat(self):return False
     def isstring(self):return False
     def isboolean(self):return False

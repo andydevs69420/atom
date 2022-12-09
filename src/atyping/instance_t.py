@@ -13,8 +13,11 @@ class instance_t(nonprimitive_t):
         self.typeid = _typeID
         self.name   = _instancename
     
-    def repr(self):
+    def qualname(self):
         return self.name
+
+    def repr(self):
+        return "instance_of_" + self.name
     
     def matches(self, _rhs):
         if  not _rhs.isinstance():

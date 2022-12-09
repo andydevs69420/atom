@@ -16,6 +16,9 @@ class type_t(nonprimitive_t):
         #! type members becomes parameters
         self.parameters = _parameters
     
+    def qualname(self):
+        return self.name
+        
     def repr(self):
         _param = ""
         for _p in range(self.paramcount):

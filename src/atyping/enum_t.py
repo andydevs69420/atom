@@ -15,6 +15,9 @@ class enum_t(nonprimitive_t):
         self.membertype = _membertype
         self.members    = _members
 
+    def qualname(self):
+        return self.name
+
     def repr(self):
         return self.name + "[" + self.membertype.repr() + "]"
     

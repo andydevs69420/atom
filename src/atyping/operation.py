@@ -10,6 +10,31 @@ class operation:
     def op_integer_t():
         from . import integer_t
         return integer_t()
+
+    @staticmethod
+    def op_signedbyte_t():
+        from . import signedbyte_t
+        return signedbyte_t()
+    
+    @staticmethod
+    def op_signedshort_t():
+        from . import signedshort_t
+        return signedshort_t()
+    
+    @staticmethod
+    def op_signedint_t():
+        from . import signedint_t
+        return signedint_t()
+    
+    @staticmethod
+    def op_signedlong_t():
+        from . import signedlong_t
+        return signedlong_t()
+    
+    @staticmethod
+    def op_signedbigint_t():
+        from . import signedbigint_t
+        return signedbigint_t()
     
     @staticmethod
     def op_float_t():

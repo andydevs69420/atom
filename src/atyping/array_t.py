@@ -11,6 +11,9 @@ class array_t(nonprimitive_t):
         self.name = type_names.ARRAY
         self.elementtype = _elementtype
 
+    def qualname(self):
+        return self.name + "_of_" + self.elementtype.qualname()
+
     def repr(self):
         return self.name + "[" + self.elementtype.repr() + "]"
     

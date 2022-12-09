@@ -13,6 +13,9 @@ class nativefn_t(nonprimitive_t):
         self.paramcount = _paramcount
         self.parameters = _parameters
     
+    def qualname(self):
+        return self.name + "_returning_" + self.returntype.qualname()
+
     def repr(self):
         _param = ""
         for _p in range(self.paramcount):

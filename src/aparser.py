@@ -1079,6 +1079,19 @@ class parser(object):
             _node = expr_ast(
                 ast_type.UNARY_OP, self.d_location(_start), _opt, _rhs)
         
+        #! typeof
+        elif self.check_both(token_type.IDENTIFIER, keywords.TYPEOF):
+
+            _opt = self.lookahead.value
+            self.expect_t(token_type.IDENTIFIER)
+            
+            _rhs = self.unary_op()
+            if  not _rhs:
+                error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
+
+            _node = expr_ast(
+                ast_type.UNARY_OP, self.d_location(_start), _opt, _rhs)
+
         #! unpack
         elif self.check_both(token_type.SYMBOL, "*" ):
 

@@ -15,6 +15,8 @@ class keywords:
     TRUE     = "true"
     FALSE    = "false"
     NULL     = "null"
+    TYPEOF   = "typeof"
+
     NATIVE   = "native"
     FUN      = "fun"
     STRUCT   = "struct"

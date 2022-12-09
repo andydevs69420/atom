@@ -11,7 +11,10 @@ class map_t(nonprimitive_t):
         self.name = type_names.MAP
         self.keytype = _keytype
         self.valtype = _valtype
-        
+
+    def qualname(self):
+        return self.name + "_with_" + self.keytype.qualname() + "_and_" + self.valtype.qualname()
+
     def repr(self):
         return self.name + "[" + self.keytype.repr() + ":" + self.valtype.repr() + "]"
     
