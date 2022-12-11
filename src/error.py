@@ -12,6 +12,8 @@ class error_category(Enum):
     CompileError  = 0x05
     RuntimeError  = 0x06
 
+    UtfError = 0x07
+
 class error:
 
     @staticmethod

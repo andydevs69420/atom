@@ -1,5 +1,6 @@
 from aobjects import *
 from atyping import *
+from error import (error_category, error)
 
 class std:
 
@@ -55,6 +56,12 @@ class std:
 
     @staticmethod
     def readl(_state, _message):
-        ...
-        return astring(input(_message.raw))
+        _input = ""
+        try:
+            _input = input(_message.raw)
+        except:
+            print()
+            error.raise_fromstack(error_category.IOError, "keyboard interrupted...", _state.stacktrace)
+
+        return astring(_input)
 

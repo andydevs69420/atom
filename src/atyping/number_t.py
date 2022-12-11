@@ -8,87 +8,25 @@ def op_pow_div(_lhs, _rhs):
         Cast operation as float.
     """
     if  _lhs.isint() and _rhs.isint():
-        return operation.op_float64_t()
+        return operation.op_float_t()
     
-    elif _lhs.isint() and _rhs.isfloat32():
-        return operation.op_float32_t()
+    elif _lhs.isfloat() and _rhs.isfloat():
+        return operation.op_float_t()
     
-    elif _lhs.isint() and _rhs.isfloat64():
-        return operation.op_float64_t()
-    #! ====== float =====
-    elif _lhs.isfloat32() and _rhs.isint():
-        return operation.op_float32_t()
-
-    elif _lhs.isfloat32() and _rhs.isfloat32():
-        return operation.op_float32_t()
-    
-    elif _lhs.isfloat32() and _rhs.isfloat64():
-        return operation.op_float64_t()
-    #! ===== double =====
-    elif _lhs.isfloat32() or _rhs.isfloat64():
-        return operation.op_float64_t()
     #! end
     return operation.op_error_t()
 
 def op_mul_mod_add_sub(_lhs, _rhs):
-    """ FOR mul, mod, add, sub.
+    if  _lhs.isint() and _rhs.isint():
+        return operation.op_integer_t()
 
-        You can simply use "or" because operand types can be interchanged,
-        and remove redundant condition.
-    """
-    #! ============== BYTE ==================
-    if  _lhs.isbyte() and _rhs.isbyte():
-        return operation.op_signedbyte_t()
+    elif _lhs.isfloat() and _rhs.isfloat():
+        return operation.op_float_t()
 
-    elif _lhs.isbyte() and _rhs.isshort():
-        return operation.op_signedshort_t()
+    elif _lhs.isfloat() and _rhs.isint():
+        return operation.op_float_t()
     
-    elif _lhs.isbyte() and _rhs.isint32():
-        return operation.op_signedint_t()
-
-    elif _lhs.isbyte() and _rhs.islong():
-        return operation.op_signedlong_t()
-
-    elif _lhs.isbyte() and _rhs.isbigint():
-        return operation.op_signedbigint_t()
-    #! ============== SHORT =================
-    elif _lhs.isshort() and _rhs.isbyte():
-        return operation.op_signedshort_t()
-
-    elif _lhs.isshort() and _rhs.isshort():
-        return operation.op_signedshort_t()
-    
-    elif _lhs.isshort() and _rhs.isint32():
-        return operation.op_signedint_t()
-
-    elif _lhs.isshort() and _rhs.islong():
-        return operation.op_signedlong_t()
-
-    elif _lhs.isshort() and _rhs.isbigint():
-        return operation.op_signedbigint_t()
-    #! =============== INT ==================
-    elif _lhs.isint32() and _rhs.isbyte():
-        return operation.op_signedint_t()
-
-    elif _lhs.isint32() and _rhs.isshort():
-        return operation.op_signedint_t()
-    
-    elif _lhs.isint32() and _rhs.isint32():
-        return operation.op_signedint_t()
-
-    elif _lhs.isint32() and _rhs.islong():
-        return operation.op_signedlong_t()
-
-    elif _lhs.isint32() and _rhs.isbigint():
-        return operation.op_signedbigint_t()
-    #! ============== LONG ==================
-    elif _lhs.islong() or _rhs.islong():
-        return operation.op_signedlong_t()
-    #! ============= BIGINT =================
-    elif _lhs.isbigint() or _rhs.isbigint():
-        return operation.op_signedbigint_t()
-    #! ========== ATLEAST 1 FLOAT ===========
-    elif _lhs.isfloat() or _rhs.isfloat():
+    elif _lhs.isint() and _rhs.isfloat():
         return operation.op_float_t()
     
     #! end

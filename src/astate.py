@@ -29,6 +29,7 @@ class astate(object):
         self.files = ([])
         self.codes = ({})
         self.calls = ({})
+        self.stacktrace = ([])
 
         #! VM
         self.stack = sizedstack(1000)

@@ -176,8 +176,6 @@ class lexer(object):
             #! append next [0-9]+
             _token.value += self.num_part()
 
-            #! convert
-            _token.value = str(float(_token.value))
         
         if   self.current.clook in ('e', 'E'):
             _token.ttype =  token_type.FLOAT
@@ -193,8 +191,9 @@ class lexer(object):
             #! append next [0-9]+
             _token.value += self.num_part()
             
-            #! convert
-            _token.value = str(float(_token.value))
+        
+        if  _token.ttype == token_type.FLOAT:
+            _token.value  = str(float(_token.value))
 
         #! end
         return _token

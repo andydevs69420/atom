@@ -64,10 +64,10 @@ class constantevaluator(object):
         _float = float(_node.get(0))
 
         #! get size
-        _fsize = float_t.auto(_fsize)
+        _fsize = float_t.auto(_float)
 
         if  _fsize.iserror():
-            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+            error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
 
         #! make auto int
         return (_fsize, _float)
@@ -97,7 +97,14 @@ class constantevaluator(object):
             _result = _rhs[0].bitnot()
 
             if  not _result.iserror():
-                return (_result, ~ _rhs[1])
+                _data = ~ _rhs[1]
+
+                if  _result.isint():
+                    #! get size
+                    if  integer_t.auto(_data).iserror():
+                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+
+                return (_result, _data)
 
         if  _op == "!":
             _result = _rhs[0].lognot()
@@ -441,25 +448,7 @@ class generator(constantevaluator):
         #! push int type
         _tname = _node.get(0)
 
-        if  _tname == type_names.I8:
-            push_ttable(self, signedbyte_t())
-            return
-
-        elif _tname == type_names.I16:
-            push_ttable(self, signedshort_t())
-            return
-
-        elif _tname == type_names.I32:
-            push_ttable(self, signedint_t())
-            return
-        
-        elif _tname == type_names.I64:
-            push_ttable(self, signedlong_t())
-            return
-        elif _tname == type_names.I128:
-            push_ttable(self, signedbigint_t())
-            return
-        raise
+        push_ttable(self, integer_t())
     
     def ast_float_t(self, _node):
         #! push int type
@@ -548,8 +537,14 @@ class generator(constantevaluator):
         #! max is float 64
         F64 = float(_node.get(0))
 
+        #! get size
+        _sze = float_t.auto(F64)
+
+        if  _sze.iserror():
+            error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+
         #! type
-        push_ttable(self, float_t())
+        push_ttable(self, _sze)
 
         #! opcode
         emit_opcode(self, fload, F64)
@@ -599,6 +594,26 @@ class generator(constantevaluator):
         #! opcode
         emit_opcode(self, _opcode, _var, _name.get_offset())
     
+    def exact_size(self, _type, _current):
+        if  _current.isarray():
+            _current = _current.elementtype
+      
+        if  _current.matches(_type):
+            #!
+            
+            if  _current.isbigint():
+                _type = _current
+            if  _current.islong():
+                _type = _current
+            if  _current.isint32():
+                _type = _current
+            if  _current.isshort():
+                _type = _current
+            if  _current.isbyte():
+                _type = _current
+            
+        print()
+        return _type
 
     def ast_array(self, _node):
         _arrtype = None
@@ -644,14 +659,22 @@ class generator(constantevaluator):
                     emit_opcode(self, array_push)
             
             _arrsize += 1
+     
+            if  _current.isarray():
+                if  not _current.elementtype.matches(_arrtype):
+                    #! array of any
+                    push_ttable(self, any_t())
 
-            if  not _arrtype.matches(_current):
-                #! array of any
-                push_ttable(self, any_t())
+                    #! set as array element type
+                    _arrtype = self.tstack.popp()
 
-                #! set as array element type
-                _arrtype = self.tstack.popp()
+            else:
+                if  not _current.matches(_arrtype):
+                    #! array of any
+                    push_ttable(self, any_t())
 
+                    #! set as array element type
+                    _arrtype = self.tstack.popp()
     
         if  not _hasunpack:
             #! opcode
@@ -879,31 +902,29 @@ class generator(constantevaluator):
 
         #! type 
         _dtype = self.tstack.popp()
-
-        _wrapper = _dtype.qualname() + "." + _name
         
         #! check wrapper
-        if  not self.symtbl.contains(_wrapper):
+        if  not self.symtbl.contains(_name):
             error.raise_tracked(error_category.CompileError, "wrapper function \"%s\" for type %s is not defined." % (_name, _dtype.repr()), _node.site)
 
-        _info = self.symtbl.lookup(_wrapper)
+        _info = self.symtbl.lookup(_name)
 
         #! datatype
         _functype = _info.get_datatype()
 
-        #! check if callable
+        #! check if callable|wrapper
         if  not _functype.isfunction():
-            error.raise_tracked(error_category.CompileError, "%s is not a callable type." % _functype.repr(), _node.site)
+            error.raise_tracked(error_category.CompileError, "%s is not a user defined function eg: wrapper, fun." % _functype.repr(), _node.site)
 
         #! check parameter count
         if  _functype.paramcount != (len(_node.get(2)) + 1):
-            error.raise_tracked(error_category.CompileError, "%s requires %d argument, got %d." % (_wrapper, _functype.paramcount - 1, len(_node.get(2))), _node.site)
+            error.raise_tracked(error_category.CompileError, "%s requires %d argument, got %d." % (_name, _functype.paramcount - 1, len(_node.get(2))), _node.site)
         
         #! emit return type
         push_ttable(self, _functype.returntype)
 
         #! load function
-        emit_opcode(self, load_global, _wrapper, _info.get_offset())
+        emit_opcode(self, load_global, _name, _info.get_offset())
 
         #! rotate param
         emit_opcode(self, rot1)
@@ -912,6 +933,9 @@ class generator(constantevaluator):
 
         _recieve_param = _node.get(2)
         _rquired_param = _functype.parameters[1:]
+
+        if  not _functype.parameters[0][1].matches(_dtype):
+            error.raise_tracked(error_category.CompileError, "can't wrap %s with \"%s\". required %s, got %s." % (_dtype.repr(), _name, _functype.parameters[0][1].repr(), _dtype.repr()), _node.site)
 
         #! check every arguments
         for _each_param in _recieve_param[::-1]:
@@ -3028,7 +3052,7 @@ class generator(constantevaluator):
 
         #! name is "datatype + '.' + wrapper_name"
         
-        _name = _ptype0.qualname() + "." + _node.get(1)
+        _name = _node.get(1)
 
         #! check if function name is already defined.
         if  self.symtbl.contains(_name):
@@ -3075,9 +3099,6 @@ class generator(constantevaluator):
 
         #! currentreturn
         _returntype = self.tstack.popp()
-
-        #! revalidate type(runtime level)
-        self.type_assert(_returntype)
 
         #! add return
         emit_opcode(self, return_control)
@@ -3296,46 +3317,9 @@ class generator(constantevaluator):
         if  not self.currentfunctiontype.matches(_dtype):
             error.raise_tracked(error_category.CompileError, "expected return type %s, got %s." %  (self.currentfunctiontype.repr(), _dtype.repr()), _node.site)
 
-        #! revalidate type(runtime level)
-        self.type_assert(self.currentfunctiontype)
-
         #! opcode
         emit_opcode(self, return_control)
     
-    def type_assert(self, _returntype):
-
-        if  _returntype.isint():
-            #! check
-            if  _returntype.isbyte():
-                #! opcode
-                emit_opcode(self, assert_i8)
-
-            elif _returntype.isshort():
-                #! opcode
-                emit_opcode(self, assert_i16)
-            
-            elif _returntype.isint32():
-                #! opcode
-                emit_opcode(self, assert_i32)
-
-            elif _returntype.islong():
-                #! opcode
-                emit_opcode(self, assert_i64)
-            
-            elif _returntype.isbigint():
-                #! opcode
-                emit_opcode(self, assert_i128)
-
-        elif _returntype.isfloat():
-            #! check
-            if  _returntype.isfloat32():
-                #! opcode
-                emit_opcode(self, assert_f32)
-
-            elif _returntype.isfloat64():
-                #! opcode
-                emit_opcode(self, assert_f64)
-
     def ast_expr_stmnt(self, _node):
         #! statement
         self.visit(_node.get(0))
@@ -3371,14 +3355,16 @@ class codegen(generator):
                 error.raise_tracked(error_category.CompileError, "file not found or invalid file \"%s\"." % _each_import, _node.site)
 
             #! read file first
+            _FILE =\
             read_file(self.state, _fpath)
 
-            #! parse
-            _parse = parser(self.state)
-            
-            for _each_node in _parse.raw_parse():
-                #! visit each node
-                self.visit(_each_node)
+            if  _FILE:
+                #! parse
+                _parse = parser(self.state)
+                
+                for _each_node in _parse.raw_parse():
+                    #! visit each node
+                    self.visit(_each_node)
         #! end
     
     def ast_source(self, _node):
@@ -3436,8 +3422,8 @@ class codegen(generator):
         #! set program code
         self.state.codes["program"] = self.bcodes
 
-        for i in self.bcodes:
-            print(i)
+        # for i in self.bcodes:
+        #     print(i)
 
         #! end
         return self.bcodes

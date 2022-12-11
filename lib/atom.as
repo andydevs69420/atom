@@ -1,23 +1,32 @@
 #! comment
 #! another comment!
 
-import[std];
+
+import [std, stringstd];
 
 
-
-struct Pet 
-{
-    name:str;
-    dob :str;
-}
+wrapper fun _string:str toLowerCase() strtolower(_string);
 
 
-
-fun[i8] add(_a:i8, _b:i8) { return _a * _b; }
-
-fun[i8] main(_args:array[str])
+fun[int] main(_args:array[str])
 {   
-    print(Pet("Milo", "Jun"));
-    add(6, 127);
-    return 0b0000011;
+    2 + 2;
+    print(charcodepoints("😀大"));
+    let i = 0;
+    for (; i < 10; i += 1)
+        print(strlen("hello"));
+
+    #! ε大😀ε大😀ε大😀ε大😀ε大😀ε大😀ε大😀ε大😀ε大😀ε大😀ε大
+
+    print(strtolower("FOOOC"));
+
+    print( "FOOOC"!toLowerCase() );
+
+    print(strsplit("asda|sd", "|"));
+
+    print(strreverse("hola"));
+
+    print(strrepeat("a", 50));
+
+    return 0b0000001;
 }
