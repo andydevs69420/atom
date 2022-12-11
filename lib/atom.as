@@ -19,14 +19,10 @@ fun[int] main(_args:array[str])
     #! ε大😀ε大😀ε大😀ε大😀ε大😀ε大😀ε大😀ε大😀ε大😀ε大😀ε大
 
     print(strtolower("FOOOC"));
-
-    print( "FOOOC"!toLowerCase() );
-
+    print("FOOOC"!toLowerCase());
     print(strsplit("asda|sd", "|"));
-
     print(strreverse("hola"));
-
     print(strrepeat("a", 50));
-
+    print(charcodepoints("大"));
     return 0b0000001;
 }

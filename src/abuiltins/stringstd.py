@@ -252,3 +252,7 @@ class stringstd:
 
         return aarray(*_codepoints)
 
+    @staticmethod
+    def fromcharcodepoints(_state, __codepoints__):
+        return astring(build_from_code_points(__codepoints__))
+
