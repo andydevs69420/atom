@@ -166,6 +166,10 @@ def codepoint_to_hex(_codepoint_part:int):
 
     return _string
 
+
+def is_valid_trailbyte(_trail:int):
+    return (_trail >= 0) and ((_trail & _VALID_TRAIL_BIT) == _VALID_TRAIL_BIT);
+
 class stringstd:
 
     metadata = ({
@@ -310,7 +314,7 @@ class stringstd:
             _size = get_head_size(_pure_array[_idx])
 
             if  _size == 1:
-                if  (_pure_array[_idx] & _VALID_TRAIL_BIT) == _VALID_TRAIL_BIT:
+                if  is_valid_trailbyte(_pure_array[_idx]):
                     error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
                 #! 
                 _idx += 1
@@ -322,7 +326,7 @@ class stringstd:
 
                 for _trailing_index in range(_follow_index, len(_pure_array)):
 
-                    if  (_pure_array[_trailing_index] & _VALID_TRAIL_BIT) == _VALID_TRAIL_BIT:
+                    if  is_valid_trailbyte(_pure_array[_trailing_index]):
                         _score += 1
                     
                 if  _score != _size:
@@ -346,7 +350,7 @@ class stringstd:
             if  _size == 1:
                 _hexstr += codepoint_to_hex(_pure_array[_idx])
 
-                if  (_pure_array[_idx] & _VALID_TRAIL_BIT) == _VALID_TRAIL_BIT:
+                if  is_valid_trailbyte(_pure_array[_idx]):
                     error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
                 #! 
                 _idx += 1
@@ -361,7 +365,7 @@ class stringstd:
                 for _trailing_index in range(_follow_index, len(_pure_array)):
                     _hexstr += codepoint_to_hex(_pure_array[_trailing_index])
 
-                    if  (_pure_array[_trailing_index] & _VALID_TRAIL_BIT) == _VALID_TRAIL_BIT:
+                    if  is_valid_trailbyte(_pure_array[_trailing_index]):
                         _score += 1
                     
                 if  _score != _size:

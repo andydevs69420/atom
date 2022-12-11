@@ -619,7 +619,7 @@ class generator(constantevaluator):
 
     def ast_array(self, _node):
         _arrtype = None
-        _element = _node.get(0)[::-1]
+        _element = _node.get(0)
         _arrsize = 0
         _hasunpack = False
 
@@ -818,11 +818,11 @@ class generator(constantevaluator):
             
         elif _dtype.isinstance():
 
-            if  not self.symtbl.contains(_dtype.repr()):
+            if  not self.symtbl.contains(_dtype.qualname()):
                 error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
 
             #! structtable
-            _info = self.symtbl.lookup(_dtype.repr())
+            _info = self.symtbl.lookup(_dtype.qualname())
 
             _type = _info.get_datatype()
 
@@ -3397,7 +3397,7 @@ class codegen(generator):
             error.raise_tracked(error_category.CompileError, "invalid main function, required %s, got %s." % (_required_main.repr(), _main.get_datatype().repr()), _main.get_site())
 
         #! make args
-        for _args in self.state.aargv[::-1]:
+        for _args in self.state.aargv:
             #! emit arg as string
             emit_opcode(self, sload, _args)
         

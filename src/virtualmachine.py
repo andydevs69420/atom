@@ -149,7 +149,7 @@ class virtualmachine(object):
         #! appended inorder
         for _r in range(_popsize):_arr.append(popp_operand(self))
 
-        _new_arr = aarray(*_arr)
+        _new_arr = aarray(*_arr[::-1])
 
         atom_object_New(self.state, _new_arr)
 
