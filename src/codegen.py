@@ -91,6 +91,8 @@ class constantevaluator(object):
         _rhs =\
         self.visit_evaluator(_node.get(1))
 
+        if _rhs == ...: return ...
+
         _result = ...
 
         if  _op == "~":

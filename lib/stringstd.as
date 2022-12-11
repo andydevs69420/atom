@@ -23,7 +23,8 @@ fun[str] strrepeat(__string__:str, __times__:int);
 native::stringstd
 fun[array[int]] charcodepoints(__string__:str);
 
-#!native::stringstd
-#!fun[str] fromcharcodepoints(__codepoints__:array[int]);
+native::stringstd
+fun[str] fromcharcodepoints(__codepoints__:array[int]);
 
-
+native::stringstd
+fun[str] tohexstring(__codepoints__:array[int]);

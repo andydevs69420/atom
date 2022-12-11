@@ -134,6 +134,38 @@ def build_from_code_points(_code_points_array:list[int]):
     
     return _str
 
+
+
+def codepoint_to_hex(_codepoint_part:int):
+    _alpha = ['a', 'b', 'c', 'd', 'e', 'f']
+
+    _result = _codepoint_part
+    _string = "\\x"
+    _prev = 0
+    
+    while True:
+        _prev = _result
+        _result //= 16
+
+        if  _result <= 0: break
+
+        if  _result >= 10:
+            _string += _alpha[_result - 10]
+
+        else:
+            _string += str(_result)
+
+        _prev = _prev % 16
+
+        #! remaining
+        if  _prev >= 10:
+            _string += _alpha[_prev - 10]
+
+        else:
+            _string += str(_prev)
+
+    return _string
+
 class stringstd:
 
     metadata = ({
@@ -168,6 +200,14 @@ class stringstd:
             ("__string__", string_t()), 
         ]), 
 
+        "fromcharcodepoints": nativefn_t(string_t(), 1, [
+            ("__codepoints__", array_t(integer_t())), 
+        ]), 
+
+        "tohexstring": nativefn_t(string_t(), 1, [
+            ("__codepoints__", array_t(integer_t())), 
+        ]), 
+
     })
 
     @staticmethod
@@ -200,9 +240,15 @@ class stringstd:
             case "strrepeat":
                 return stringstd.strrepeat
 
+            case "fromcharcodepoints":
+                return stringstd.fromcharcodepoints
+            
             case "charcodepoints":
                 return stringstd.charcodepoints
-            
+
+            case "tohexstring":
+                return stringstd.tohexstring
+
             case _:
                 raise AttributeError("No such attribute \"%s\"" % _attribute)
 
@@ -254,5 +300,74 @@ class stringstd:
 
     @staticmethod
     def fromcharcodepoints(_state, __codepoints__):
-        return astring(build_from_code_points(__codepoints__))
+        #! validate sequence
 
+        _pure_array = [_int.raw for _int in __codepoints__.array]
+
+        _idx = 0
+        while _idx < len(_pure_array):
+
+            _size = get_head_size(_pure_array[_idx])
+
+            if  _size == 1:
+                if  (_pure_array[_idx] & _VALID_TRAIL_BIT) == _VALID_TRAIL_BIT:
+                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
+                #! 
+                _idx += 1
+                continue
+
+            else:
+                _score = 1
+                _follow_index = _idx + 1
+
+                for _trailing_index in range(_follow_index, len(_pure_array)):
+
+                    if  (_pure_array[_trailing_index] & _VALID_TRAIL_BIT) == _VALID_TRAIL_BIT:
+                        _score += 1
+                    
+                if  _score != _size:
+                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
+
+                _idx += _score
+
+        return astring(build_from_code_points(_pure_array))
+
+    @staticmethod
+    def tohexstring(_state, __codepoints__):
+        _pure_array = [_int.raw for _int in __codepoints__.array]
+    
+        _hexstr = ""
+
+        _idx = 0
+        while _idx < len(_pure_array):
+
+            _size = get_head_size(_pure_array[_idx])
+
+            if  _size == 1:
+                _hexstr += codepoint_to_hex(_pure_array[_idx])
+
+                if  (_pure_array[_idx] & _VALID_TRAIL_BIT) == _VALID_TRAIL_BIT:
+                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
+                #! 
+                _idx += 1
+                continue
+
+            else:
+                _hexstr += codepoint_to_hex(_pure_array[_idx])
+
+                _score = 1
+                _follow_index = _idx + 1
+
+                for _trailing_index in range(_follow_index, len(_pure_array)):
+                    _hexstr += codepoint_to_hex(_pure_array[_trailing_index])
+
+                    if  (_pure_array[_trailing_index] & _VALID_TRAIL_BIT) == _VALID_TRAIL_BIT:
+                        _score += 1
+                    
+                if  _score != _size:
+                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
+
+                _idx += _score
+        
+        #!
+        return astring(_hexstr)
