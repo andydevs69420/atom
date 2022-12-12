@@ -19,7 +19,7 @@ _2BYTE_FOLLOW = 0b00011111
 _3BYTE_FOLLOW = 0b00001111
 _4BYTE_FOLLOW = 0b00000111
 
-_VALID_TRAIL_BIT   = 0b10000000
+_VALID_TRAIL_BYTE   = 0b10000000
 _MAXIMUM_TRAIL_BIT = 0b00111111
 
 
@@ -42,7 +42,7 @@ def getUtfSize(_codepoint:int):
         return 2
     elif _codepoint < 0x010000:
         return 3
-    elif _codepoint < 0x10FFFF:
+    elif _codepoint < 0x110000:
         return 4
     #! end
     return 0
@@ -60,7 +60,7 @@ def split_code_points(_codepoint:int):
         )
         #! 2nd byte
         _sequence.append(
-            (_codepoint & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BIT
+            (_codepoint & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
         )
 
     elif _size == 3:
@@ -70,11 +70,11 @@ def split_code_points(_codepoint:int):
         )
         #! 2nd byte
         _sequence.append(
-            ((_codepoint >> 6) & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BIT
+            ((_codepoint >> 6) & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
         )
         #! 3rd byte
         _sequence.append(
-            (_codepoint & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BIT
+            (_codepoint & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
         )
     
     elif _size == 4:
@@ -84,15 +84,15 @@ def split_code_points(_codepoint:int):
         )
         #! 2nd byte
         _sequence.append(
-            ((_codepoint >> 12) & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BIT
+            ((_codepoint >> 12) & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
         )
         #! 3rd byte
         _sequence.append(
-            ((_codepoint >> 6) & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BIT
+            ((_codepoint >> 6) & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
         )
         #! 4th byte
         _sequence.append(
-            (_codepoint & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BIT
+            (_codepoint & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
         )
 
     return _sequence
@@ -129,11 +129,37 @@ def build_from_code_points(_code_points_array:list[int]):
             _ord |= ((_code_points_array[_index + 2] & _MAXIMUM_TRAIL_BIT) << 6)
             _ord |= (_code_points_array[_index + 3] & _MAXIMUM_TRAIL_BIT)
             _index += 4
-        
+    
         _str += chr(_ord)
     
     return _str
 
+
+def is_hex(_char):
+    return is_hex_alpha(_char) or is_hex_numeric(_char)
+
+def is_hex_alpha(_char):
+    _chr = ord(_char)
+    return (
+        (_chr >= 0x41 and _chr <= 0x46) or
+        (_chr >= 0x61 and _chr <= 0x66)
+    )
+
+def is_hex_numeric(_char):
+    _chr = ord(_char)
+    return (_chr >= 0x30 and _chr <= 0x39)
+
+def get_hex_char_value(_hex_char):
+    assert is_hex(_hex_char)
+            # a   b   c   d   e   f 
+    _alpha = [10, 11, 12, 13, 14, 15]
+
+    if  is_hex_alpha(_hex_char):
+        _ord = ord(_hex_char.upper())
+        return _alpha[(_ord  % 16) - 1]
+    
+    #!
+    return int(_hex_char)
 
 
 def codepoint_to_hex(_codepoint_part:int):
@@ -166,9 +192,25 @@ def codepoint_to_hex(_codepoint_part:int):
 
     return _string
 
+def is_valid_byte(_byte:int):
+    return (_byte | 255) == 255
+
+def is_valid_start_byte(_size, _byte):
+
+    if  _size == 2:
+        return (_byte | _2BYTE_UTF) == _2BYTE_UTF
+    elif _size == 3:
+        return (_byte | _3BYTE_UTF) == _3BYTE_UTF
+    elif _size == 4:
+        return (_byte | _4BYTE_UTF) == _4BYTE_UTF
+    
+    raise
 
 def is_valid_trailbyte(_trail:int):
-    return (_trail >= 0) and ((_trail & _VALID_TRAIL_BIT) == _VALID_TRAIL_BIT);
+    return (_trail >= 0) and ((_trail & _VALID_TRAIL_BYTE) == _VALID_TRAIL_BYTE);
+
+
+
 
 class stringstd:
 
@@ -212,6 +254,11 @@ class stringstd:
             ("__codepoints__", array_t(integer_t())), 
         ]), 
 
+        "parsestring": nativefn_t(string_t(), 1, [
+            ("__string__", string_t()), 
+        ]), 
+
+
     })
 
     @staticmethod
@@ -252,6 +299,9 @@ class stringstd:
 
             case "tohexstring":
                 return stringstd.tohexstring
+            
+            case "parsestring":
+                return stringstd.parsestring
 
             case _:
                 raise AttributeError("No such attribute \"%s\"" % _attribute)
@@ -313,6 +363,9 @@ class stringstd:
 
             _size = get_head_size(_pure_array[_idx])
 
+            if  not is_valid_byte(_pure_array[_idx]):
+                error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
+
             if  _size == 1:
                 if  is_valid_trailbyte(_pure_array[_idx]):
                     error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
@@ -320,7 +373,10 @@ class stringstd:
                 _idx += 1
                 continue
 
-            else:
+            elif _size > 1:
+                if  not is_valid_start_byte(_size, _pure_array[_idx]):
+                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence %d, ..., ..., ." % (_size, _pure_array[_idx]) , _state.stacktrace)
+
                 _score = 1
                 _follow_index = _idx + 1
 
@@ -347,6 +403,9 @@ class stringstd:
 
             _size = get_head_size(_pure_array[_idx])
 
+            if  not is_valid_byte(_pure_array[_idx]):
+                error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
+
             if  _size == 1:
                 _hexstr += codepoint_to_hex(_pure_array[_idx])
 
@@ -356,7 +415,7 @@ class stringstd:
                 _idx += 1
                 continue
 
-            else:
+            elif _size > 1:
                 _hexstr += codepoint_to_hex(_pure_array[_idx])
 
                 _score = 1
@@ -375,3 +434,91 @@ class stringstd:
         
         #!
         return astring(_hexstr)
+    
+    def parsestring(_state, __string__):
+        _idx = 0
+
+        _pure_string = __string__.raw
+
+        _bytes_array = []
+
+        while _idx < len(_pure_string):
+            
+            if  _pure_string[_idx] == "\\":
+                #! "\x" sequence | 1 byte max
+                _bytes_array.append(ord(_pure_string[_idx]))
+                _idx += 1
+
+                if  _pure_string[_idx] == "x":
+                    _bytes_array.append(ord(_pure_string[_idx]))
+                    _idx += 1
+                    _scr  = 0
+
+                    _hex_value = 0
+                    for _i in range(2):
+                        if  (_idx+_i) >= len(_pure_string): break
+
+                        if  not is_hex(_pure_string[_idx + _i]):
+                            break
+                        _scr += 1
+
+                        _bytes_array.append(ord(_pure_string[_idx + _i]))
+                        
+                        if  _i == 0:
+                            _hex_value =  get_hex_char_value(_pure_string[_idx + _i]) * 16
+                        else:
+                            _hex_value += get_hex_char_value(_pure_string[_idx + _i])
+                    
+                    if  _scr != 2:
+                        error.raise_fromstack(error_category.UtfError, "invalid unicode escape sequence.", _state.stacktrace)
+                    
+                    if  is_valid_byte(_hex_value) and _hex_value > 31:
+                        for _i in range(4): _bytes_array.pop()
+                        _bytes_array.append(_hex_value)
+
+                    _idx += _scr
+
+
+                
+                elif _pure_string[_idx] == "u":
+                    ...
+
+            else:
+                _bytes_array.append(ord(_pure_string[_idx]))
+                _idx += 1
+        
+        _idx = 0
+        while _idx < len(_bytes_array):
+
+            _size = get_head_size(_bytes_array[_idx])
+
+            if  not is_valid_byte(_bytes_array[_idx]):
+                error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
+
+            if  _size == 1:
+                if  is_valid_trailbyte(_bytes_array[_idx]):
+                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
+                #! 
+                _idx += 1
+                continue
+
+            elif _size > 1:
+                if  not is_valid_start_byte(_size, _bytes_array[_idx]):
+                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence %d, ..., ..., ." % (_size, _bytes_array[_idx]) , _state.stacktrace)
+
+                _score = 1
+                _follow_index = _idx + 1
+
+                for _trailing_index in range(_follow_index, len(_bytes_array)):
+
+                    if  is_valid_trailbyte(_bytes_array[_trailing_index]):
+                        _score += 1
+                    
+                if  _score != _size:
+                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
+
+                _idx += _score
+
+
+        return astring(build_from_code_points(_bytes_array))
+

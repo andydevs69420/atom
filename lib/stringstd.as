@@ -28,3 +28,6 @@ fun[str] fromcharcodepoints(__codepoints__:array[int]);
 
 native::stringstd
 fun[str] tohexstring(__codepoints__:array[int]);
+
+native::stringstd
+fun[str] parsestring(__string__:str);
