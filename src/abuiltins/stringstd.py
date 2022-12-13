@@ -254,10 +254,13 @@ class stringstd:
             ("__codepoints__", array_t(integer_t())), 
         ]), 
 
-        "parsestring": nativefn_t(string_t(), 1, [
+        "atoi": nativefn_t(integer_t(), 1, [
             ("__string__", string_t()), 
         ]), 
 
+        "atof": nativefn_t(float_t(), 1, [
+            ("__string__", string_t()), 
+        ]), 
 
     })
 
@@ -302,6 +305,12 @@ class stringstd:
             
             case "parsestring":
                 return stringstd.parsestring
+
+            case "atoi":
+                return stringstd.atoi
+            
+            case "atof":
+                return stringstd.atoi
 
             case _:
                 raise AttributeError("No such attribute \"%s\"" % _attribute)
@@ -434,91 +443,19 @@ class stringstd:
         
         #!
         return astring(_hexstr)
-    
-    def parsestring(_state, __string__):
-        _idx = 0
 
-        _pure_string = __string__.raw
+    def atoi(_state, __string__):
+        _string = __string__.raw
 
-        _bytes_array = []
-
-        while _idx < len(_pure_string):
-            
-            if  _pure_string[_idx] == "\\":
-                #! "\x" sequence | 1 byte max
-                _bytes_array.append(ord(_pure_string[_idx]))
-                _idx += 1
-
-                if  _pure_string[_idx] == "x":
-                    _bytes_array.append(ord(_pure_string[_idx]))
-                    _idx += 1
-                    _scr  = 0
-
-                    _hex_value = 0
-                    for _i in range(2):
-                        if  (_idx+_i) >= len(_pure_string): break
-
-                        if  not is_hex(_pure_string[_idx + _i]):
-                            break
-                        _scr += 1
-
-                        _bytes_array.append(ord(_pure_string[_idx + _i]))
-                        
-                        if  _i == 0:
-                            _hex_value =  get_hex_char_value(_pure_string[_idx + _i]) * 16
-                        else:
-                            _hex_value += get_hex_char_value(_pure_string[_idx + _i])
-                    
-                    if  _scr != 2:
-                        error.raise_fromstack(error_category.UtfError, "invalid unicode escape sequence.", _state.stacktrace)
-                    
-                    if  is_valid_byte(_hex_value) and _hex_value > 31:
-                        for _i in range(4): _bytes_array.pop()
-                        _bytes_array.append(_hex_value)
-
-                    _idx += _scr
-
-
-                
-                elif _pure_string[_idx] == "u":
-                    ...
-
-            else:
-                _bytes_array.append(ord(_pure_string[_idx]))
-                _idx += 1
+        if  not str(_string).isdigit():
+            error.raise_fromstack(error_category.NumberFormatError, "invalid %s integer string format." % _string, _state.stacktrace)
         
-        _idx = 0
-        while _idx < len(_bytes_array):
+        return ainteger(int(_string))
+    
+    def atof(_state, __string__):
+        _string = __string__.raw
 
-            _size = get_head_size(_bytes_array[_idx])
-
-            if  not is_valid_byte(_bytes_array[_idx]):
-                error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
-
-            if  _size == 1:
-                if  is_valid_trailbyte(_bytes_array[_idx]):
-                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
-                #! 
-                _idx += 1
-                continue
-
-            elif _size > 1:
-                if  not is_valid_start_byte(_size, _bytes_array[_idx]):
-                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence %d, ..., ..., ." % (_size, _bytes_array[_idx]) , _state.stacktrace)
-
-                _score = 1
-                _follow_index = _idx + 1
-
-                for _trailing_index in range(_follow_index, len(_bytes_array)):
-
-                    if  is_valid_trailbyte(_bytes_array[_trailing_index]):
-                        _score += 1
-                    
-                if  _score != _size:
-                    error.raise_fromstack(error_category.UtfError, "invalid %d byte utf-8 sequence." % _size, _state.stacktrace)
-
-                _idx += _score
-
-
-        return astring(build_from_code_points(_bytes_array))
-
+        if  not str(_string).isdigit():
+            error.raise_fromstack(error_category.NumberFormatError, "invalid %s float string format." % _string, _state.stacktrace)
+        
+        return ainteger(float(_string))

@@ -13,6 +13,7 @@ class error_category(Enum):
     RuntimeError  = 0x06
 
     UtfError = 0x07
+    NumberFormatError = 0x08
 
 class error:
 

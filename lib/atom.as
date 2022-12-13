@@ -4,13 +4,15 @@
 import [std, stringstd];
 
 
-
 fun[int] main(_args:array[str])
 {   
     print(_args);
     print(tohexstring([240, 159, 152, 128]));
     print(fromcharcodepoints([240, 159, 152, 128]));
-    print(parsestring("\xff\x9f\x98\x80"));
+
+    print(atoi("100") + 2);
+
+    print(atof("200") * 1);
 
     return 0xc0ffee;
 }

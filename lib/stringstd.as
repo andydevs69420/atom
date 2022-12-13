@@ -30,4 +30,8 @@ native::stringstd
 fun[str] tohexstring(__codepoints__:array[int]);
 
 native::stringstd
-fun[str] parsestring(__string__:str);
+fun[int] atoi(__string__:str);
+
+native::stringstd
+fun[float] atof(__string__:str);
+
