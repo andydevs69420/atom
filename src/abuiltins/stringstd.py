@@ -2,7 +2,7 @@ from aobjects import *
 from atyping import *
 from error import (error_category, error)
 
-
+from inlineparser.intparser import parseInt
 
 #! ========================== utf
 """ USES Binary to easily understand.
@@ -302,15 +302,12 @@ class stringstd:
 
             case "tohexstring":
                 return stringstd.tohexstring
-            
-            case "parsestring":
-                return stringstd.parsestring
 
             case "atoi":
                 return stringstd.atoi
             
             case "atof":
-                return stringstd.atoi
+                return stringstd.atof
 
             case _:
                 raise AttributeError("No such attribute \"%s\"" % _attribute)
@@ -444,18 +441,27 @@ class stringstd:
         #!
         return astring(_hexstr)
 
+    @staticmethod
     def atoi(_state, __string__):
-        _string = __string__.raw
+        _string = parseInt(__string__.raw)
 
-        if  not str(_string).isdigit():
-            error.raise_fromstack(error_category.NumberFormatError, "invalid %s integer string format." % _string, _state.stacktrace)
+        if  not _string:
+            error.raise_fromstack(error_category.NumberFormatError, "invalid integer string format (%s)." % __string__.raw, _state.stacktrace)
         
         return ainteger(int(_string))
-    
+
+    @staticmethod
     def atof(_state, __string__):
         _string = __string__.raw
 
-        if  not str(_string).isdigit():
-            error.raise_fromstack(error_category.NumberFormatError, "invalid %s float string format." % _string, _state.stacktrace)
+        if  not is_float(_string):
+            error.raise_fromstack(error_category.NumberFormatError, "invalid float string format (%s)." % __string__.raw, _state.stacktrace)
         
-        return ainteger(float(_string))
+        return afloat(float(_string))
+
+def is_float(_flt):
+    try:
+        float(_flt)
+        return True
+    except:
+        return False

@@ -1,5 +1,4 @@
 
-from . import type_names
 from . import nonprimitive_t
 from . import operation
 
