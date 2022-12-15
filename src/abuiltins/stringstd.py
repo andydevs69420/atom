@@ -3,12 +3,12 @@ from atyping import *
 from error import (error_category, error)
 
 from inlineparser.intparser import parseInt
+from inlineparser.floatparser import floatParse
 
 #! ========================== utf
 """ USES Binary to easily understand.
 """
 
-#! MASK
 _1BYTE_UTF = 0b00000000
 _2BYTE_UTF = 0b11000000
 _3BYTE_UTF = 0b11100000
@@ -448,16 +448,16 @@ class stringstd:
         if  not _string:
             error.raise_fromstack(error_category.NumberFormatError, "invalid integer string format (%s)." % __string__.raw, _state.stacktrace)
         
-        return ainteger(int(_string))
+        return ainteger(_string)
 
     @staticmethod
     def atof(_state, __string__):
-        _string = __string__.raw
+        _string = floatParse(__string__.raw)
 
-        if  not is_float(_string):
+        if  not _string:
             error.raise_fromstack(error_category.NumberFormatError, "invalid float string format (%s)." % __string__.raw, _state.stacktrace)
         
-        return afloat(float(_string))
+        return afloat(_string)
 
 def is_float(_flt):
     try:
