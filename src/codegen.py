@@ -38,12 +38,12 @@ class constantevaluator(object):
 
     def visit_evaluator(self, _node):
         #! make visitor
-        _visitor = getattr(self, "eval_" + _node.type.name.lower(), self.visit_error)
+        _visitor = getattr(self, "eval_" + _node.type.name.lower(), self.visit_evaluator_error)
 
         #! end
         return _visitor(_node)
     
-    def visit_error(self, _node):
+    def visit_evaluator_error(self, _node):
         return ...
 
     def eval_int(self, _node):
@@ -399,14 +399,98 @@ class constantevaluator(object):
 
 
 class interfacebuilder(constantevaluator):
+    """ Source to interface converter.
+    """
 
     def __init__(self):
         super().__init__()
+        self.virtualoffset = 0
     
-    def makeinterface(self, _node):
-        ...
+    def visit_declairation(self, _node):
+        _visitor = getattr(self, "interface_" + _node.type.name.lower(), self.visit_declairation_error)
 
-class generator(constantevaluator):
+        return _visitor(_node)
+
+    def visit_declairation_error(self, _node):
+        raise AttributeError("unimplemented node no# %d a.k.a %s!!!" % (_node.type.value, _node.type.name))
+
+    def interface_function(self, _node):
+        """    
+               $0        $1       $2       $3
+            returntype  name  parameters  body
+        """
+        _old_offset = self.virtualoffset
+
+        self.virtualoffset = 0
+
+        #! =======================
+        _parameters = []
+
+        #! set current function
+        _functionreturntype =\
+        self.visit_declairation(_node.get(0))
+
+        #! new func scope
+        self.symtbl.newscope()
+
+        #! check if function name is already defined.
+        if  self.symtbl.contains(_node.get(1)):
+            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(1), _node.site)
+
+        #! compile parameters
+        for _each_param in _node.get(2):
+
+            #! param dtype
+            _vtype =\
+            self.visit_declairation(_each_param[1])
+
+            #! check if parameter is already defined.
+            if  self.symtbl.haslocal(_each_param[0]):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
+
+            #! make param list
+            _parameters.append((_each_param[0], _vtype))
+
+            #! opcode
+            emit_opcode(self, store_fast, _each_param[0], self.offset)
+
+            #! register
+            self.symtbl.insert_var(_each_param[0], self.offset, _vtype, False, False, _node.site)
+
+            self.virtualoffset += 1
+            #! end
+
+        #! end func scope
+        self.symtbl.endscope()
+
+        #! store code
+        self.state.codes[_node.get(1)] = self.bcodes
+
+        #! restore
+        self.virtualoffset = _old_offset
+
+        #! register
+        self.symtbl.insert_fun(_node.get(1), self.virtualoffset, fn_t(_functionreturntype, len(_parameters), _parameters), self.currentfunctiontype, _node.site)
+
+        #! end
+        self.virtualoffset += 1
+    
+    def make_from_root(self, _root_node):
+        #! make
+        for _each_node in _root_node.get(0):
+            #! only function and struct
+            if  _each_node.type == ast_type.FUNCTION         or\
+                _each_node.type == ast_type.NATIVE_FUNCTION  or\
+                _each_node.type == ast_type.FUNCTION_WRAPPER or\
+                _each_node.type == ast_type.STRUCT:
+
+                #! visit node
+                self.visit_declairation(_each_node)
+            
+            else: #! otherwise increment v-offset
+                self.virtualoffset += 1
+
+class generator(interfacebuilder):
     """ Base code generator for atom.
     """
 
@@ -3370,6 +3454,10 @@ class codegen(generator):
         #! end
     
     def ast_source(self, _node):
+        #! make interface
+        self.make_from_root(_node)
+
+        #! visit each
         for _each_node in _node.get(0):
             self.visit(_each_node)
         
