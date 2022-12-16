@@ -820,7 +820,7 @@ class generator(interfacebuilder):
         _plength = len(_node.get(2))
 
         _params = []
-        
+
         for _idx in range(_plength):
             #! visit
             self.visit(_node.get(2)[_idx])
@@ -828,7 +828,7 @@ class generator(interfacebuilder):
             _params.append((f"param{_idx}", self.tstack.popp()))
 
         #! push int type
-        push_ttable(self, fn_t(_return))
+        push_ttable(self, fn_t(_return, _plength, _params))
 
     
     def ast_map_t(self, _node):
@@ -894,7 +894,6 @@ class generator(interfacebuilder):
         #! opcode
         emit_opcode(self, fload, F64)
     
-
     def ast_str(self, _node):
         STR = str(_node.get(0))
 
