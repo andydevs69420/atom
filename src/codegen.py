@@ -417,7 +417,7 @@ class interfacebuilder(constantevaluator):
 
     
     def interface_any_t(self, _node):
-        #! push int type
+        #! return int type
         return any_t()
 
     def interface_int_t(self, _node):
@@ -425,19 +425,19 @@ class interfacebuilder(constantevaluator):
         return integer_t()
     
     def interface_float_t(self, _node):
-        #! push int type
+        #! return float type
         return float_t()
     
     def interface_str_t(self, _node):
-        #! push int type
+        #! return str type
         return string_t()
     
     def interface_bool_t(self, _node):
-        #! push int type
+        #! return bool type
         return boolean_t()
 
     def interface_void_t(self, _node):
-        #! push int type
+        #! return void type
         return null_t()
 
     def interface_array_t(self, _node):
@@ -445,7 +445,7 @@ class interfacebuilder(constantevaluator):
         _internal =\
         self.visit_declairation(_node.get(1))
 
-        #! push int type
+        #! return array type
         return array_t(_internal)
 
     def interface_fn_t(self, _node):
@@ -453,8 +453,16 @@ class interfacebuilder(constantevaluator):
         _return =\
         self.visit_declairation(_node.get(1))
 
-        #! push int type
-        return fn_t(_return)
+        _plength = len(_node.get(2))
+
+        _params = []
+        for _idx in range(_plength):
+            _params.append(
+                (f"param{_idx}", self.visit_declairation(_node.get(2)[_idx]))
+            )
+
+        #! return fn type
+        return fn_t(_return, _plength, _params)
 
     
     def interface_map_t(self, _node):
@@ -466,7 +474,7 @@ class interfacebuilder(constantevaluator):
         _val =\
         self.visit_declairation(_node.get(2))
 
-        #! push int type
+        #! return map type
         return map_t(_key, _val)
     
     def interface_type_t(self, _node):
@@ -778,19 +786,19 @@ class generator(interfacebuilder):
         push_ttable(self, integer_t())
     
     def ast_float_t(self, _node):
-        #! push int type
+        #! push float type
         push_ttable(self, float_t())
     
     def ast_str_t(self, _node):
-        #! push int type
+        #! push str type
         push_ttable(self, string_t())
     
     def ast_bool_t(self, _node):
-        #! push int type
+        #! push bool type
         push_ttable(self, boolean_t())
 
     def ast_void_t(self, _node):
-        #! push int type
+        #! push void type
         push_ttable(self, null_t())
 
     def ast_array_t(self, _node):
@@ -799,7 +807,7 @@ class generator(interfacebuilder):
 
         _internal = self.tstack.popp()
 
-        #! push int type
+        #! push array type
         push_ttable(self, array_t(_internal))
 
     
@@ -808,6 +816,16 @@ class generator(interfacebuilder):
         self.visit(_node.get(1))
 
         _return = self.tstack.popp()
+
+        _plength = len(_node.get(2))
+
+        _params = []
+        
+        for _idx in range(_plength):
+            #! visit
+            self.visit(_node.get(2)[_idx])
+
+            _params.append((f"param{_idx}", self.tstack.popp()))
 
         #! push int type
         push_ttable(self, fn_t(_return))

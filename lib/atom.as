@@ -5,6 +5,7 @@
 struct Person {
     name:str;
     nage:int;
+    eat:fn[int](Person, str);
 }
 
 

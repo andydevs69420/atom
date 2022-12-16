@@ -426,6 +426,25 @@ class parser(object):
 
         #!
         return (_identifier, _datatype)
+    
+    def list_native_datatype(self):
+        _start = self.lookahead
+        _list  = []
+
+        #! 1st type
+        _list.append(self.native_datatype())
+
+        while self.check_both(token_type.SYMBOL, ","):
+            #! ','
+            self.expect_t(token_type.SYMBOL)
+
+            if  not self.check_t(token_type.IDENTIFIER):
+                error.raise_tracked(error_category.ParseError, "unexpected end of datatype after \"%s\"." % self.previous.value, self.d_location(_start))
+
+            #! Nth type
+            _list.append(self.native_datatype())
+        
+        return tuple(_list)
 
     def native_datatype(self):
         """ Use keywords from typing to ensure proper spelling.
@@ -451,6 +470,25 @@ class parser(object):
             return self.t_map_native()
         #! end
         return self.t_user()
+    
+    def list_datatype(self):
+        _start = self.lookahead
+        _list  = []
+
+        #! 1st type
+        _list.append(self.datatype())
+
+        while self.check_both(token_type.SYMBOL, ","):
+            #! ','
+            self.expect_t(token_type.SYMBOL)
+
+            if  not self.check_t(token_type.IDENTIFIER):
+                error.raise_tracked(error_category.ParseError, "unexpected end of datatype after \"%s\"." % self.previous.value, self.d_location(_start))
+
+            #! Nth type
+            _list.append(self.datatype())
+        
+        return tuple(_list)
     
     def datatype(self):
         """ Use keywords from typing to ensure proper spelling.
@@ -758,11 +796,19 @@ class parser(object):
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
 
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        _parametertypes = self.list_native_datatype()
+
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
         #! terminated
         self.decr(_type=True)
 
         return expr_ast(
-            ast_type.FN_T, self.d_location(_start), _fn, _return)
+            ast_type.FN_T, self.d_location(_start), _fn, _return, _parametertypes)
 
     def t_fn(self):
         """ Regular typing for function.
@@ -793,11 +839,19 @@ class parser(object):
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
 
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        _parametertypes = self.list_datatype()
+
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
         #! terminated
         self.decr(_type=True)
 
         return expr_ast(
-            ast_type.FN_T, self.d_location(_start), _fn, _return)
+            ast_type.FN_T, self.d_location(_start), _fn, _return, _parametertypes)
     
     def t_map_native(self):
         """ Native typing for map.
