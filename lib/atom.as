@@ -1,12 +1,16 @@
 #! comment
 #! another comment!
 
-define fun[int] _obj:int add(_n:int) _obj + _n;
 
 struct Person {
     name:str;
+    nage:int;
 }
 
+
+enum xx {
+    x = 2 << 3
+}
 
 
 fun[int] main(_args:array[str])
@@ -14,9 +18,19 @@ fun[int] main(_args:array[str])
     2 + 2;
     print(2!add(4));
 
-    print(Person("Philipp"));
+    const x = Person("Philipp", 0);
 
-    print(add(1,2));
+    let i = 0;
+    for (; i < 10; i += 1)
+        print(i);
+
+    print(x.name = "ada");
+
+    print(x.nage += 2);
+    print(x);
+
+    print(add(1, 2));
+    print(xx.x);
 
     return 0;
 }
@@ -24,3 +38,5 @@ fun[int] main(_args:array[str])
 native::std
 fun[void] print(_object:any);
 
+
+define fun[int] _obj:int add(_n:int) _obj + _n;

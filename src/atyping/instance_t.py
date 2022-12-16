@@ -16,7 +16,7 @@ class instance_t(nonprimitive_t):
         return self.name
 
     def repr(self):
-        return "instance_of_" + self.name
+        return self.name
     
     def matches(self, _rhs):
         if  not _rhs.isinstance():
