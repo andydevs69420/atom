@@ -2107,7 +2107,7 @@ class parser(object):
         """
         if  self.check_both(token_type.IDENTIFIER, keywords.IMPORT):
             return self.import_stmnt()
-        if  self.check_both(token_type.IDENTIFIER, keywords.WRAPPER):
+        if  self.check_both(token_type.IDENTIFIER, keywords.DEFINE):
             return self.function_wrapper()
         if  self.check_both(token_type.IDENTIFIER, keywords.NATIVE):
             return self.native_function_proto()
@@ -2168,18 +2168,26 @@ class parser(object):
 
             Syntax|Grammar
             --------------
-            "wrap" "fun" parameter raw_iden '(' list_parameter ')' non_nullable_expression ;
+            "define" "fun" '[' returntype ']' parameter raw_iden '(' list_parameter ')' non_nullable_expression ;
 
             Returns
             -------
             ast
         """
         _start = self.lookahead
-        #! "wrapper"
-        self.expect_both(token_type.IDENTIFIER, keywords.WRAPPER)
+        #! "define"
+        self.expect_both(token_type.IDENTIFIER, keywords.DEFINE)
 
         #! "function"
         self.expect_both(token_type.IDENTIFIER, keywords.FUN)
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _dtype = self.returntype()
+
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
 
         _param0 = self.parameter()
 
@@ -2205,7 +2213,7 @@ class parser(object):
         #! ';'
 
         return expr_ast(
-            ast_type.FUNCTION_WRAPPER, _locsite, _param0, _wrapname, _parameters, _expr)
+            ast_type.FUNCTION_WRAPPER, _locsite, _dtype, _param0, _wrapname, _parameters, _expr)
     
     def native_function_proto(self):
         """ Native function prototype.

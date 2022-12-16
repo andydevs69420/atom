@@ -29,7 +29,7 @@ class keywords:
     WHILE    = "while"
     DO       = "do"
 
-    WRAPPER  = "wrapper"
+    DEFINE   = "define"
     IMPORT   = "import"
     CONST    = "const"
     VAR      = "var"
