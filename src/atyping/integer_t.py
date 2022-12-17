@@ -71,15 +71,12 @@ class integer_t(number_t):
     def matches(self, _rhs):
         return _rhs.isint()
 
+    def isconstant(self):
+        return True
+
     def isint(self):
         return True
-    
-    def ismax8(self):return False
-    def ismax16(self):return False
-    def ismax32(self):return False
-    def ismax64(self):return False
-    def ismax128(self):return False
-    
+        
     #! ==== integer specific op ====
 
     def bitnot(self):

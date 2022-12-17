@@ -14,7 +14,8 @@ class tag_t(object):
 
     #! ======= checker =======
     def isprimitive(self):return False
-    def isnonprimitive(self): False
+    def isnonprimitive(self):return False
+    def isconstant(self):return False
     def isany(self):return False
     def isint(self):return False
     def isbyte(self):return False

@@ -26,6 +26,9 @@ class boolean_t(primitive_t):
     def matches(self, _rhs):
         return _rhs.isboolean()
     
+    def isconstant(self):
+        return True
+    
     def isboolean(self):
         return True
     

@@ -375,6 +375,7 @@ class lexer(object):
              self.current.clook == ']' or\
              self.current.clook == '{' or\
              self.current.clook == '}' or\
+             self.current.clook == '?' or\
              self.current.clook == '.' or\
              self.current.clook == '!' or\
              self.current.clook == ';' or\

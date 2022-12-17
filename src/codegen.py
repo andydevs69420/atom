@@ -723,21 +723,39 @@ class interfacebuilder(constantevaluator):
 
         #! end
         self.virtualoffset += 1
-    
-    def make_from_root(self, _root_node):
-        #! make
-        for _each_node in _root_node.get(0):
-            #! only function and struct
-            if  _each_node.type == ast_type.FUNCTION         or\
-                _each_node.type == ast_type.NATIVE_FUNCTION  or\
-                _each_node.type == ast_type.FUNCTION_WRAPPER or\
-                _each_node.type == ast_type.STRUCT:
 
-                #! visit node
-                self.visit_declairation(_each_node)
-            
-            else: #! otherwise increment v-offset
-                self.virtualoffset += 1
+        if  _node.get(2) == "print":
+            print("print", "virtualoffset:", self.virtualoffset - 1)
+    
+    # def make_from_import(self, _nodes):
+    #     raise
+    #     #! make
+    #     for _each_node in _nodes:
+    #         #! only function and struct
+    #         self.before_visit(_each_node)
+
+    # def make_from_root(self, _root_node):
+    #     #! make
+    #     for _each_node in _root_node.get(0):
+    #         #! only function and struct
+    #         self.before_visit(_each_node)
+    
+    def before_visit(self, _node):
+        #! only function and struct
+        if  _node.type == ast_type.FUNCTION         or\
+            _node.type == ast_type.NATIVE_FUNCTION  or\
+            _node.type == ast_type.FUNCTION_WRAPPER or\
+            _node.type == ast_type.STRUCT:
+
+            #! visit node
+            self.visit_declairation(_node)
+        
+        elif _node.type == ast_type.IMPORT: 
+            #! visit node
+            pass
+
+        else: #! otherwise increment v-offset
+            self.virtualoffset += 1
 
 class generator(interfacebuilder):
     """ Base code generator for atom.
@@ -1358,6 +1376,185 @@ class generator(interfacebuilder):
             #! emit
             emit_opcode(self, call_type, len(_node.get(1)), self.callid - 1)
     
+
+    def ast_ternary(self, _node):
+        if  _node.get(0).type == ast_type.SHORTC_OP:
+            if  _node.get(0).get(1) == "&&":
+                self.ternary_logic_and(_node)
+
+            else:
+                self.ternary_logic_or(_node)
+
+        else:
+            self.ternary_using_normal_condition(_node)
+    
+    def ternary_logic_and(self, _node):
+        _condition = _node.get(0)
+        _op = _condition.get(1)
+
+        #! compile rhs
+        self.visit(_condition.get(2))
+
+        _rhs_type = self.tstack.popp()
+
+        #! check rhs type
+        if  not _rhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condition.site)
+
+        #! when logical and(&&). both operands
+        #! must evaluate to true.
+        #! if any operand produces false, 
+        #! then the condition is false.
+        #! so jump to false value without evaluating lhs.
+        _if_false__jump_to_false_val =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+    
+        #! compile lhs
+        self.visit(_condition.get(0))
+
+        _lhs_type = self.tstack.popp()
+
+        #! check lhs type
+        if  not _lhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condition.site)
+
+        _jump_to_false =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+
+        #! compile true
+        self.visit(_node.get(1))
+
+        _truetype =\
+        self.tstack.popp()
+
+        #! jump to end
+        _to_end =\
+        emit_opcode(self, jump_to, TARGET)
+
+        #! jump if true
+        _if_false__jump_to_false_val[2] = get_byteoff(self)
+
+        #! jump to false value
+        _jump_to_false[2] = get_byteoff(self)
+
+        #! compile false
+        self.visit(_node.get(2))
+
+        _falsetype =\
+        self.tstack.popp()
+
+        #! jumpto end ternary
+        _to_end[2] = get_byteoff(self)
+
+        if  _truetype.matches(_falsetype):
+            push_ttable(self, _truetype)
+        
+        else:
+            push_ttable(self, any_t())
+    
+    def ternary_logic_or(self, _node):
+        _condition = _node.get(0)
+        _op = _condition.get(1)
+
+        #! compile rhs
+        self.visit(_condition.get(2))
+
+        _rhs_type = self.tstack.popp()
+
+        #! check rhs type
+        if  not _rhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condition.site)
+
+        #! when logical or(||), atleast 1 operand
+        #! produces true to make the condition satisfiable.
+        #! IF rhs produces true. do not evaluate lhs.
+        _if_true__jump_to_true_val =\
+        emit_opcode(self, pop_jump_if_true, TARGET)
+    
+        #! compile lhs
+        self.visit(_condition.get(0))
+
+        _lhs_type = self.tstack.popp()
+
+        #! check lhs type
+        if  not _lhs_type.isboolean():
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condition.site)
+
+        _jump_to_false =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+        
+        #! jump if true
+        _if_true__jump_to_true_val[2] = get_byteoff(self)
+
+        #! compile true
+        self.visit(_node.get(1))
+
+        _truetype =\
+        self.tstack.popp()
+
+        #! jump to end
+        _to_end =\
+        emit_opcode(self, jump_to, TARGET)
+
+        #! jump to false value
+        _jump_to_false[2] = get_byteoff(self)
+
+        #! compile false
+        self.visit(_node.get(2))
+
+        _falsetype =\
+        self.tstack.popp()
+
+        #! jumpto end ternary
+        _to_end[2] = get_byteoff(self)
+
+        if  _truetype.matches(_falsetype):
+            push_ttable(self, _truetype)
+        
+        else:
+            push_ttable(self, any_t())
+    
+    def ternary_using_normal_condition(self, _node):
+        #! compile condition
+        self.visit(_node.get(0))
+
+        _condtype = self.tstack.popp()
+
+        #! check
+        if  not _condtype.isboolean():
+            error.raise_tracked(error_category.CompileError, "ternary condition must be a boolean type, got %s." % _condtype.repr(), _node.get(0).site)
+
+        #! opcode
+        _jump =\
+        emit_opcode(self, pop_jump_if_false, TARGET)
+
+        #! compile true
+        self.visit(_node.get(1))
+
+        _truetype =\
+        self.tstack.popp()
+
+        #! jump to end
+        _to_end =\
+        emit_opcode(self, jump_to, TARGET)
+
+        _jump[2] = get_byteoff(self)
+
+        #! compile false
+        self.visit(_node.get(2))
+
+        _falsetype =\
+        self.tstack.popp()
+
+        #! jumpto end ternary
+        _to_end[2] = get_byteoff(self)
+
+        if  _truetype.matches(_falsetype):
+            push_ttable(self, _truetype)
+        
+        else:
+            push_ttable(self, any_t())
+    
     def ast_unary_op(self, _node):
         """
              $0   $1
@@ -1462,7 +1659,28 @@ class generator(interfacebuilder):
             raise
 
         if  _operation.iserror():
-            error.raise_tracked(error_category.CompileError, "invalid operation %s %s." % (_op, _rhs.repr()), _node.site)
+            error.raise_tracked(error_category.CompileError, "sinvalid operation %s %s." % (_op, _rhs.repr()), _node.site)
+
+    
+    def ast_unary_typeof(self, _node):
+        """
+             $0    $1
+            _op  _rhs
+        """
+        #! visit rhs
+        self.visit(_node.get(1))
+        
+        #! datatypoe
+        _dtype = self.tstack.popp()
+
+        #! push str
+        push_ttable(self, string_t())
+
+        #! opcode
+        emit_opcode(self, pop_top)
+
+        #! push type as string
+        emit_opcode(self, sload, _dtype.repr())
 
     def ast_unary_unpack(self, _node):
         """
@@ -2480,17 +2698,17 @@ class generator(interfacebuilder):
             self.if_using_normal_condition(_node)
     
     def if_logic_and(self, _node):
-        _condtition = _node.get(0)
-        _op = _condtition.get(1)
+        _condition = _node.get(0)
+        _op = _condition.get(1)
 
         #! compile rhs
-        self.visit(_condtition.get(2))
+        self.visit(_condition.get(2))
 
         _rhs_type = self.tstack.popp()
 
         #! check rhs type
         if  not _rhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condition.site)
 
         #! when logical and(&&). both operands
         #! must evaluate to true.
@@ -2501,13 +2719,13 @@ class generator(interfacebuilder):
         emit_opcode(self, pop_jump_if_false, TARGET)
         
         #! compile lhs
-        self.visit(_condtition.get(0))
+        self.visit(_condition.get(0))
 
         _lhs_type = self.tstack.popp()
 
         #! check lhs type
         if  not _lhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condition.site)
 
         #! if lhs evaluates to false for
         #! both operand. jump to else
@@ -2541,17 +2759,17 @@ class generator(interfacebuilder):
             _jump_to_end[2] = get_byteoff(self)
 
     def if_logic_or(self, _node):
-        _condtition = _node.get(0)
-        _op = _condtition.get(1)
+        _condition = _node.get(0)
+        _op = _condition.get(1)
 
         #! compile rhs
-        self.visit(_condtition.get(2))
+        self.visit(_condition.get(2))
 
         _rhs_type = self.tstack.popp()
 
         #! check rhs type
         if  not _rhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condition.site)
 
         #! when logical or(||), atleast 1 operand
         #! produces true to make the condition satisfiable.
@@ -2560,13 +2778,13 @@ class generator(interfacebuilder):
         emit_opcode(self, pop_jump_if_true, TARGET)
         
         #! compile lhs
-        self.visit(_condtition.get(0))
+        self.visit(_condition.get(0))
 
         _lhs_type = self.tstack.popp()
 
         #! check lhs type
         if  not _lhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condition.site)
 
         #! if lhs evaluates to false for
         #! both operand. jump to else
@@ -2994,8 +3212,8 @@ class generator(interfacebuilder):
             self.while_using_normal_condition(_node)
     
     def while_logic_and(self, _node):
-        _condtition = _node.get(0)
-        _op = _condtition.get(1)
+        _condition = _node.get(0)
+        _op = _condition.get(1)
 
         _loop_begin = get_byteoff(self)
 
@@ -3005,13 +3223,13 @@ class generator(interfacebuilder):
         self.breaks.append(_breaks)
 
         #! compile rhs
-        self.visit(_condtition.get(2))
+        self.visit(_condition.get(2))
 
         _rhs_type = self.tstack.popp()
 
         #! check rhs type
         if  not _rhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condition.site)
 
         #! when logical and(&&). both operands
         #! must evaluate to true.
@@ -3023,13 +3241,13 @@ class generator(interfacebuilder):
         
         
         #! compile lhs
-        self.visit(_condtition.get(0))
+        self.visit(_condition.get(0))
 
         _lhs_type = self.tstack.popp()
 
         #! check lhs type
         if  not _lhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condition.site)
 
         #! if lhs evaluates to false for
         #! both operand. jump to end while
@@ -3060,8 +3278,8 @@ class generator(interfacebuilder):
         self.breaks.pop()
     
     def while_logic_or(self, _node):
-        _condtition = _node.get(0)
-        _op = _condtition.get(1)
+        _condition = _node.get(0)
+        _op = _condition.get(1)
 
         _loop_begin = get_byteoff(self)
 
@@ -3071,13 +3289,13 @@ class generator(interfacebuilder):
         self.breaks.append(_breaks)
 
         #! compile rhs
-        self.visit(_condtition.get(2))
+        self.visit(_condition.get(2))
 
         _rhs_type = self.tstack.popp()
 
         #! check rhs type
         if  not _rhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condition.site)
 
        
         #! when logical or(||), atleast 1 operand
@@ -3087,13 +3305,13 @@ class generator(interfacebuilder):
         emit_opcode(self, pop_jump_if_true, TARGET)
     
         #! compile lhs
-        self.visit(_condtition.get(0))
+        self.visit(_condition.get(0))
 
         _lhs_type = self.tstack.popp()
 
         #! check lhs type
         if  not _lhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condition.site)
 
         #! if lhs evaluates to false for
         #! both operand. jump to end while
@@ -3184,8 +3402,8 @@ class generator(interfacebuilder):
             self.dowhile_using_normal_condition(_node)
     
     def dowhile_logic_and(self, _node):
-        _condtition = _node.get(1)
-        _op = _condtition.get(1)
+        _condition = _node.get(1)
+        _op = _condition.get(1)
 
         _loop_begin = get_byteoff(self)
 
@@ -3200,13 +3418,13 @@ class generator(interfacebuilder):
         #! NOTE: body|statement does not emit type, so do not pop.
 
         #! compile rhs
-        self.visit(_condtition.get(2))
+        self.visit(_condition.get(2))
 
         _rhs_type = self.tstack.popp()
 
         #! check rhs type
         if  not _rhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condition.site)
 
         #! when logical and(&&). both operands
         #! must evaluate to true.
@@ -3217,13 +3435,13 @@ class generator(interfacebuilder):
         emit_opcode(self, pop_jump_if_false, TARGET)
         
         #! compile lhs
-        self.visit(_condtition.get(0))
+        self.visit(_condition.get(0))
 
         _lhs_type = self.tstack.popp()
 
         #! check lhs type
         if  not _lhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condition.site)
 
         #! if lhs evaluates to false for
         #! both operand. jump to end do while
@@ -3249,8 +3467,8 @@ class generator(interfacebuilder):
         self.breaks.pop()
     
     def dowhile_logic_or(self, _node):
-        _condtition = _node.get(1)
-        _op = _condtition.get(1)
+        _condition = _node.get(1)
+        _op = _condition.get(1)
 
         _loop_begin = get_byteoff(self)
 
@@ -3265,13 +3483,13 @@ class generator(interfacebuilder):
         #! NOTE: body|statement does not emit type, so do not pop.
 
         #! compile rhs
-        self.visit(_condtition.get(2))
+        self.visit(_condition.get(2))
 
         _rhs_type = self.tstack.popp()
 
         #! check rhs type
         if  not _rhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "right operand for op \"%s\" must be boolean type, got %s." % (_op, _rhs_type.repr()), _condition.site)
 
         #! when logical and(&&). both operands
         #! must evaluate to true.
@@ -3281,13 +3499,13 @@ class generator(interfacebuilder):
         emit_opcode(self, pop_jump_if_true, _loop_begin)
         
         #! compile lhs
-        self.visit(_condtition.get(0))
+        self.visit(_condition.get(0))
 
         _lhs_type = self.tstack.popp()
 
         #! check lhs type
         if  not _lhs_type.isboolean():
-            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condtition.site)
+            error.raise_tracked(error_category.CompileError, "left operand for op \"%s\" must be a boolean type, got %s." % (_op, _lhs_type.repr()), _condition.site)
 
         #! if lhs evaluates to false for
         #! both operand. jump to end do while
@@ -3548,10 +3766,27 @@ class generator(interfacebuilder):
         #! end
         self.offset += 1
 
+
+        if  _node.get(2) == "print":
+            print("print", "offset:", self.offset - 1)
+
     def ast_var_stmnt(self, _node):
         """ Global variable declairation.
         """
         for _variable in _node.get(0):
+
+            if  _variable[1]:
+
+                _astt = _variable[1]
+
+                if not (
+                    _astt.type == ast_type.INT   or
+                    _astt.type == ast_type.FLOAT or
+                    _astt.type == ast_type.STR   or
+                    _astt.type == ast_type.BOOL  or
+                    _astt.type == ast_type.NULL
+                ):
+                    error.raise_tracked(error_category.CompileError, "initializer element is not constant.", _variable[1].site)
             
             if  not _variable[1]:
                 #! null
@@ -3607,7 +3842,25 @@ class generator(interfacebuilder):
             #! end
 
     def ast_const_stmnt(self, _node):
+        #! global scope?
+        _is_global = self.symtbl.isglobal()
+
         for _variable in _node.get(0):
+
+            if  _is_global:
+
+                if  _variable[1]:
+
+                    _astt = _variable[1]
+                    
+                    if not (
+                        _astt.type == ast_type.INT   or
+                        _astt.type == ast_type.FLOAT or
+                        _astt.type == ast_type.STR   or
+                        _astt.type == ast_type.BOOL  or
+                        _astt.type == ast_type.NULL
+                    ):
+                        error.raise_tracked(error_category.CompileError, "initializer element is not constant.", _variable[1].site)
             
             if  not _variable[1]:
                 #! null
@@ -3624,9 +3877,7 @@ class generator(interfacebuilder):
 
             if  self.symtbl.haslocal(_variable[0]):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _variable[0], _node.site)
-
-            _is_global = self.symtbl.isglobal()
-
+            
             #! check
             _opcode = store_global if _is_global else store_local
 
@@ -3719,10 +3970,13 @@ class codegen(generator):
     
     def ast_source(self, _node):
         #! make interface
-        self.make_from_root(_node)
+        for _each_node in _node.get(0):
+            #! visit every declairation
+            self.before_visit(_each_node)
 
         #! visit each
         for _each_node in _node.get(0):
+            #! visit each node
             self.visit(_each_node)
         
         #! add main

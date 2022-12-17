@@ -791,7 +791,7 @@ class parser(object):
         #! '['
         self.expect_both(token_type.SYMBOL, "[")
 
-        _return = self.native_datatype()
+        _return = self.native_returntype()
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
@@ -834,7 +834,7 @@ class parser(object):
         #! '['
         self.expect_both(token_type.SYMBOL, "[")
 
-        _return = self.datatype()
+        _return = self.returntype()
 
         self.expect_both(token_type.SYMBOL, "]")
         #! ']'
@@ -1212,6 +1212,25 @@ class parser(object):
 
         #! end
         return _node
+    
+    def ternary(self):
+        _node = self.member()
+        if  not _node: return _node
+
+        if  not self.check_both(token_type.SYMBOL, "?"):
+            return _node
+        
+        #! ternary
+        self.expect_both(token_type.SYMBOL, "?")
+
+        _if_true = self.non_nullable_expr()
+
+        self.expect_both(token_type.SYMBOL, ":")
+
+        _if_false = self.non_nullable_expr()
+
+        return expr_ast(
+            ast_type.TERNARY, "...", _node, _if_true, _if_false)
 
     def unary_op(self):
         _start = self.lookahead
@@ -1246,7 +1265,7 @@ class parser(object):
                 error.raise_tracked(error_category.ParseError, "missing right operand \"%s\"." % _opt, self.d_location(_start))
 
             _node = expr_ast(
-                ast_type.UNARY_OP, self.d_location(_start), _opt, _rhs)
+                ast_type.UNARY_TYPEOF, self.d_location(_start), _opt, _rhs)
 
         #! unpack
         elif self.check_both(token_type.SYMBOL, "*" ):
@@ -1280,7 +1299,7 @@ class parser(object):
                 ast_type.UNARY_UNPACK, self.d_location(_start), _opt, _rhs)
         
         else:
-            _node = self.member()
+            _node = self.ternary()
 
         #! terminated
         self.decr()
@@ -1681,6 +1700,26 @@ class parser(object):
         #! end
         return _node
 
+    def source_compound_and_simple(self):
+        if  self.check_both(token_type.IDENTIFIER, keywords.FUN):
+            return self.function()
+        if  self.check_both(token_type.IDENTIFIER, keywords.STRUCT):
+            return self.struct()
+        if  self.check_both(token_type.IDENTIFIER, keywords.ENUM):
+            return self.enum()
+        if  self.check_both(token_type.IDENTIFIER, keywords.IMPORT):
+            return self.import_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.DEFINE):
+            return self.function_wrapper()
+        if  self.check_both(token_type.IDENTIFIER, keywords.NATIVE):
+            return self.native_function_proto()
+        if  self.check_both(token_type.IDENTIFIER, keywords.VAR):
+            return self.var_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.CONST):
+            return self.const_stmnt()
+        #! error
+        error.raise_tracked(error_category.SemanticError, "expected declairation, got \"%s\"." % self.lookahead.value, self.c_location())
+
     def compound_stmnt(self):
         """ COMPOUND statement.
 
@@ -1688,12 +1727,6 @@ class parser(object):
             -------
             ast
         """
-        if  self.check_both(token_type.IDENTIFIER, keywords.FUN):
-            return self.function()
-        if  self.check_both(token_type.IDENTIFIER, keywords.STRUCT):
-            return self.struct()
-        if  self.check_both(token_type.IDENTIFIER, keywords.ENUM):
-            return self.enum()
         if  self.check_both(token_type.IDENTIFIER, keywords.IF):
             return self.if_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.SWITCH):
@@ -2159,14 +2192,6 @@ class parser(object):
             -------
             ast
         """
-        if  self.check_both(token_type.IDENTIFIER, keywords.IMPORT):
-            return self.import_stmnt()
-        if  self.check_both(token_type.IDENTIFIER, keywords.DEFINE):
-            return self.function_wrapper()
-        if  self.check_both(token_type.IDENTIFIER, keywords.NATIVE):
-            return self.native_function_proto()
-        if  self.check_both(token_type.IDENTIFIER, keywords.VAR):
-            return self.var_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.LET):
             return self.let_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.CONST):
@@ -2500,7 +2525,7 @@ class parser(object):
         self.enter(context.GLOBAL)
 
         while self.hasNext():
-            _node = self.compound_stmnt()
+            _node = self.source_compound_and_simple()
 
             #! check if epsilon
             if  not _node: break

@@ -45,6 +45,9 @@ class float_t(number_t):
     def matches(self, _rhs):
         return _rhs.isfloat()
     
+    def isconstant(self):
+        return True
+    
     def isfloat(self):
         return True
 

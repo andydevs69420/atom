@@ -26,6 +26,9 @@ class null_t(primitive_t):
     def matches(self, _rhs):
         return _rhs.isnull()
     
+    def isconstant(self):
+        return True
+    
     def isnull(self):
         return True
     

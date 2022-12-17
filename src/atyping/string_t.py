@@ -26,6 +26,9 @@ class string_t(nonprimitive_t):
     def matches(self, _rhs):
         return _rhs.isstring()
     
+    def isconstant(self):
+        return True
+    
     def isstring(self):
         return True
 
