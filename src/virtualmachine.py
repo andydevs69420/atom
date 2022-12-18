@@ -91,7 +91,7 @@ class virtualmachine(object):
 
     def load_funpntr(self, _bytecode_chunk):
         _funpntr =\
-        afun(_bytecode_chunk[2])
+        afun(_bytecode_chunk[2], _bytecode_chunk[3])
 
         atom_object_New(self.state, _funpntr)
     
@@ -370,14 +370,14 @@ class virtualmachine(object):
 
         _funpntr =\
         popp_operand(self)
-        print(_funpntr)
+       
         #! pushback
         for _r in range(_popsize): push_operand(self, _tmp.pop())
 
         #! push program frame
-        self.state.stack.push(frame(self.state.codes[_funpntr.funpntr]))
+        self.state.stack.push(frame(self.state.codes[_funpntr.modpntr][_funpntr.funpntr]))
 
-        for _i in self.state.codes[_funpntr.funpntr]:
+        for _i in self.state.codes[_funpntr.modpntr][_funpntr.funpntr]:
             print(_i)
         
     def call_type(self, _bytecode_chunk):

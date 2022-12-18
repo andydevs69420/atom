@@ -1,6 +1,8 @@
 """ Static analyzer and compiler for atom.
 """
 
+from os import path
+
 from stack import stack
 from readf import (file_isfile, read_file)
 from aparser import parser
@@ -2606,7 +2608,7 @@ class generator(interfacebuilder):
         self.symtbl.endscope()
 
         #! store code
-        self.state.codes[_node.get(1)] = self.bcodes
+        self.state.codes[self.names[-1]][_node.get(1)] = self.bcodes
 
         #! restore
         self.offset = _old_offset
@@ -2620,7 +2622,7 @@ class generator(interfacebuilder):
         None
         
         #! val opcode
-        emit_opcode(self, load_funpntr, _node.get(1))
+        emit_opcode(self, load_funpntr, self.names[-1], _node.get(1))
 
         #! var opcode
         emit_opcode(self, store_global, _node.get(1), self.offset)
@@ -3942,6 +3944,7 @@ class codegen(generator):
         #! init prop
         self.state   = _state
         self.gparser = parser(self.state)
+        self.names   = []
 
     #! ========== simple ============
     
@@ -3962,10 +3965,37 @@ class codegen(generator):
             if  _FILE:
                 #! parse
                 _parse = parser(self.state)
+
+                #! push name
+                self.names.append(_each_import)
+                self.state.codes[_each_import] = ({})
+
+                _old_bcodes = self.bcodes
+
+                #! ==================
+
+                self.bcodes = []
+
+                self.symtbl.newscope()
                 
                 for _each_node in _parse.raw_parse():
                     #! visit each node
                     self.visit(_each_node)
+
+                _symbols =\
+                self.symtbl.endscope()
+                
+                #! restore
+                self.bcodes = _old_bcodes
+
+                #! build
+
+                #! store as variable
+                emit_opcode(self, store_global, _each_import, self.offset)
+
+                #!
+                self.offset += 1
+                self.names.pop()
         #! end
     
     def ast_source(self, _node):
@@ -4022,6 +4052,11 @@ class codegen(generator):
     
     
     def generate(self):
+        #! push name
+        _name = path.basename(self.gparser.lexer.current.fpath.split(".")[0])
+        self.names.append(_name)
+        self.state.codes[_name] = ({})
+
         #! compile each child node
         self.visit(self.gparser.parse())
 

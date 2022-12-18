@@ -4,8 +4,9 @@ from . import aobject
 
 class afun(aobject):
 
-    def __init__(self, _funname):
+    def __init__(self, _modname, _funname):
         super().__init__()
+        self.modpntr = _modname
         self.funpntr = _funname
     
     def objecthash(self):

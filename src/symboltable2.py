@@ -252,6 +252,7 @@ class SymbolTable(HashTable):
     def endscope(self):
         """ Removes scope from hierarchy.
         """
+        return\
         self.childnodes.popp()
 
 
