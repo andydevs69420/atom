@@ -13,7 +13,7 @@ class afun(aobject):
         return self.hash(self.funpntr)
 
     def __str__(self):
-        return "<function %s(...) at atom memory index %s/>" % (self.funpntr, hex(self.offset.offset))
+        return "<function %s.%s(...) at atom memory index %s/>" % (self.modpntr, self.funpntr, hex(self.offset.offset))
     
     def __repr__(self):
         return self.__str__()

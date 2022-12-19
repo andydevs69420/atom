@@ -4,8 +4,9 @@ from . import aobject
 
 class atype(aobject):
 
-    def __init__(self, _typename):
+    def __init__(self, _modpntr, _typename):
         super().__init__()
+        self.modpntr  = _modpntr
         self.typepntr = _typename
     
     def objecthash(self):

@@ -33,9 +33,10 @@ class tag_t(object):
     def isfunction(self):return False
     def isnativefunction(self):return False
     def ismap(self):return False
-    def istype(self):return False
     def isenum(self):return False
+    def istype(self):return False
     def isinstance(self):return False
+    def ismodule(self):return False
     def iserror(self):return False
 
     #! ======== operation =======

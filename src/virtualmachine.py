@@ -110,7 +110,7 @@ class virtualmachine(object):
     
     def load_typepntr(self, _bytecode_chunk):
         _typepntr =\
-        atype(_bytecode_chunk[2])
+        atype(_bytecode_chunk[2], _bytecode_chunk[3])
 
         atom_object_New(self.state, _typepntr)
     
@@ -262,6 +262,23 @@ class virtualmachine(object):
 
         _map.put(popp_operand(self), popp_operand(self))
     
+    #! ===== make module ======
+    def build_module(self, _bytecode_chunk):
+        _popsize = _bytecode_chunk[3]
+
+        _object = amodule(_bytecode_chunk[2])
+
+        #! alloc
+        atom_object_New(self.state, _object)
+
+        for _r in range(_popsize):
+            _k = popp_operand(self)
+            _v = popp_operand(self)
+            _object.put(_k, _v)
+
+        #! push to operand
+        push_operand(self, _object)
+
     #! = struct / object make =
 
     def make_aobject(self, _bytecode_chunk):
@@ -373,12 +390,12 @@ class virtualmachine(object):
        
         #! pushback
         for _r in range(_popsize): push_operand(self, _tmp.pop())
+        
+        for _i in self.state.codes[_funpntr.modpntr][_funpntr.funpntr]:
+            print(_i)
 
         #! push program frame
         self.state.stack.push(frame(self.state.codes[_funpntr.modpntr][_funpntr.funpntr]))
-
-        for _i in self.state.codes[_funpntr.modpntr][_funpntr.funpntr]:
-            print(_i)
         
     def call_type(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
@@ -396,7 +413,7 @@ class virtualmachine(object):
         for _r in range(_popsize): push_operand(self, _tmp.pop())
 
         #! push program frame
-        self.state.stack.push(frame(self.state.codes[_typepntr.typepntr]))
+        self.state.stack.push(frame(self.state.codes[_typepntr.modpntr][_typepntr.typepntr]))
 
     def return_control(self, _bytecode_chunk):
         self.state.stack.popp()

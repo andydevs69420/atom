@@ -45,15 +45,16 @@ class ast_type(Enum):
     BLOCK_STMNT   = 40
 
     IMPORT        = 100
-    NATIVE_FUNCTION  = 101
-    VAR_STMNT     = 102
-    LET_STMNT     = 103
-    CONST_STMNT   = 104
-    BREAK_STMNT   = 105
-    CONTINUE_STMNT= 106
-    RETURN_STMNT  = 107
-    EXPR_STMNT    = 108
-    SOURCE        = 109
+    FROM          = 101
+    NATIVE_FUNCTION  = 102
+    VAR_STMNT     = 103
+    LET_STMNT     = 104
+    CONST_STMNT   = 105
+    BREAK_STMNT   = 106
+    CONTINUE_STMNT= 107
+    RETURN_STMNT  = 108
+    EXPR_STMNT    = 109
+    SOURCE        = 110
 
 
 

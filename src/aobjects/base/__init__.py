@@ -8,6 +8,7 @@ from .aarray import aarray
 from .afun import afun
 from .anativefun import anativefun
 from .amap import amap
-from .atype import atype
 from .aenum import aenum
+from .atype import atype
 from .ainstance import ainstance
+from .amodule import amodule

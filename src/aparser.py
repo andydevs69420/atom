@@ -1709,6 +1709,8 @@ class parser(object):
             return self.enum()
         if  self.check_both(token_type.IDENTIFIER, keywords.IMPORT):
             return self.import_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.FROM):
+            return self.from_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.DEFINE):
             return self.function_wrapper()
         if  self.check_both(token_type.IDENTIFIER, keywords.NATIVE):
@@ -2212,7 +2214,7 @@ class parser(object):
 
             Syntax|Grammar
             --------------
-            "import" '[' list_idn ']' ';'
+            "import" '[' list_idn ']' ';' ;
 
             Returns
             -------
@@ -2241,6 +2243,45 @@ class parser(object):
 
         return stmnt_ast(
             ast_type.IMPORT, _locsite, _imports)
+    
+    def from_stmnt(self):
+        """ FROM statement.
+
+            Syntax|Grammar
+            --------------
+            "from" raw_iden "import" '[' list_idn ']' ';' ;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        #! "from"
+        self.expect_both(token_type.IDENTIFIER, keywords.FROM)
+
+        _modname = self.raw_iden()
+
+        #! "import"
+        self.expect_both(token_type.IDENTIFIER, keywords.IMPORT)
+
+        #! '['
+        self.expect_both(token_type.SYMBOL, "[")
+
+        _imports = self.list_idn()
+
+        self.expect_both(token_type.SYMBOL, "]")
+        #! ']'
+
+        if  not self.under(context.GLOBAL, True):
+            error.raise_tracked(error_category.SemanticError, "cannot declaire imports here!", self.d_location(_start))
+
+        _locsite = self.d_location(_start)
+
+        self.expect_both(token_type.SYMBOL, ";")
+        #! ';'
+
+        return stmnt_ast(
+            ast_type.FROM, _locsite, _modname, _imports)
     
     def function_wrapper(self):
         """ Function wrapper

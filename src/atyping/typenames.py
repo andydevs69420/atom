@@ -25,6 +25,9 @@ class type_names:
     MAP    = "map"
     TYPE   = "type"
     ENUM   = "enum"
+
+    MODULE = "module"
+
     # INSTANCE = PROVIDED BY BUILDER
     ERROR  = "error"
 

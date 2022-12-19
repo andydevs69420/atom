@@ -7,7 +7,10 @@
 #! const
 iload  = "iload"
 fload  = "fload"
+
 sload  = "sload"
+string_get = "string_get"
+
 bload  = "bload"
 nload  = "nload"
 
@@ -34,6 +37,9 @@ map_set = "map_set"
 
 build_enum = "build_enum"
 get_enum   = "get_enum"
+
+
+build_module = "build_module"
 
 make_aobject = "make_aobject"
 get_attribute = "get_attribute"

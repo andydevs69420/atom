@@ -400,366 +400,7 @@ class constantevaluator(object):
         return self.visit_evaluator(_node)
 
 
-class interfacebuilder(constantevaluator):
-    """ Source to interface converter.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.virtualoffset = 0
-        self.virtualcurrentstructnumber = 0
-    
-    def visit_declairation(self, _node):
-        _visitor = getattr(self, "interface_" + _node.type.name.lower(), self.visit_declairation_error)
-
-        return _visitor(_node)
-
-    def visit_declairation_error(self, _node):
-        raise AttributeError("unimplemented node no# %d a.k.a %s!!!" % (_node.type.value, _node.type.name))
-
-    
-    def interface_any_t(self, _node):
-        #! return int type
-        return any_t()
-
-    def interface_int_t(self, _node):
-        #! push int type
-        return integer_t()
-    
-    def interface_float_t(self, _node):
-        #! return float type
-        return float_t()
-    
-    def interface_str_t(self, _node):
-        #! return str type
-        return string_t()
-    
-    def interface_bool_t(self, _node):
-        #! return bool type
-        return boolean_t()
-
-    def interface_void_t(self, _node):
-        #! return void type
-        return null_t()
-
-    def interface_array_t(self, _node):
-        #! internal
-        _internal =\
-        self.visit_declairation(_node.get(1))
-
-        #! return array type
-        return array_t(_internal)
-
-    def interface_fn_t(self, _node):
-        #! return
-        _return =\
-        self.visit_declairation(_node.get(1))
-
-        _plength = len(_node.get(2))
-
-        _params = []
-        for _idx in range(_plength):
-            _params.append(
-                (f"param{_idx}", self.visit_declairation(_node.get(2)[_idx]))
-            )
-
-        #! return fn type
-        return fn_t(_return, _plength, _params)
-
-    
-    def interface_map_t(self, _node):
-        #! key type
-        _key =\
-        self.visit_declairation(_node.get(1))
-
-        #! val type
-        _val =\
-        self.visit_declairation(_node.get(2))
-
-        #! return map type
-        return map_t(_key, _val)
-    
-    def interface_type_t(self, _node):
-        """ User defined type.
-        """
-        #! check
-        if  not self.symtbl.contains(_node.get(0)):
-            error.raise_tracked(error_category.CompileError, "type %s is not defined." % _node.get(0), _node.site)
-
-        _info = self.symtbl.lookup(_node.get(0))
-        
-        #! datatype
-        _dtype = _info.get_datatype()
-
-        #! emit type
-        return _dtype.returntype
-    
-    def interface_struct(self, _node):
-        """    
-               $0      $1
-            subtypes  body
-        """
-        _old_offset = self.virtualoffset
-
-        for _each_subtype in _node.get(0):
-
-            #! check if function|struct name is already defined.
-            if  self.symtbl.contains(_each_subtype):
-                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_subtype, _node.site)
-         
-            self.virtualoffset = 0
-
-            #! make scope
-            self.symtbl.newscope()
-
-            _members = []
-
-            if  len(_node.get(1)) <= 0:
-                error.raise_tracked(error_category.CompileError, "struct \"%s\" has empty body." %  _each_subtype, _node.site)
-
-            for _each_member in _node.get(1):
-
-                #! visit type
-                _dtype =\
-                self.visit_declairation(_each_member[1])
-
-                #! check if parameter is already defined.
-                if  self.symtbl.haslocal(_each_member[0]):
-                    error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_member[0], _node.site)
-
-                #! insert
-                _members.append((_each_member[0], _dtype))
-
-                #! register
-                self.symtbl.insert_var(_each_member[0], self.virtualoffset, _dtype, False, False, _node.site)
-
-                self.virtualoffset += 1
-                #! end
-
-            #! leave scope
-            self.symtbl.endscope()
-
-            #! restore
-            self.virtualoffset = _old_offset
-            
-            #! struct becomes a function
-            _type = type_t(self.virtualcurrentstructnumber, _each_subtype, instance_t(self.virtualcurrentstructnumber, _each_subtype), len(_members), tuple(_members))
-
-            #! register
-            self.symtbl.insert_struct(_each_subtype, (self.virtualoffset + self.offset), _type, _node.site)
-
-            #! end
-            self.virtualoffset += 1
-            _old_offset  = self.virtualoffset
-
-        #! increment every struct dec
-        self.virtualcurrentstructnumber += 1
-    
-    def interface_function_wrapper(self, _node):
-        """    
-                $0        $1           $2         $3     $4
-            returntype  wraptype  wrapper_name  params  return
-        """
-        _old_offset = self.virtualoffset
-
-        self.virtualoffset = 0
-
-        #! =======================
-        _parameters = []
-
-        #! new func scope
-        self.symtbl.newscope()
-
-        #! return type
-        _desiredreturntype =\
-        self.visit_declairation(_node.get(0))
-
-        _param0 = _node.get(1)
-
-        #! parameter 1 datatype
-        _ptype0 =\
-        self.visit_declairation(_param0[1])
-        
-        _name = _node.get(2)
-
-        #! check if function name is already defined.
-        if  self.symtbl.contains(_name):
-            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _name, _node.site)
-        
-        #! make param list
-        _parameters.append((_param0[0], _ptype0))
-
-        #! register
-        self.symtbl.insert_var(_param0[0], self.virtualoffset, _ptype0, False, False, _node.site)
-
-        self.virtualoffset += 1
-
-        #! compile parameters
-        for _each_param in _node.get(3):
-
-            #! param dtype
-            _vtype =\
-            self.visit_declairation(_each_param[1])
-
-            #! check if parameter is already defined.
-            if  self.symtbl.haslocal(_each_param[0]):
-                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
-
-            #! make param list
-            _parameters.append((_each_param[0], _vtype))
-
-            #! register
-            self.symtbl.insert_var(_each_param[0], self.virtualoffset, _vtype, False, False, _node.site)
-
-            self.virtualoffset += 1
-            #! end
-
-        #! end func scope
-        self.symtbl.endscope()
-
-        #! restore
-        self.virtualoffset = _old_offset
-
-        #! register
-        self.symtbl.insert_fun(_name, (self.virtualoffset + self.offset), fn_t(_desiredreturntype, len(_parameters), _parameters), _desiredreturntype, _node.site)
-
-        #! end
-        self.virtualoffset += 1
-        
-    
-    def interface_function(self, _node):
-        """    
-               $0        $1       $2       $3
-            returntype  name  parameters  body
-        """
-        _old_offset = self.virtualoffset
-
-        self.virtualoffset = 0
-
-        #! ===================
-        _parameters = []
-
-        #! set current function
-        _functionreturntype =\
-        self.visit_declairation(_node.get(0))
-
-        #! new func scope
-        self.symtbl.newscope()
-
-        #! check if function name is already defined.
-        if  self.symtbl.contains(_node.get(1)):
-            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(1), _node.site)
-
-        #! compile parameters
-        for _each_param in _node.get(2):
-
-            #! param dtype
-            _vtype =\
-            self.visit_declairation(_each_param[1])
-
-            #! check if parameter is already defined.
-            if  self.symtbl.haslocal(_each_param[0]):
-                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
-
-            #! make param list
-            _parameters.append((_each_param[0], _vtype))
-
-            #! register
-            self.symtbl.insert_var(_each_param[0], self.virtualoffset, _vtype, False, False, _node.site)
-
-            self.virtualoffset += 1
-            #! end
-
-        #! end func scope
-        self.symtbl.endscope()
-
-        #! restore
-        self.virtualoffset = _old_offset
-
-        #! register
-        self.symtbl.insert_fun(_node.get(1), (self.virtualoffset + self.offset), fn_t(_functionreturntype, len(_parameters), _parameters), _functionreturntype, _node.site)
-
-        #! end
-        self.virtualoffset += 1
-    
-    def interface_native_function(self, _node):
-        """    
-            $0        $1          $2       $3     $4
-            mod   returntype  func_name  params  body
-        """
-        _parameters = []
-
-        #! new func scope
-        self.symtbl.newscope()
-
-        #! visit returntype
-        _returntype =\
-        self.visit_declairation(_node.get(1))
-
-        #! check if function name is already defined.
-        if  self.symtbl.contains(_node.get(2)):
-            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(2), _node.site)
-
-        #! compile parameters
-        for _each_param in _node.get(3):
-
-            #! visit type
-            _vtype =\
-            self.visit_declairation(_each_param[1])
-
-            #! check if parameter is already defined.
-            if  self.symtbl.haslocal(_each_param[0]):
-                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
-
-            #! make param list
-            _parameters.append((_each_param[0], _vtype))
-
-        #! end func scope
-        self.symtbl.endscope()
-
-        #! datatype
-        _datatype = nativefn_t(_returntype, len(_parameters), _parameters)
-
-        #! register
-        self.symtbl.insert_fun(_node.get(2), (self.virtualoffset + self.offset), _datatype, _returntype, _node.site)
-
-        #! end
-        self.virtualoffset += 1
-
-        if  _node.get(2) == "print":
-            print("print", "virtualoffset:", self.virtualoffset - 1)
-    
-    # def make_from_import(self, _nodes):
-    #     raise
-    #     #! make
-    #     for _each_node in _nodes:
-    #         #! only function and struct
-    #         self.before_visit(_each_node)
-
-    # def make_from_root(self, _root_node):
-    #     #! make
-    #     for _each_node in _root_node.get(0):
-    #         #! only function and struct
-    #         self.before_visit(_each_node)
-    
-    def before_visit(self, _node):
-        #! only function and struct
-        if  _node.type == ast_type.FUNCTION         or\
-            _node.type == ast_type.NATIVE_FUNCTION  or\
-            _node.type == ast_type.FUNCTION_WRAPPER or\
-            _node.type == ast_type.STRUCT:
-
-            #! visit node
-            self.visit_declairation(_node)
-        
-        elif _node.type == ast_type.IMPORT: 
-            #! visit node
-            pass
-
-        else: #! otherwise increment v-offset
-            self.virtualoffset += 1
-
-class generator(interfacebuilder):
+class generator(constantevaluator):
     """ Base code generator for atom.
     """
 
@@ -1204,6 +845,23 @@ class generator(interfacebuilder):
 
             #! get
             emit_opcode(self, get_attribute)
+        
+        elif _dtype.ismodule():
+            #! check
+            if  not _dtype.hasAttribute(_node.get(1)):
+                error.raise_tracked(error_category.CompileError, "%s has no attribute \"%s\"." % (_dtype.repr(), _node.get(1)), _node.site)
+
+            _attribtype = _dtype.getAttribute(_node.get(1))
+
+            #! emit attribute type
+            push_ttable(self, _attribtype)
+
+            #! push attribute as string
+            emit_opcode(self, sload, _node.get(1))
+
+            #! just use get attribute because module is an object
+            emit_opcode(self, get_attribute)
+
         else:
             error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
     
@@ -1244,6 +902,17 @@ class generator(interfacebuilder):
 
             #! opcode
             emit_opcode(self, map_get)
+        
+        elif _objtype.isstring():
+            #! verify index
+            if  not _element_type.isint():
+                error.raise_tracked(error_category.CompileError, "string index should be int, got %s." % _element_type.repr(), _node.site)
+
+            #! push map value type
+            push_ttable(self, string_t())
+
+            #! opcode
+            emit_opcode(self, string_get)
 
         else:
             error.raise_tracked(error_category.CompileError, "%s is not subscriptable." % _objtype.repr(), _node.site)
@@ -1682,7 +1351,7 @@ class generator(interfacebuilder):
         emit_opcode(self, pop_top)
 
         #! push type as string
-        emit_opcode(self, sload, _dtype.repr())
+        emit_opcode(self, sload, _dtype.qualname())
 
     def ast_unary_unpack(self, _node):
         """
@@ -2116,6 +1785,14 @@ class generator(interfacebuilder):
 
                 #! opcode
                 emit_opcode(self, map_set)
+            
+            elif _objtype.isstring():
+                #! verify index
+                if  not _element_type.isint():
+                    error.raise_tracked(error_category.CompileError, "string index should be int, got %s." % _element_type.repr(), _node.site)
+                
+                #! 
+                error.raise_tracked(error_category.CompileError, "string element can't be re-assigned.", _node.site)
 
             else:
                 error.raise_tracked(error_category.CompileError, "%s is not subscriptable." % _objtype.repr(), _node.site)
@@ -2158,6 +1835,15 @@ class generator(interfacebuilder):
 
                 #! set
                 emit_opcode(self, set_attribute)
+            
+
+            elif _dtype.ismodule():
+                #! check
+                if  not _dtype.hasAttribute(_lhs.get(1)):
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute \"%s\"." % (_dtype.repr(), _lhs.get(1)), _node.site)
+
+                #! end
+                error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
             else:
                 error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
@@ -2390,6 +2076,14 @@ class generator(interfacebuilder):
 
                 #! opcode
                 emit_opcode(self, map_set)
+            
+            elif _objtype.isstring():
+                #! verify index
+                if  not _element_type.isint():
+                    error.raise_tracked(error_category.CompileError, "string index should be int, got %s." % _element_type.repr(), _node.site)
+                
+                #! 
+                error.raise_tracked(error_category.CompileError, "string element can't be re-assigned.", _node.site)
 
             else:
                 error.raise_tracked(error_category.CompileError, "%s is not subscriptable." % _objtype.repr(), _node.site)
@@ -2432,6 +2126,14 @@ class generator(interfacebuilder):
 
                 #! set
                 emit_opcode(self, set_attribute)
+            
+            elif _dtype.ismodule():
+                #! check
+                if  not _dtype.hasAttribute(_lhs.get(1)):
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute \"%s\"." % (_dtype.repr(), _lhs.get(1)), _node.site)
+
+                #! end
+                error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
             else:
                 error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
@@ -2506,7 +2208,7 @@ class generator(interfacebuilder):
             self.symtbl.endscope()
 
             #! store code
-            self.state.codes[_each_subtype] = self.bcodes
+            self.state.codes[self.names[-1]][_each_subtype] = self.bcodes
 
             #! restore
             self.offset = _old_offset
@@ -2519,7 +2221,7 @@ class generator(interfacebuilder):
             self.symtbl.insert_struct(_each_subtype, self.offset, _type, _node.site)
 
             #! val opcode
-            emit_opcode(self, load_typepntr, _each_subtype)
+            emit_opcode(self, load_typepntr, self.names[-1], _each_subtype)
 
             #! var opcode
             emit_opcode(self, store_global, _each_subtype, self.offset)
@@ -3677,7 +3379,7 @@ class generator(interfacebuilder):
         self.symtbl.endscope()
 
         #! store code
-        self.state.codes[_name] = self.bcodes
+        self.state.codes[self.names[-1]][_name] = self.bcodes
 
         #! restore
         self.offset = _old_offset
@@ -3687,7 +3389,7 @@ class generator(interfacebuilder):
         self.symtbl.insert_fun(_name, self.offset, fn_t(_returntype, len(_parameters), _parameters), _returntype, _node.site)
 
         #! val opcode
-        emit_opcode(self, load_funpntr, _name)
+        emit_opcode(self, load_funpntr, self.names[-1], _name)
 
         #! var opcode
         emit_opcode(self, store_global, _name, self.offset)
@@ -3962,6 +3664,10 @@ class codegen(generator):
             _FILE =\
             read_file(self.state, _fpath)
 
+            #! check if exist
+            if  self.symtbl.contains(_each_import):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_import, _node.site)
+
             if  _FILE:
                 #! parse
                 _parse = parser(self.state)
@@ -3970,40 +3676,144 @@ class codegen(generator):
                 self.names.append(_each_import)
                 self.state.codes[_each_import] = ({})
 
-                _old_bcodes = self.bcodes
-
                 #! ==================
 
-                self.bcodes = []
+                self.symtbl.newparentscope()
 
-                self.symtbl.newscope()
+                _ast_nodes = _parse.raw_parse()
                 
-                for _each_node in _parse.raw_parse():
+                #! make interface from import
+                self.make_from_import(_ast_nodes)
+
+                for _each_node in _ast_nodes:
                     #! visit each node
                     self.visit(_each_node)
 
                 _symbols =\
-                self.symtbl.endscope()
+                self.symtbl.endparentscope()
                 
-                #! restore
-                self.bcodes = _old_bcodes
+                _members = []
 
                 #! build
+                for _each_child in _symbols.aslist():
+                    #! emit load global (value)
+                    emit_opcode(self, load_global, _each_child[0], _each_child[1].get_offset())
+
+                    #! emit sload (key)
+                    emit_opcode(self, sload, _each_child[0])
+
+                    #! append a member
+                    _members.append((_each_child[0], _each_child[1].get_datatype()))
+                
+                #! emit build_module
+                emit_opcode(self, build_module, _each_import, len(_members))
 
                 #! store as variable
                 emit_opcode(self, store_global, _each_import, self.offset)
+
+                #! register as toplevel global var
+                self.symtbl.insert_module(_each_import, self.offset, module_t(_each_import, _members), True, True, _node.site)
 
                 #!
                 self.offset += 1
                 self.names.pop()
         #! end
     
-    def ast_source(self, _node):
-        #! make interface
-        for _each_node in _node.get(0):
-            #! visit every declairation
-            self.before_visit(_each_node)
+    def ast_from(self, _node):
+        _import = _node.get(0)
+        #! put extra
+        _fpath = _import + ".as"
+        
+        #! check file
+        if  not file_isfile(self.state, _fpath):
+            error.raise_tracked(error_category.CompileError, "file not found or invalid file \"%s\"." % _import, _node.site)
 
+        #! read file first
+        _FILE =\
+        read_file(self.state, _fpath)
+
+        #! check if exist
+        if  self.symtbl.contains(_import):
+            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _import, _node.site)
+
+        if  _FILE:
+            #! parse
+            _parse = parser(self.state)
+
+            #! push name
+            self.names.append(_import)
+            self.state.codes[_import] = ({})
+
+            #! ==================
+
+            self.symtbl.newparentscope()
+
+            _ast_nodes = _parse.raw_parse()
+            for _each_node in _ast_nodes:
+                #! visit each node
+                self.visit(_each_node)
+
+            _symbols =\
+            self.symtbl.endparentscope()
+            
+            _members = []
+
+            #! build
+            for _each_child in _symbols.aslist():
+                #! emit load global (value)
+                emit_opcode(self, load_global, _each_child[0], _each_child[1].get_offset())
+
+                #! emit sload (key)
+                emit_opcode(self, sload, _each_child[0])
+
+                #! append a member
+                _members.append((_each_child[0], _each_child[1].get_datatype()))
+            
+            #! emit build_module
+            emit_opcode(self, build_module, _import, len(_members))
+
+            #! store as variable
+            emit_opcode(self, store_global, _import, self.offset)
+
+            _datatype = module_t(_import, _members)
+
+            #! register as toplevel global var
+            self.symtbl.insert_module(_import, self.offset, _datatype, True, True, _node.site)
+
+            #!
+            self.offset += 1
+            self.names.pop()
+
+            _modoff = (self.offset - 1)
+
+            for _each_attrib in _node.get(1):
+                #! check if exist
+                if  self.symtbl.contains(_each_attrib):
+                    error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_attrib, _node.site)
+                
+                #! load module
+                emit_opcode(self, load_global, _import, _modoff)
+
+                #! load attrib as string
+                emit_opcode(self, sload, _each_attrib)
+
+                #! get attribute
+                emit_opcode(self, get_attribute)
+
+                #! store as global variable
+                emit_opcode(self, store_global, _each_attrib, self.offset)
+
+                #! check for attribute
+                if  not _datatype.hasAttribute(_each_attrib):
+                    error.raise_tracked(error_category.CompileError, "module %s has no attribute \"%s\"." %  (_import, _each_attrib), _node.site)
+
+                #! register
+                self.symtbl.insert_var(_each_attrib, self.offset, _datatype.getAttribute(_each_attrib), True, True, _node.site)
+
+                #! end
+                self.offset += 1
+    
+    def ast_source(self, _node):
         #! visit each
         for _each_node in _node.get(0):
             #! visit each node

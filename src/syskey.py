@@ -31,6 +31,7 @@ class keywords:
 
     DEFINE   = "define"
     IMPORT   = "import"
+    FROM     = "from"
     CONST    = "const"
     VAR      = "var"
     LET      = "let"

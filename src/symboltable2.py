@@ -127,6 +127,42 @@ class HashTable(object):
             _hashcode |= 0
         
         return _hashcode
+    
+    def aslist(self):
+        _children = []
+        
+        for _chain in self.__bucket:
+            #! next element
+            if  not _chain: continue
+
+            #! 
+            _head = _chain
+            while _head:
+                #! append current
+                _children.append((_head.nkey, _head.nval))
+
+                #! next tail
+                _head = _head.tail
+        
+        return _children
+    
+    def keys(self):
+        _keys = []
+        
+        for _chain in self.__bucket:
+            #! next element
+            if  not _chain: continue
+
+            #! 
+            _head = _chain
+            while _head:
+                #! append current
+                _keys.append(_head.nkey)
+
+                #! next tail
+                _head = _head.tail
+        
+        return _keys
 
 
 class SymbolTable(HashTable):
@@ -194,11 +230,11 @@ class SymbolTable(HashTable):
         _top.put(_varname, variabletable(_varname, _offset, _datatype, _isglobal, _isconstant, _site))
     
     def insert_fun(self,
-        _funcname  ,
-        _offset    ,
-        _datatype  ,
-        _retrtype  ,
-        _site      ,
+        _funcname,
+        _offset  ,
+        _datatype,
+        _retrtype,
+        _site    ,
     ):
         #! check bottom
         _top = self.childnodes.peek() if not self.childnodes.isempty() else self
@@ -230,6 +266,20 @@ class SymbolTable(HashTable):
         #! insert
         _top.put(_enumname, enumtable(_enumname, _offset, _datatype, _site))
 
+    def insert_module(self,
+        _modname   ,
+        _offset    ,
+        _datatype  ,
+        _isglobal  ,
+        _isconstant,
+        _site      ,
+    ):
+        #! check bottom
+        _top = self.childnodes.peek() if not self.childnodes.isempty() else self
+        
+        #! insert
+        _top.put(_modname, moduletable(_modname, _offset, _datatype, _isglobal, _isconstant, _site))
+
     def lookup(self, _key):
         #! check bottom
         _top = self.childnodes.peek() if not self.childnodes.isempty() else self
@@ -244,6 +294,7 @@ class SymbolTable(HashTable):
         #! end
         raise KeyError("key not found \"%s\"." % _key)
     
+    #! child scope
     def newscope(self):
         """ Creates new symboltable node.
         """
@@ -254,13 +305,24 @@ class SymbolTable(HashTable):
         """
         return\
         self.childnodes.popp()
+    
+    #! stand alone scope
+    def newparentscope(self):
+        """ Creates new symboltable node.
+        """
+        self.childnodes.push(SymbolTable())
+    
+    def endparentscope(self):
+        """ Creates new symboltable node.
+        """
+        return\
+        self.childnodes.popp()
 
 
 
 class typetable(object):
 
-    def __init__(self):
-        pass
+    def __init__(self):pass
     
     def get_name(self):...
 
@@ -380,6 +442,37 @@ class variabletable(typetable):
     
     def get_name(self):
         return self.varname
+    
+    def get_offset(self):
+        return self.offset
+
+    def get_datatype(self):
+        return self.datatype
+    
+    def is_global(self):
+        return self.isglobal
+    
+    def is_constant(self):
+        return self.isconstant
+    
+    def get_site(self):
+        return self.site
+
+class moduletable(typetable):
+    """ Module table for atom.
+    """
+
+    def __init__(self, _modname, _offset, _datatype, _isglobal, _isconstant, _site):
+        super().__init__()
+        self.modname    = _modname
+        self.offset     = _offset
+        self.datatype   = _datatype
+        self.isglobal   = _isglobal
+        self.isconstant = _isconstant
+        self.site       = _site
+    
+    def get_name(self):
+        return self.modname
     
     def get_offset(self):
         return self.offset
