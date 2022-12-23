@@ -5,19 +5,16 @@
 
 from std import [print];
 
-import [integerstd];
 
-
-fun[void] test_import()
+function test_import() -> void
 {
-    integerstd.itoa(100);
-    print(  "Hello World!"  );
-    print(  integerstd.itoa(69420) );
+    print(  "Hello World!" );
+    print(   69420   );
 }
 
 
 
-fun[void] test_all()
+function test_all() -> void
 {
     test_import();
 

@@ -317,11 +317,18 @@ class lexer(object):
         
         elif self.current.clook == '/' or\
              self.current.clook == '%' or\
-             self.current.clook == '+' or\
-             self.current.clook == '-':
+             self.current.clook == '+':
             _token.value += self.nextchr()
 
             if   self.current.clook == '=':
+                _token.value += self.nextchr()
+        
+        elif self.current.clook == '-':
+            _token.value += self.nextchr()
+
+            if   self.current.clook == '=':
+                _token.value += self.nextchr()
+            elif self.current.clook == '>':
                 _token.value += self.nextchr()
         
         elif self.current.clook == '<':

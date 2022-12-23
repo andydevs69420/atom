@@ -1,4 +1,5 @@
 from .aobject import aobject
+from .aerror import aerror
 from .ainteger import ainteger
 from .afloat import afloat
 from .astring import astring

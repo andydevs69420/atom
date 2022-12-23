@@ -50,7 +50,6 @@ class HashTable(object):
 
     
     def put(self, _key, _value):
-        assert _key and _value, "invalid data!!!"
         
         _index = self.hash(_key) % self.__htsize
         

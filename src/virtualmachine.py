@@ -18,19 +18,39 @@ def popp_operand(_cls):
 def peek_operand(_cls):
     return _cls.state.oprnd.peek()
 
-def check_int(_cls, _int):
-    if  integer_t.auto(_int).iserror():
-        error.raise_fromstack(error_category.RuntimeError, "integer underflowed or overflowed.", _cls.state.stacktrace)
-    
-    #! end
-    return _int
+def inrange(_n, _min=0, _max=69420):
+    """ index starts at zero(0)
+    """
+    return _n >= _min and _n <= _max
 
-def check_flt(_cls, _flt):
-    if  float_t.auto(_flt).iserror():
-        error.raise_fromstack(error_category.RuntimeError, "float underflowed or overflowed.", _cls.state.stacktrace)
+
+def check_int(_int):
+    return not integer_t.auto(_int).iserror()
+
+def check_flt(_flt):
+    return not float_t.auto(_flt).iserror()
+
+def atom_throw_error(_cls, _error_cat, _message):
+    if  len(_cls.state.exceptions) > 0:
+        _error = aerror(_error_cat.name, _message)
+
+        #! alloc
+        atom_object_New(_cls.state, _error)
+
+        #! push to stack
+        push_operand(_cls, _error)
+
+        #! pop if not main
+        if  len(_cls.state.stack) > 2: _cls.state.stack.popp()
+
+        #! jump to except
+        _cls.state.stack.peek().ipointer = (_cls.state.exceptions[-1] // 2)
+
+        #! end
+        return
     
     #! end
-    return _flt
+    error.raise_fromstack(_error_cat, _message, _cls.state.stacktrace)
 
 class virtualmachine(object):
     """ Virtual machine for atom.
@@ -70,6 +90,23 @@ class virtualmachine(object):
     
         #! push to opstack
         push_operand(self, _str)
+    
+    def string_get(self, _bytecode_chunk):
+        _str =\
+        popp_operand(self)
+
+        _idx =\
+        popp_operand(self)
+
+        if  not inrange(_idx.raw, 0, (len(_str.raw) - 1)):...
+
+        _newstr = astring(_str.raw[_idx.raw])
+
+        #! alloc
+        atom_object_New(self.state, _newstr)
+
+        #! push to opstack
+        push_operand(self, _newstr)
     
     def bload(self, _bytecode_chunk):
         _str =\
@@ -428,9 +465,17 @@ class virtualmachine(object):
         _obj =\
         popp_operand(self)
 
-        
+        _result = ~_obj.raw
+
         #! check
-        _new = ainteger(check_int(self, ~_obj.raw))
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = ainteger(_result)
 
         #! alloc
         atom_object_New(self.state, _new)
@@ -454,7 +499,17 @@ class virtualmachine(object):
         _obj =\
         popp_operand(self)
 
-        _new = ainteger(check_int(self, + _obj.raw))
+        _result = + _obj.raw
+
+        #! check
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = ainteger(_result)
 
         #! alloc
         atom_object_New(self.state, _new)
@@ -466,7 +521,17 @@ class virtualmachine(object):
         _obj =\
         popp_operand(self)
 
-        _new = ainteger(check_int(self, - _obj.raw))
+        _result = - _obj.raw
+
+        #! check
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = ainteger(_result)
 
         #! alloc
         atom_object_New(self.state, _new)
@@ -478,7 +543,17 @@ class virtualmachine(object):
         _obj =\
         popp_operand(self)
 
-        _new = afloat(check_flt(self, + _obj.raw))
+        _result = + _obj.raw
+
+        #! check
+        if  not check_flt(_result):
+            atom_throw_error(self, error_category.RuntimeError, "float underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = afloat(_result)
 
         #! alloc
         atom_object_New(self.state, _new)
@@ -490,7 +565,17 @@ class virtualmachine(object):
         _obj =\
         popp_operand(self)
 
-        _new = afloat(check_flt(self, - _obj.raw))
+        _result = - _obj.raw
+
+        #! check
+        if  not check_flt(_result):
+            atom_throw_error(self, error_category.RuntimeError, "float underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = afloat(_result)
 
         #! alloc
         atom_object_New(self.state, _new)
@@ -507,8 +592,17 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        ainteger(check_int(self, _lhs.raw ** _rhs.raw))
+        _result = _lhs.raw ** _rhs.raw
+
+        #! check
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = ainteger(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -523,8 +617,17 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        afloat(check_flt(self, _lhs.raw ** _rhs.raw))
+        _result = _lhs.raw ** _rhs.raw
+
+        #! check
+        if  not check_flt(_result):
+            atom_throw_error(self, error_category.RuntimeError, "float underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = afloat(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -541,8 +644,17 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        ainteger(check_int(self, _lhs.raw * _rhs.raw))
+        _result = _lhs.raw * _rhs.raw
+
+        #! check
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = ainteger(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -557,8 +669,17 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        afloat(check_flt(self, _lhs.raw * _rhs.raw))
+        _result = _lhs.raw * _rhs.raw
+
+        #! check
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "float underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = afloat(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -575,10 +696,23 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        afloat(check_flt(self, _lhs.raw / _rhs.raw))
+        if  _rhs.raw == 0:
+            atom_throw_error(self, error_category.RuntimeError, "zero divison error %s / %s." % (_lhs.__repr__(), _rhs.__repr__()))
 
-        #! FIXME: zero division error
+            #! end
+            return
+
+        _result = _lhs.raw / _rhs.raw
+
+        #! check
+        if  not check_flt(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = afloat(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -595,10 +729,23 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        ainteger(check_int(self, _lhs.raw % _rhs.raw))
+        if  _rhs.raw == 0:
+            atom_throw_error(self, error_category.RuntimeError, "zero divison error %s % %s." % (_lhs.__repr__(), _rhs.__repr__()))
 
-        #! FIXME: zero division error
+            #! end
+            return
+
+        _result = _lhs.raw % _rhs.raw
+
+        #! check
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = ainteger(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -613,8 +760,23 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        afloat(check_flt(self, _lhs.raw % _rhs.raw))
+        if  _rhs.raw == 0:
+            atom_throw_error(self, error_category.RuntimeError, "zero divison error %s % %s." % (_lhs.__repr__(), _rhs.__repr__()))
+
+            #! end
+            return
+
+        _result = _lhs.raw % _rhs.raw
+
+        #! check
+        if  not check_flt(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = afloat(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -631,8 +793,17 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        ainteger(check_int(self, _lhs.raw + _rhs.raw))
+        _result = _lhs.raw + _rhs.raw
+
+        #! check
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = ainteger(_result)
         
         #! store
         atom_object_New(self.state, _new)
@@ -647,8 +818,17 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        afloat(check_flt(self, _lhs.raw + _rhs.raw))
+        _result = _lhs.raw + _rhs.raw
+
+        #! check
+        if  not check_flt(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = afloat(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -681,8 +861,17 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        ainteger(check_int(self, _lhs.raw - _rhs.raw))
+        _result = _lhs.raw - _rhs.raw
+
+        #! check
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = ainteger(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -697,8 +886,17 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        afloat(check_flt(self, _lhs.raw - _rhs.raw))
+        _result = _lhs.raw - _rhs.raw
+
+        #! check
+        if  not check_flt(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = afloat(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -715,8 +913,17 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        ainteger(check_int(self, _lhs.raw << _rhs.raw))
+        _result = _lhs.raw << _rhs.raw
+
+        #! check
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = ainteger(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -731,8 +938,17 @@ class virtualmachine(object):
         _rhs =\
         popp_operand(self)
 
-        _new =\
-        ainteger(check_int(self, _lhs.raw >> _rhs.raw))
+        _result = _lhs.raw >> _rhs.raw
+
+        #! check
+        if  not check_int(_result):
+            atom_throw_error(self, error_category.RuntimeError, "integer underflowed or overflowed.")
+
+            #! end
+            return
+        
+        #! make
+        _new = ainteger(_result)
 
         #! store
         atom_object_New(self.state, _new)
@@ -958,7 +1174,7 @@ class virtualmachine(object):
         #! cuplicate top
         push_operand(self, peek_operand(self))
 
-    def rot1(self, _bytecode_chunk):
+    def rot2(self, _bytecode_chunk):
         _top = popp_operand(self)
         _bot = popp_operand(self)
 
@@ -1034,6 +1250,13 @@ class virtualmachine(object):
     def jump_to(self, _bytecode_chunk):
         self.state.stack.peek().ipointer = (_bytecode_chunk[2] // 2) - 1
     
+    def setup_try(self, _bytecode_chunk):
+        self.state.exceptions.append(_bytecode_chunk[2])
+
+    def unsetup_try(self, _bytecode_chunk):
+        self.state.exceptions.pop()
+
+    
     #! =========== visitor ===========
     
     def visit(self, _bytecode_chunk):
@@ -1069,6 +1292,7 @@ class virtualmachine(object):
         print("Program finished with exit code %s..." % popp_operand(self).__repr__())
 
         #! debug!!
+        #! print(self.state.oprnd.peek(), len(self.state.oprnd))
         assert self.state.oprnd.isempty(), "not all operand is popped out!!"
 
         #! end

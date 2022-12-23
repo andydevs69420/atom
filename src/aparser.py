@@ -127,7 +127,7 @@ class parser(object):
             _ttype : token_type
         """
         if  not self.check_t(_ttype):
-            error.raise_tracked(error_category.ParseError, "unexpected \"%s\" token. Did you mean %s??" % (self.lookahead.value, _ttype.name), self.c_location())
+            error.raise_tracked(error_category.ParseError, "unexpected \"%s\" token. Did you mean %s?" % (self.lookahead.value, _ttype.name), self.c_location())
             #! end
         
         #! next
@@ -142,7 +142,7 @@ class parser(object):
             _value : str
         """
         if  not self.check_v(_value):
-            error.raise_tracked(error_category.ParseError, "unexpected token \"%s\". Did you mean \"%s\"??" % (self.lookahead.value, _value), self.c_location())
+            error.raise_tracked(error_category.ParseError, "unexpected token \"%s\". Did you mean \"%s\"?" % (self.lookahead.value, _value), self.c_location())
             #! end
         
         #! next
@@ -159,7 +159,7 @@ class parser(object):
         """
 
         if  not self.check_both(_ttype, _value):
-            error.raise_tracked(error_category.ParseError, "unexpected token \"%s\". Did you mean \"%s\"??" % (self.lookahead.value, _value), self.c_location())
+            error.raise_tracked(error_category.ParseError, "unexpected token \"%s\". Did you mean \"%s\"?" % (self.lookahead.value, _value), self.c_location())
             #! end
         
         #! next
@@ -1701,7 +1701,7 @@ class parser(object):
         return _node
 
     def source_compound_and_simple(self):
-        if  self.check_both(token_type.IDENTIFIER, keywords.FUN):
+        if  self.check_both(token_type.IDENTIFIER, keywords.FUNCTION):
             return self.function()
         if  self.check_both(token_type.IDENTIFIER, keywords.STRUCT):
             return self.struct()
@@ -1739,6 +1739,8 @@ class parser(object):
             return self.while_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.DO):
             return self.dowhile_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.TRY):
+            return self.try_except_finally_stmnt()
         if  self.check_both(token_type.SYMBOL, "{"):
             return self.block_of_stmnt()
         #! end
@@ -1760,16 +1762,8 @@ class parser(object):
         #! enter ctx
         self.enter(context.FUNCTION)
 
-        #! "fun"
-        self.expect_both(token_type.IDENTIFIER, keywords.FUN)
-
-        #! '['
-        self.expect_both(token_type.SYMBOL, "[")
-
-        _return = self.returntype()
-    
-        self.expect_both(token_type.SYMBOL, "]")
-        #! ']'
+        #! "function"
+        self.expect_both(token_type.IDENTIFIER, keywords.FUNCTION)
 
         _fname = self.raw_iden()
 
@@ -1781,6 +1775,13 @@ class parser(object):
         self.expect_both(token_type.SYMBOL, ")")
         #! ')'
 
+        #! "->"
+        self.expect_both(token_type.SYMBOL, "->")
+
+        #! return type
+        _return = self.returntype()
+
+        #! body
         _body = self.function_body()
 
         #! leave ctx
@@ -2153,6 +2154,31 @@ class parser(object):
         return stmnt_ast(
             ast_type.DOWHILE_STMNT, "...", _body, _cond)
 
+
+    def try_except_finally_stmnt(self):
+        #! "try"
+        self.expect_both(token_type.IDENTIFIER, keywords.TRY)
+
+        _try_block = self.block_of_stmnt()
+
+        #! "except"
+        self.expect_both(token_type.IDENTIFIER, keywords.EXCEPT)
+
+        _error_recv = self.raw_iden()
+
+        _except_block = self.block_of_stmnt()
+
+        if  not self.check_both(token_type.IDENTIFIER,keywords.FINALLY):
+            return stmnt_ast(
+                ast_type.TRY_EXCEPT_FINALLY, "...", _try_block, _error_recv, _except_block, None)
+
+        #! "finally"
+        self.expect_both(token_type.IDENTIFIER, keywords.FINALLY)
+
+        _finally_block = self.block_of_stmnt()
+
+        return stmnt_ast(
+            ast_type.TRY_EXCEPT_FINALLY, "...", _try_block, _error_recv, _except_block, _finally_block)
     
     def block_of_stmnt(self):
         """ BLOCK OF STATEMENT.
@@ -2288,7 +2314,7 @@ class parser(object):
 
             Syntax|Grammar
             --------------
-            "define" "fun" '[' returntype ']' parameter raw_iden '(' list_parameter ')' non_nullable_expression ;
+            "define" "function" parameter raw_iden '(' list_parameter ')' "->" returntype non_nullable_expression ;
 
             Returns
             -------
@@ -2299,15 +2325,7 @@ class parser(object):
         self.expect_both(token_type.IDENTIFIER, keywords.DEFINE)
 
         #! "function"
-        self.expect_both(token_type.IDENTIFIER, keywords.FUN)
-
-        #! '['
-        self.expect_both(token_type.SYMBOL, "[")
-
-        _dtype = self.returntype()
-
-        self.expect_both(token_type.SYMBOL, "]")
-        #! ']'
+        self.expect_both(token_type.IDENTIFIER, keywords.FUNCTION)
 
         _param0 = self.parameter()
 
@@ -2322,6 +2340,12 @@ class parser(object):
         self.expect_both(token_type.SYMBOL, ")")
         #! ')'
 
+        #! "->"
+        self.expect_both(token_type.SYMBOL, "->")
+
+        #! return type
+        _returntype = self.returntype()
+
         _expr = self.non_nullable_expr()
 
         if  not self.under(context.GLOBAL, True):
@@ -2333,15 +2357,15 @@ class parser(object):
         #! ';'
 
         return expr_ast(
-            ast_type.FUNCTION_WRAPPER, _locsite, _dtype, _param0, _wrapname, _parameters, _expr)
+            ast_type.FUNCTION_WRAPPER, _locsite, _returntype, _param0, _wrapname, _parameters, _expr)
     
     def native_function_proto(self):
         """ Native function prototype.
 
             Syntax|Grammar
             --------------
-            anotation
-            "fun" '[' returntype ']' raw_iden '(' list_parameters ')' ';' ;
+            "native" "::" raw_iden
+            "function" raw_iden '(' list_parameters ')' "->" returntype ';' ;
 
             Returns
             -------
@@ -2361,16 +2385,8 @@ class parser(object):
         #! enter ctx
         self.enter(context.FUNCTION)
 
-        #! "fun"
-        self.expect_both(token_type.IDENTIFIER, keywords.FUN)
-
-        #! '['
-        self.expect_both(token_type.SYMBOL, "[")
-
-        _return = self.returntype()
-    
-        self.expect_both(token_type.SYMBOL, "]")
-        #! ']'
+        #! "function"
+        self.expect_both(token_type.IDENTIFIER, keywords.FUNCTION)
 
         _fname = self.raw_iden()
 
@@ -2381,6 +2397,12 @@ class parser(object):
     
         self.expect_both(token_type.SYMBOL, ")")
         #! ')'
+
+        #! "->"
+        self.expect_both(token_type.SYMBOL, "->")
+
+        #! return type
+        _return = self.returntype()
 
         #! ';'
         self.expect_both(token_type.SYMBOL, ";")
@@ -2588,8 +2610,3 @@ class parser(object):
 
     def parse(self):
         return self.source()
-        
-
-        
-
-

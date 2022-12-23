@@ -2,7 +2,7 @@
 from sys import argv
 from os import path as ospath
 from stack import stack
-from sizedstack import sizedstack
+from aframe import frame
 from mem import mem
 from aobjects import aobject
 
@@ -30,9 +30,10 @@ class astate(object):
         self.codes = ({})
         self.calls = ({})
         self.stacktrace = ([])
+        self.exceptions = ([])
 
         #! VM
-        self.stack = sizedstack(1000)
+        self.stack = stack( frame   )
         self.oprnd = stack( aobject )
         
         #! MEM

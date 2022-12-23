@@ -3,35 +3,35 @@
 #! date: December 10 2022
 
 native::stringstd
-fun[int] strlen(__string__:str);
+function strlen(__string__:str) -> int;
 
 native::stringstd
-fun[str] strtoupper(__string__:str);
+function strtoupper(__string__:str) -> str;
 
 native::stringstd
-fun[str] strtolower(__string__:str);
+function strtolower(__string__:str) -> str;
 
 native::stringstd
-fun[array[str]] strsplit(__string__:str, __delimeter__:str);
+function strsplit(__string__:str, __delimeter__:str) -> array[str];
 
 native::stringstd
-fun[str] strreverse(__string__:str);
+function strreverse(__string__:str) -> str;
 
 native::stringstd
-fun[str] strrepeat(__string__:str, __times__:int);
+function strrepeat(__string__:str, __times__:int) -> str;
 
 native::stringstd
-fun[array[int]] charcodepoints(__string__:str);
+function charcodepoints(__string__:str) -> array[int];
 
 native::stringstd
-fun[str] fromcharcodepoints(__codepoints__:array[int]);
+function fromcharcodepoints(__codepoints__:array[int]) -> str;
 
 native::stringstd
-fun[str] tohexstring(__codepoints__:array[int]);
+function tohexstring(__codepoints__:array[int]) -> str;
 
 native::stringstd
-fun[int] atoi(__string__:str);
+function atoi(__string__:str) -> int;
 
 native::stringstd
-fun[float] atof(__string__:str);
+function atof(__string__:str) -> float;
 

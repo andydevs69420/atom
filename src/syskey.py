@@ -18,7 +18,7 @@ class keywords:
     TYPEOF   = "typeof"
 
     NATIVE   = "native"
-    FUN      = "fun"
+    FUNCTION = "function"
     STRUCT   = "struct"
     ENUM     = "enum"
     IF       = "if"
@@ -28,6 +28,9 @@ class keywords:
     FOR      = "for"
     WHILE    = "while"
     DO       = "do"
+    TRY      = "try"
+    EXCEPT   = "except"
+    FINALLY  = "finally"
 
     DEFINE   = "define"
     IMPORT   = "import"

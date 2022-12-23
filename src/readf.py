@@ -31,9 +31,9 @@ def read_file(_state, _file_path):
 
         if  ospath.exists(_loc) and ospath.isfile(_loc):
             try:
-                #! prevent duplicate
-                if  ospath.basename(_loc) in _state.names:
-                    return False
+                #! prevent duplicate|circular import
+                # if  ospath.basename(_loc) in _state.names:
+                #     return False
 
                 #! read
                 _file = open(_loc, "r")

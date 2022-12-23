@@ -42,7 +42,8 @@ class ast_type(Enum):
     FOR_STMNT     = 37
     WHILE_STMNT   = 38
     DOWHILE_STMNT = 39
-    BLOCK_STMNT   = 40
+    TRY_EXCEPT_FINALLY = 40
+    BLOCK_STMNT   = 41
 
     IMPORT        = 100
     FROM          = 101
