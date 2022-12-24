@@ -18,4 +18,6 @@ function test_all() -> void
 {
     test_import();
 
+    print(2);
+
 }

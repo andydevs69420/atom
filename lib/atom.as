@@ -3,7 +3,10 @@
 
 from test import [print];
 import [integerstd, stringstd];
-from std import [test_all];
+
+from std import [readl];
+
+import [atom];
 
 var x   = [1,2,3];
 const y = [1,2,3, x], z = 2;
@@ -48,7 +51,6 @@ function main(_args:array[str]) -> int
     print(fact(x));
     print(non_rec_fact(x));
 
-    test_all();
 
     return 0;
 }

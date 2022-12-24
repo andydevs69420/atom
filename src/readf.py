@@ -31,10 +31,6 @@ def read_file(_state, _file_path):
 
         if  ospath.exists(_loc) and ospath.isfile(_loc):
             try:
-                #! prevent duplicate|circular import
-                # if  ospath.basename(_loc) in _state.names:
-                #     return False
-
                 #! read
                 _file = open(_loc, "r")
                 _state.files.append(afile(_loc, _file.read()))
@@ -46,7 +42,7 @@ def read_file(_state, _file_path):
                 _state.names.append(ospath.basename(_loc))
 
                 #! end
-                return True
+                return
 
             except IOError:
                 error.raise_untracked(error_category.IOError, "file is not readable \"%s\"." % _file_path)

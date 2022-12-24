@@ -4039,146 +4039,25 @@ class codegen(generator):
                 error.raise_tracked(error_category.CompileError, "file not found or invalid file \"%s\"." % _each_import, _node.site)
 
             #! read file first
-            _FILE =\
             read_file(self.state, _fpath)
 
             #! check if exist
             if  self.symtbl.contains(_each_import):
                 error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_import, _node.site)
 
-            if  not _FILE:
-                raise
+            #! check for circular import
+            if  self.imptbl.contains(_each_import + "->" + self.names[-1]) or self.imptbl.contains(_each_import + "->" + _each_import):
+                error.raise_tracked(error_category.CompileError, "can't import \"%s\" due to circular import." %  _each_import, _node.site)
 
-                #! next
-                continue
-            
-            if  _FILE:
-                #! parse
-                _parse = parser(self.state)
+            #! insert if not circular
+            self.imptbl.insert(self.names[-1] + "->" + _each_import, None)
 
-                #! push name
-                self.names.append(_each_import)
-                self.state.codes[_each_import] = ({})
-
-                #! ==================
-
-                self.symtbl.newparentscope()
-
-                _ast_nodes = _parse.raw_parse()
-                _length    = len(_ast_nodes)
-
-                _resume = 0
-
-                for _idx in range(_length):
-
-                    _each_node = _ast_nodes[_idx]
-
-                    if  _each_node.type == ast_type.FROM      or\
-                        _each_node.type == ast_type.IMPORT    or\
-                        _each_node.type == ast_type.VAR_STMNT or\
-                        _each_node.type == ast_type.CONST_STMNT:
-                        #! compile file
-                        self.visit(_each_node)
-
-                        _resume = _idx + 1
-
-                        #! next
-                        continue
-                    
-                    #! make interface
-
-                    if  _idx == _resume:
-                        for _j in range(_idx, _length):
-
-                            _node_to_make = _ast_nodes[_j]
-
-                            if  _node_to_make.type == ast_type.FROM      or\
-                                _node_to_make.type == ast_type.IMPORT    or\
-                                _node_to_make.type == ast_type.VAR_STMNT or\
-                                _node_to_make.type == ast_type.CONST_STMNT:
-                                #! pause
-                                _resume = _j + 1
-                                break
-                            
-                            elif _node_to_make.type == ast_type.STRUCT   or\
-                                _node_to_make.type == ast_type.FUNCTION or\
-                                _node_to_make.type == ast_type.FUNCTION_WRAPPER or\
-                                _node_to_make.type == ast_type.NATIVE_FUNCTION:
-                                #! make interface for node
-                                self.visit_int(_node_to_make)
-
-                            else:
-                                self.virtoffset += 1
-                        
-                        #! end
-
-                    #! visit each node
-                    self.visit(_each_node)
-
-                _symbols =\
-                self.symtbl.endparentscope()
-                
-                _members = []
-
-                #! build
-                for _each_child in _symbols.aslist():
-                    #! emit load global (value)
-                    emit_opcode(self, load_global, _each_child[0], _each_child[1].get_offset())
-
-                    #! emit sload (key)
-                    emit_opcode(self, sload, _each_child[0])
-
-                    #! append a member
-                    _members.append((_each_child[0], _each_child[1].get_datatype()))
-                
-                #! emit build_module
-                emit_opcode(self, build_module, _each_import, len(_members))
-
-                #! store as variable
-                emit_opcode(self, store_global, _each_import, self.offset)
-
-                #! register as toplevel global var
-                self.symtbl.insert_module(_each_import, self.offset, module_t(_each_import, _members), True, True, _node.site)
-
-                #! store to import table
-                self.imptbl.insert_module(_each_import, self.offset, module_t(_each_import, _members), True, True, _node.site)
-
-                #!
-                self.offset     += 1
-                self.virtoffset += 1
-                self.names.pop()
-        #! end
-    
-    def ast_from(self, _node):
-        """
-            I Forgot to implement 2 pass compiler,
-            and instead combined analyzer and compiler together.
-        """
-        _import = _node.get(0)
-
-        #! put extra
-        _fpath = _import + ".as"
-        
-        #! check file
-        if  not file_isfile(self.state, _fpath):
-            error.raise_tracked(error_category.CompileError, "file not found or invalid file \"%s\"." % _import, _node.site)
-
-        #! read file first
-        _FILE =\
-        read_file(self.state, _fpath)
-
-        #! check if exist
-        if  self.symtbl.contains(_import):
-            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _import, _node.site)
-
-
-        if  _FILE:
             #! parse
             _parse = parser(self.state)
 
             #! push name
-            self.names.append(_import)
-            self.state.codes[_import] = ({})
+            self.names.append(_each_import)
+            self.state.codes[_each_import] = ({})
 
             #! ==================
 
@@ -4190,7 +4069,7 @@ class codegen(generator):
             _resume = 0
 
             for _idx in range(_length):
-                
+
                 _each_node = _ast_nodes[_idx]
 
                 if  _each_node.type == ast_type.FROM      or\
@@ -4221,9 +4100,9 @@ class codegen(generator):
                             break
                         
                         elif _node_to_make.type == ast_type.STRUCT   or\
-                             _node_to_make.type == ast_type.FUNCTION or\
-                             _node_to_make.type == ast_type.FUNCTION_WRAPPER or\
-                             _node_to_make.type == ast_type.NATIVE_FUNCTION:
+                            _node_to_make.type == ast_type.FUNCTION or\
+                            _node_to_make.type == ast_type.FUNCTION_WRAPPER or\
+                            _node_to_make.type == ast_type.NATIVE_FUNCTION:
                             #! make interface for node
                             self.visit_int(_node_to_make)
 
@@ -4252,52 +4131,178 @@ class codegen(generator):
                 _members.append((_each_child[0], _each_child[1].get_datatype()))
             
             #! emit build_module
-            emit_opcode(self, build_module, _import, len(_members))
+            emit_opcode(self, build_module, _each_import, len(_members))
 
             #! store as variable
-            emit_opcode(self, store_global, _import, self.offset)
-
-            _datatype = module_t(_import, _members)
+            emit_opcode(self, store_global, _each_import, self.offset)
 
             #! register as toplevel global var
-            self.symtbl.insert_module(_import, self.offset, _datatype, True, True, _node.site)
+            self.symtbl.insert_module(_each_import, self.offset, module_t(_each_import, _members), True, True, _node.site)
 
             #!
             self.offset     += 1
             self.virtoffset += 1
-
             self.names.pop()
-
-            _modoff = (self.offset - 1)
-
-            for _each_attrib in _node.get(1):
-                #! check if exist
-                if  self.symtbl.contains(_each_attrib):
-                    error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_attrib, _node.site)
-                
-                #! load module
-                emit_opcode(self, load_global, _import, _modoff)
-
-                #! load attrib as string
-                emit_opcode(self, sload, _each_attrib)
-
-                #! get attribute
-                emit_opcode(self, get_attribute)
-
-                #! store as global variable
-                emit_opcode(self, store_global, _each_attrib, self.offset)
-
-                #! check for attribute
-                if  not _datatype.hasAttribute(_each_attrib):
-                    error.raise_tracked(error_category.CompileError, "module %s has no attribute \"%s\"." %  (_import, _each_attrib), _node.site)
-
-                #! register
-                self.symtbl.insert_var(_each_attrib, self.offset, _datatype.getAttribute(_each_attrib), True, True, _node.site)
-
-                #! end
-                self.offset     += 1
-                self.virtoffset += 1
+        #! end
     
+    def ast_from(self, _node):
+        """
+            I Forgot to implement 2 pass compiler,
+            and instead combined analyzer and compiler together.
+        """
+        _import = _node.get(0)
+
+        #! put extra
+        _fpath = _import + ".as"
+        
+        #! check file
+        if  not file_isfile(self.state, _fpath):
+            error.raise_tracked(error_category.CompileError, "file not found or invalid file \"%s\"." % _import, _node.site)
+
+        #! read file first
+        read_file(self.state, _fpath)
+
+        #! check if exist
+        if  self.symtbl.contains(_import):
+            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _import, _node.site)
+
+        #! check for circular import
+        if  self.imptbl.contains(_import + "->" + self.names[-1]) or self.imptbl.contains(_import + "->" + _import):
+            error.raise_tracked(error_category.CompileError, "can't import \"%s\" due to circular import." %  _import, _node.site)
+
+        #! insert if not circular
+        self.imptbl.insert(self.names[-1] + "->" + _import, None)
+
+        #! parse
+        _parse = parser(self.state)
+
+        #! push name
+        self.names.append(_import)
+        self.state.codes[_import] = ({})
+
+        #! =========================
+
+        self.symtbl.newparentscope()
+
+        _ast_nodes = _parse.raw_parse()
+        _length    = len(_ast_nodes)
+
+        _resume = 0
+
+        for _idx in range(_length):
+            
+            _each_node = _ast_nodes[_idx]
+
+            if  _each_node.type == ast_type.FROM      or\
+                _each_node.type == ast_type.IMPORT    or\
+                _each_node.type == ast_type.VAR_STMNT or\
+                _each_node.type == ast_type.CONST_STMNT:
+                #! compile file
+                self.visit(_each_node)
+
+                _resume = _idx + 1
+
+                #! next
+                continue
+            
+            #! make interface
+
+            if  _idx == _resume:
+                for _j in range(_idx, _length):
+
+                    _node_to_make = _ast_nodes[_j]
+
+                    if  _node_to_make.type == ast_type.FROM      or\
+                        _node_to_make.type == ast_type.IMPORT    or\
+                        _node_to_make.type == ast_type.VAR_STMNT or\
+                        _node_to_make.type == ast_type.CONST_STMNT:
+                        #! pause
+                        _resume = _j + 1
+                        break
+                    
+                    elif _node_to_make.type == ast_type.STRUCT   or\
+                         _node_to_make.type == ast_type.FUNCTION or\
+                         _node_to_make.type == ast_type.FUNCTION_WRAPPER or\
+                         _node_to_make.type == ast_type.NATIVE_FUNCTION:
+                        #! make interface for node
+                        self.visit_int(_node_to_make)
+
+                    else:
+                        self.virtoffset += 1
+                
+                #! end
+
+            #! visit each node
+            self.visit(_each_node)
+
+        _symbols =\
+        self.symtbl.endparentscope()
+        
+        _members = []
+
+        #! build
+        for _each_child in _symbols.aslist():
+            #! emit load global (value)
+            emit_opcode(self, load_global, _each_child[0], _each_child[1].get_offset())
+
+            #! emit sload (key)
+            emit_opcode(self, sload, _each_child[0])
+
+            #! append a member
+            _members.append((_each_child[0], _each_child[1].get_datatype()))
+        
+        #! emit build_module
+        emit_opcode(self, build_module, _import, len(_members))
+
+        #! store as variable
+        emit_opcode(self, store_global, _import, self.offset)
+
+        _datatype = module_t(_import, _members)
+
+        #! register as toplevel global var
+        self.symtbl.insert_module(_import, self.offset, _datatype, True, True, _node.site)
+
+        #!
+        self.offset     += 1
+        self.virtoffset += 1
+
+        self.names.pop()
+
+        _modoff = (self.offset - 1)
+
+        for _each_attrib in _node.get(1):
+            #! check if exist
+            if  self.symtbl.contains(_each_attrib):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_attrib, _node.site)
+            
+            #! load module
+            emit_opcode(self, load_global, _import, _modoff)
+
+            #! load attrib as string
+            emit_opcode(self, sload, _each_attrib)
+
+            #! get attribute
+            emit_opcode(self, get_attribute)
+
+            #! store as global variable
+            emit_opcode(self, store_global, _each_attrib, self.offset)
+
+            #! check for attribute
+            if  not _datatype.hasAttribute(_each_attrib):
+                error.raise_tracked(error_category.CompileError, "module %s has no attribute \"%s\"." %  (_import, _each_attrib), _node.site)
+
+            #! register
+            self.symtbl.insert_var(_each_attrib, self.offset, _datatype.getAttribute(_each_attrib), True, True, _node.site)
+
+            #! end
+            self.offset     += 1
+            self.virtoffset += 1
+    
+    def import_from(self, _node):
+        _import = _node.get(0)
+
+        print(self.state.codes[_import])
+
     def ast_source(self, _node):
         """ I Forgot to implement 2 pass compiler,
             and instead combined analyzer and compiler together.
