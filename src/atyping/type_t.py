@@ -19,6 +19,13 @@ class type_t(nonprimitive_t):
         #! methods
         self.methods = []
     
+    def clear(self):
+        self.methods = []
+    
+    def dump(self):
+        print(self.methods)
+        print(self.parameters)
+    
     def qualname(self):
         return self.name
         

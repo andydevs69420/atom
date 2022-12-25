@@ -502,6 +502,7 @@ class source_to_interface(constantevaluator):
                $0      $1
             subtypes  body
         """
+        print("DEBUG: interface -> struct")
         _old_offset = self.virtoffset
 
         for _each_subtype in _node.get(0):
@@ -558,11 +559,50 @@ class source_to_interface(constantevaluator):
         #! increment every struct dec
         self.virtualstructnumber += 1
     
+    def int_implements(self, _node):
+        """
+              $0   $1
+            _name _body
+        """
+        print("DEBUG: interface -> implements")
+        _name = _node.get(0)
+
+        self.symtbl.newscope()
+        self.names.append(_name)
+
+        #! check if type exist
+        if  not self.symtbl.contains(_name):
+            error.raise_tracked(error_category.CompileError, "type %s is not defined." % _name, _node.site)
+        
+        _typeinfo = self.symtbl.lookup(_node.get(0))
+
+        if  not _typeinfo.get_datatype().istype():
+            error.raise_tracked(error_category.CompileError, "name %s is not a type." % _name, _node.site)
+        
+        #! make interface
+        for _each_method in _node.get(1):
+            self.visit_int(_each_method)
+        
+        #! save
+        for _each_symbol in self.symtbl.current().aslist():
+            _typeinfo.get_datatype().insert_method((_each_symbol[0], _each_symbol[1].get_datatype()))
+
+        self.names.pop()
+        _symbols =\
+        self.symtbl.endscope()
+
+        #! unpack content globally
+        for _each_symbol in _symbols.aslist():
+            _finalname = _name + "." + _each_symbol[0]
+            self.symtbl.insert_fun(_finalname, _each_symbol[1].get_offset(), _each_symbol[1].get_datatype(), _each_symbol[1].get_returntype(), _each_symbol[1].get_site())
+    
+
     def int_method(self, _node):
         """    
                $0        $1     $2        $3     $4
             returntype  name  _self  parameters  body
         """
+        print("DEBUG: interface -> method")
         _old_offset = self.virtoffset
 
         self.virtoffset = 0
@@ -574,12 +614,12 @@ class source_to_interface(constantevaluator):
         _returntype =\
         self.visit_int(_node.get(0))
 
+        #! check if function name is already defined.
+        if  self.symtbl.haslocal(_node.get(1)):
+            error.raise_tracked(error_category.CompileError, "method \"%s\" was already defined." %  _node.get(1), _node.site)
+
         #! new func scope
         self.symtbl.newscope()
-
-        #! check if function name is already defined.
-        if  self.symtbl.contains(_node.get(1)):
-            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(1), _node.site)
 
         _typeinfo = self.symtbl.lookup(self.names[-1])
 
@@ -631,6 +671,7 @@ class source_to_interface(constantevaluator):
                $0        $1       $2       $3
             returntype  name  parameters  body
         """
+        print("DEBUG: interface -> function")
         _old_offset = self.virtoffset
 
         self.virtoffset = 0
@@ -686,6 +727,7 @@ class source_to_interface(constantevaluator):
                 $0        $1          $2          $3     $4
             returntype  wraptype  wrapper_name  params  return
         """
+        print("DEBUG: interface -> function wrapper")
         _old_offset = self.virtoffset
 
         self.virtoffset = 0
@@ -757,6 +799,7 @@ class source_to_interface(constantevaluator):
             $0        $1          $2       $3     $4
             mod   returntype  func_name  params  body
         """
+        print("DEBUG: interface -> native function")
         _parameters = []
 
         #! new func scope
@@ -1254,7 +1297,7 @@ class generator(source_to_interface):
 
             else:
                 #! emit attribute type
-                push_ttable(self, _attribtype)
+                push_ttable(self, _attrib_or_method_type)
 
                 #! push attribute as string
                 emit_opcode(self, sload, _node.get(1))
@@ -1456,10 +1499,13 @@ class generator(source_to_interface):
              $0         $1
             object  parameters
         """
-
         #! make call
         self.state.calls[self.callid] = _node.site
         self.callid += 1
+
+        if  _node.get(0).type == ast_type.ATTRIBUTE:
+            #! redirect
+            return self.call_method(_node)
 
         #! visit object
         self.visit(_node.get(0))
@@ -1506,7 +1552,227 @@ class generator(source_to_interface):
         else:
             #! emit
             emit_opcode(self, call_type, len(_node.get(1)), self.callid - 1)
-    
+
+    def call_method(self, _node):
+        #! 
+        _attrib_node = _node.get(0)
+
+        #! compile object
+        self.visit(_attrib_node.get(0))
+
+        _dtype =\
+        self.tstack.popp()
+
+        _attrib_name = _attrib_node.get(1)
+
+        if  _dtype.isenum():
+
+            if  not _dtype.hasAttribute(_node.get(1)):
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _attrib_name), _node.site)
+
+            _attribtype = _dtype.getAttribute(_attrib_name)
+
+            #! emit attribute type
+            push_ttable(self, _attribtype)
+
+            #! push attribute as string
+            emit_opcode(self, sload, _attrib_name)
+
+            #! get
+            emit_opcode(self, get_enum)
+
+            #! add call
+            self.call_part(_node)
+            
+        elif _dtype.isinstance():
+
+            if  not self.symtbl.contains(_dtype.qualname()):
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _attrib_name), _node.site)
+
+            #! structtable
+            _info = self.symtbl.lookup(_dtype.qualname())
+
+            _type = _info.get_datatype()
+
+            if  not _type.istype():
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _attrib_name), _node.site)
+
+            if  not _type.hasMethod(_attrib_name):
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _attrib_name), _node.site)
+
+            _attrib_or_method_type = _type.getAttribute(_attrib_name) if _type.hasAttribute(_attrib_name) else _type.getMethod(_attrib_name)
+
+            if  _attrib_or_method_type.ismethod():
+                #! emit attribute type
+                push_ttable(self, _attrib_or_method_type)
+
+                _method = _dtype.qualname() + "." + _attrib_name
+
+                _info = self.symtbl.lookup(_method)
+
+                emit_opcode(self, load_global, _method, _info.get_offset())
+
+                #! add call
+                self.call_method_part(_node)
+
+            else:
+                #! emit attribute type
+                push_ttable(self, _attrib_or_method_type)
+
+                #! push attribute as string
+                emit_opcode(self, sload, _attrib_name)
+
+                #! get
+                emit_opcode(self, get_attribute)
+
+                #! add call
+                self.call_part(_node)
+        
+        elif _dtype.ismodule():
+            #! check
+            if  not _dtype.hasAttribute(_attrib_node.get(1)):
+                error.raise_tracked(error_category.CompileError, "%s has no attribute \"%s\"." % (_dtype.repr(), _attrib_name), _node.site)
+
+            _attribtype = _dtype.getAttribute(_attrib_name)
+
+            #! emit attribute type
+            push_ttable(self, _attribtype)
+
+            #! push attribute as string
+            emit_opcode(self, sload, _attrib_name)
+
+            #! just use get attribute because module is an object
+            emit_opcode(self, get_attribute)
+
+            #! add call
+            self.call_part(_node)
+        
+        elif _dtype.isarray():
+            #! pop array
+            emit_opcode(self, pop_top)
+
+            #! emit attribute type as str
+            push_ttable(self, string_t())
+
+            if  _attrib_name == "push":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod array.push/>")
+            
+            elif _attrib_name == "pop":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod array.pop/>")
+            
+            elif _attrib_name == "peek":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod array.peek/>")
+            
+            else:
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _attrib_name), _node.site)
+        
+        elif _dtype.ismap():
+            #! pop array
+            emit_opcode(self, pop_top)
+
+            #! emit attribute type as str
+            push_ttable(self, string_t())
+
+            if  _attrib_name == "keys":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod map.keys/>")
+            
+            elif _attrib_name == "values":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod map.values/>")
+            
+            else:
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _attrib_name), _node.site)
+
+        else:
+            error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _attrib_name), _node.site)
+
+    def call_method_part(self, _node):
+        #! datatype
+        _functype = self.tstack.popp()
+
+        #! check if callable
+        if  not _functype.ismethod():
+            error.raise_tracked(error_category.CompileError, "%s is not a method type." % _functype.repr(), _node.site)
+
+        #! check parameter count
+        if  _functype.paramcount != (len(_node.get(1)) + 1):
+            error.raise_tracked(error_category.CompileError, "%s requires %d argument, got %d." % (_functype.repr(), _functype.paramcount, len(_node.get(1))), _node.site)
+
+        #! emit return type
+        push_ttable(self, _functype.returntype)
+
+        _index = 0
+
+        #! rotate until last
+        emit_opcode(self, rot2)
+
+        #! check every arguments
+        for _each_param in _node.get(1)[::-1]:
+
+            #! visit param
+            self.visit(_each_param)
+
+            _typeN = self.tstack.popp()
+
+            #! match type
+            if  not _functype.parameters[::-1][_index][1].matches(_typeN):
+                error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[::-1][_index][0], _functype.parameters[::-1][_index][1].repr(), _typeN.repr()), _node.site)
+
+            _index += 1
+
+            #! rotate until last
+            emit_opcode(self, rot2)
+        
+        #! opcode
+        emit_opcode(self, call_function, len(_node.get(1)) + 1, self.callid - 1)
+
+    def call_part(self, _node):
+        #! datatype
+        _functype = self.tstack.popp()
+
+        #! check if callable
+        if  not (_functype.isfunction() or _functype.isnativefunction() or _functype.istype()):
+            error.raise_tracked(error_category.CompileError, "%s is not a callable type." % _functype.repr(), _node.site)
+
+        #! check parameter count
+        if  _functype.paramcount != len(_node.get(1)):
+            error.raise_tracked(error_category.CompileError, "%s requires %d argument, got %d." % (_functype.repr(), _functype.paramcount, len(_node.get(1))), _node.site)
+
+        #! emit return type
+        push_ttable(self, _functype.returntype)
+
+        _index = 0
+
+        #! check every arguments
+        for _each_param in _node.get(1)[::-1]:
+
+            #! visit param
+            self.visit(_each_param)
+
+            _typeN = self.tstack.popp()
+
+            #! match type
+            if  not _functype.parameters[::-1][_index][1].matches(_typeN):
+                error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_functype.parameters[::-1][_index][0], _functype.parameters[::-1][_index][1].repr(), _typeN.repr()), _node.site)
+
+            _index += 1
+        
+        #! opcode
+        if  _functype.isnativefunction():
+            #! emit
+            emit_opcode(self, call_native, len(_node.get(1)), self.callid - 1)
+
+        elif _functype.isfunction():
+            #! emit
+            emit_opcode(self, call_function, len(_node.get(1)), self.callid - 1)
+
+        else:
+            #! emit
+            emit_opcode(self, call_type, len(_node.get(1)), self.callid - 1)
 
     def ast_ternary(self, _node):
         if  _node.get(0).type == ast_type.SHORTC_OP:
@@ -2282,19 +2548,24 @@ class generator(source_to_interface):
                 if  not _type.istype():
                     error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
                 
-                if  not _type.hasAttribute(_lhs.get(1)):
+                if  not (_type.hasAttribute(_lhs.get(1)) or _type.hasMethod(_lhs.get(1))):
                     error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
-                _attribtype = _type.getAttribute(_lhs.get(1))
+                _attrib_or_method_type = _type.getAttribute(_lhs.get(1)) if _type.hasAttribute(_lhs.get(1)) else _type.getMethod(_lhs.get(1))
 
-                if  not _attribtype.matches(_rhstype):
-                    error.raise_tracked(error_category.CompileError, "%s.%s requires %s, got %s." % (_dtype.repr(), _lhs.get(1), _attribtype.repr(), _rhstype.repr()), _node.site)
+                if  _attrib_or_method_type.ismethod():
+                    #! for error
+                    error.raise_tracked(error_category.CompileError, "%s method \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
-                #! push attribute as string
-                emit_opcode(self, sload, _lhs.get(1))
+                else:
+                    if  not _attrib_or_method_type.matches(_rhstype):
+                        error.raise_tracked(error_category.CompileError, "%s.%s requires %s, got %s." % (_dtype.repr(), _lhs.get(1), _attrib_or_method_type.repr(), _rhstype.repr()), _node.site)
 
-                #! set
-                emit_opcode(self, set_attribute)
+                    #! push attribute as string
+                    emit_opcode(self, sload, _lhs.get(1))
+
+                    #! set
+                    emit_opcode(self, set_attribute)
             
 
             elif _dtype.ismodule():
@@ -2607,18 +2878,23 @@ class generator(source_to_interface):
                 
                 if  not _type.hasAttribute(_lhs.get(1)):
                     error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _lhs.get(1)), _node.site)
+                
+                _attrib_or_method_type = _type.getAttribute(_lhs.get(1)) if _type.hasAttribute(_lhs.get(1)) else _type.getMethod(_lhs.get(1))
 
-                _attribtype = _type.getAttribute(_lhs.get(1))
+                if  _attrib_or_method_type.ismethod():
+                    #! for error
+                    error.raise_tracked(error_category.CompileError, "%s method \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
-                if  not _attribtype.matches(_rhs):
-                    error.raise_tracked(error_category.CompileError, "%s.%s requires %s, got %s." % (_dtype.repr(), _lhs.get(1), _attribtype.repr(), _rhs.repr()), _node.site)
+                else:
+                    if  not _attrib_or_method_type.matches(_rhs):
+                        error.raise_tracked(error_category.CompileError, "%s.%s requires %s, got %s." % (_dtype.repr(), _lhs.get(1), _attrib_or_method_type.repr(), _rhs.repr()), _node.site)
 
-                #! push attribute as string
-                emit_opcode(self, sload, _lhs.get(1))
+                    #! push attribute as string
+                    emit_opcode(self, sload, _lhs.get(1))
 
-                #! set
-                emit_opcode(self, set_attribute)
-            
+                    #! set
+                    emit_opcode(self, set_attribute)
+
             elif _dtype.ismodule():
                 #! check
                 if  not _dtype.hasAttribute(_lhs.get(1)):
@@ -2739,10 +3015,11 @@ class generator(source_to_interface):
             self.bcodes = _old_bcodes
             
             #! struct becomes a function
-            _type = type_t(self.currentstructnumber, _each_subtype, instance_t(self.currentstructnumber, _each_subtype), len(_members), tuple(_members))
+            #! _type = type_t(self.currentstructnumber, _each_subtype, instance_t(self.currentstructnumber, _each_subtype), len(_members), tuple(_members))
 
             #! register
-            self.symtbl.insert_struct(_each_subtype, self.offset, _type, _node.site)
+            # TODO: watchout!!
+            #! self.symtbl.insert_struct(_each_subtype, self.offset, _type, _node.site)
 
             #! val opcode
             emit_opcode(self, load_typepntr, self.names[-1], _each_subtype)
@@ -2780,6 +3057,9 @@ class generator(source_to_interface):
         for _each_method in _node.get(1):
             self.visit_int(_each_method)
         
+        #! clear saved
+        _typeinfo.get_datatype().clear()
+
         #! save
         for _each_symbol in self.symtbl.current().aslist():
             _typeinfo.get_datatype().insert_method((_each_symbol[0], _each_symbol[1].get_datatype()))
@@ -2789,7 +3069,13 @@ class generator(source_to_interface):
             self.visit(_each_method)
 
         self.names.pop()
+        _symbols =\
         self.symtbl.endscope()
+
+        #! unpack content globally
+        for _each_symbol in _symbols.aslist():
+            _finalname = _name + "." + _each_symbol[0]
+            self.symtbl.insert_fun(_finalname, _each_symbol[1].get_offset(), _each_symbol[1].get_datatype(), _each_symbol[1].get_returntype(), _each_symbol[1].get_site())
 
     def ast_method(self, _node):
         """    
@@ -2818,6 +3104,22 @@ class generator(source_to_interface):
         #! check if function name is already defined.
         # if  self.symtbl.contains(_node.get(1)):
         #     error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(1), _node.site)
+
+        _typeinfo = self.symtbl.lookup(self.names[-1])
+
+        #! mark as instance
+        _selftype = instance_t(_typeinfo.get_datatype().typenumber, _typeinfo.get_datatype().typename)
+
+        #! as param
+        _parameters.append((_node.get(2), _selftype))
+
+        #! emit 
+        emit_opcode(self, store_fast, _node.get(2), self.offset)
+
+        #! register
+        self.symtbl.insert_var(_node.get(2), self.offset, _selftype, False, False, _node.site)
+
+        self.offset += 1
 
         #! compile parameters
         for _each_param in _node.get(3):
@@ -2867,8 +3169,6 @@ class generator(source_to_interface):
         #! end func scope
         self.symtbl.endscope()
 
-        _finalname = self.names[-2] + "." + self.names[-1]
-
         #! store code
         self.state.codes[self.names[-2]][_node.get(1)] = self.bcodes
 
@@ -2877,17 +3177,17 @@ class generator(source_to_interface):
         self.bcodes = _old_bcodes
 
         #! register
-        self.symtbl.insert_fun(_finalname, self.offset, method_t(self.currentfunctiontype, len(_parameters), _parameters), self.currentfunctiontype, _node.site)
+        self.symtbl.insert_fun(_node.get(1), self.offset, method_t(self.currentfunctiontype, len(_parameters), _parameters), self.currentfunctiontype, _node.site)
 
         #! unset current function
         self.currentfunctiontype =\
         None
         
         #! val opcode
-        emit_opcode(self, load_funpntr, self.names[-2], _finalname)
+        emit_opcode(self, load_funpntr, self.names[-2], _node.get(1))
 
         #! var opcode
-        emit_opcode(self, store_global, _finalname, self.offset)
+        emit_opcode(self, store_global, _node.get(1), self.offset)
 
         #! end
         self.offset += 1
@@ -4421,10 +4721,11 @@ class codegen(generator):
                             _resume = _j + 1
                             break
                         
-                        elif _node_to_make.type == ast_type.STRUCT   or\
-                            _node_to_make.type == ast_type.FUNCTION or\
-                            _node_to_make.type == ast_type.FUNCTION_WRAPPER or\
-                            _node_to_make.type == ast_type.NATIVE_FUNCTION:
+                        elif _node_to_make.type == ast_type.STRUCT     or\
+                             _node_to_make.type == ast_type.IMPLEMENTS or\
+                             _node_to_make.type == ast_type.FUNCTION   or\
+                             _node_to_make.type == ast_type.FUNCTION_WRAPPER or\
+                             _node_to_make.type == ast_type.NATIVE_FUNCTION:
                             #! make interface for node
                             self.visit_int(_node_to_make)
 
@@ -4542,8 +4843,9 @@ class codegen(generator):
                         _resume = _j + 1
                         break
                     
-                    elif _node_to_make.type == ast_type.STRUCT   or\
-                         _node_to_make.type == ast_type.FUNCTION or\
+                    elif _node_to_make.type == ast_type.STRUCT     or\
+                         _node_to_make.type == ast_type.IMPLEMENTS or\
+                         _node_to_make.type == ast_type.FUNCTION   or\
                          _node_to_make.type == ast_type.FUNCTION_WRAPPER or\
                          _node_to_make.type == ast_type.NATIVE_FUNCTION:
                         #! make interface for node
@@ -4661,8 +4963,9 @@ class codegen(generator):
                         _resume = _j + 1
                         break
                     
-                    elif _node_to_make.type == ast_type.STRUCT   or\
-                         _node_to_make.type == ast_type.FUNCTION or\
+                    elif _node_to_make.type == ast_type.STRUCT     or\
+                         _node_to_make.type == ast_type.IMPLEMENTS or\
+                         _node_to_make.type == ast_type.FUNCTION   or\
                          _node_to_make.type == ast_type.FUNCTION_WRAPPER or\
                          _node_to_make.type == ast_type.NATIVE_FUNCTION:
                         #! make interface for node

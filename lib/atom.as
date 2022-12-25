@@ -5,17 +5,6 @@ from test import [print];
 import [integerstd, stringstd];
 from std import [readl];
 
-#! import [atom];
-
-var   x = [1, 2, 3];
-const y = [1, 2, 3, x], z = 2;
-
-enum a
-{
-    y = 2
-}
-
-const v = test;
 
 function fact(_n:int) -> int 
 {   return (_n == 1)? 1 : _n * fact(_n - 1);   }
@@ -32,51 +21,62 @@ function non_rec_fact(_n:int) -> int
     return _res;
 }
 
-
-implements Person
+struct Person, Employee
 {
-    function eat(&self, _a:int) -> void 
-    {
-        self.eat;
-    }
+    name:str;
 }
+
+function sequence(_a:int, _b:int) -> void {
+    print(_a);
+    print(_b);
+}
+
+
+
 
 function main(_args:array[str]) -> int
 {   
     tests();
-    print(y);
     print(Person("Andy"));
     print(2!add(3));
     print(integerstd);
     print("age: " + integerstd.itoa(100));
     print(stringstd.atof("125") * 2);
-    print(v);
-    print(typeof v);
 
-    let x = 15;
+    let x = 5;
 
     print(fact(x));
     print(non_rec_fact(x));
-
     print([].peek);
-
     print({}.keys);
-
-    print(Person("aadasd").eat);
-
+    
+    sequence(100,200);
+    let vv = Person("Andy");
+        vv.eat("Diaper");
+        vv.lobbster();
+    
     return 0;
 }
+
+implements Person
+{
+    function lobbster(&self) -> void 
+    {
+        print("LOBBSTER");
+    }
+
+    function eat(&self, _food:str) -> void 
+    {
+        print("eating " + _food);
+    }
+}
+
 
 function tests() -> int
 {
     let v = 123213232323323232322332323;
     v + v;
     return v;
-}
-
-struct Person, Employee
-{
-    name:str;
 }
 
 struct Dog {

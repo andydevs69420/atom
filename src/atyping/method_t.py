@@ -9,7 +9,7 @@ class method_t(nonprimitive_t):
 
     def __init__(self, _returntype, _paramcount, _parameters):
         super().__init__()
-        self.name = type_names.FN
+        self.name = type_names.METHOD
         self.returntype = _returntype
         self.paramcount = _paramcount
         self.parameters = _parameters

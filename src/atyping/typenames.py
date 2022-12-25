@@ -21,6 +21,7 @@ class type_names:
     VOID   = "void"
     ARRAY  = "array"
     FN     = "fn"
+    METHOD = "method"
     NATIVEFN = "nativefn"
     MAP    = "map"
     TYPE   = "type"
