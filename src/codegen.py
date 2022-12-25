@@ -502,7 +502,7 @@ class source_to_interface(constantevaluator):
                $0      $1
             subtypes  body
         """
-        print("DEBUG: interface -> struct")
+        #! print("DEBUG: interface -> struct")
         _old_offset = self.virtoffset
 
         for _each_subtype in _node.get(0):
@@ -564,7 +564,7 @@ class source_to_interface(constantevaluator):
               $0   $1
             _name _body
         """
-        print("DEBUG: interface -> implements")
+        #! print("DEBUG: interface -> implements")
         _name = _node.get(0)
 
         self.symtbl.newscope()
@@ -602,7 +602,7 @@ class source_to_interface(constantevaluator):
                $0        $1     $2        $3     $4
             returntype  name  _self  parameters  body
         """
-        print("DEBUG: interface -> method")
+        #! print("DEBUG: interface -> method")
         _old_offset = self.virtoffset
 
         self.virtoffset = 0
@@ -671,7 +671,7 @@ class source_to_interface(constantevaluator):
                $0        $1       $2       $3
             returntype  name  parameters  body
         """
-        print("DEBUG: interface -> function")
+        #! print("DEBUG: interface -> function")
         _old_offset = self.virtoffset
 
         self.virtoffset = 0
@@ -727,7 +727,7 @@ class source_to_interface(constantevaluator):
                 $0        $1          $2          $3     $4
             returntype  wraptype  wrapper_name  params  return
         """
-        print("DEBUG: interface -> function wrapper")
+        #! print("DEBUG: interface -> function wrapper")
         _old_offset = self.virtoffset
 
         self.virtoffset = 0
@@ -799,7 +799,7 @@ class source_to_interface(constantevaluator):
             $0        $1          $2       $3     $4
             mod   returntype  func_name  params  body
         """
-        print("DEBUG: interface -> native function")
+        #! print("DEBUG: interface -> native function")
         _parameters = []
 
         #! new func scope
