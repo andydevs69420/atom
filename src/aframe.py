@@ -1,5 +1,6 @@
 
 
+
 class frame(object):
     """ Frame for stack.
     """

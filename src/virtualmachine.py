@@ -5,7 +5,6 @@ from mem import *
 from error import (error_category, error)
 from atyping import integer_t, float_t
 
-
 TOP    = -1
 BOTTOM = 00
 
@@ -428,8 +427,8 @@ class virtualmachine(object):
         #! pushback
         for _r in range(_popsize): push_operand(self, _tmp.pop())
         
-        for _i in self.state.codes[_funpntr.modpntr][_funpntr.funpntr]:
-            print(_i)
+        # for _i in self.state.codes[_funpntr.modpntr][_funpntr.funpntr]:
+        #     print(_i)
 
         #! push program frame
         self.state.stack.push(frame(self.state.codes[_funpntr.modpntr][_funpntr.funpntr]))

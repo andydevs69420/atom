@@ -31,6 +31,7 @@ class tag_t(object):
     def isnull(self):return False
     def isarray(self):return False
     def isfunction(self):return False
+    def ismethod(self):return False
     def isnativefunction(self):return False
     def ismap(self):return False
     def isenum(self):return False

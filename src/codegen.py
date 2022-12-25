@@ -557,6 +557,74 @@ class source_to_interface(constantevaluator):
 
         #! increment every struct dec
         self.virtualstructnumber += 1
+    
+    def int_method(self, _node):
+        """    
+               $0        $1     $2        $3     $4
+            returntype  name  _self  parameters  body
+        """
+        _old_offset = self.virtoffset
+
+        self.virtoffset = 0
+
+        #! =======================
+        _parameters = []
+
+        #! set current function
+        _returntype =\
+        self.visit_int(_node.get(0))
+
+        #! new func scope
+        self.symtbl.newscope()
+
+        #! check if function name is already defined.
+        if  self.symtbl.contains(_node.get(1)):
+            error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(1), _node.site)
+
+        _typeinfo = self.symtbl.lookup(self.names[-1])
+
+        #! mark as instance
+        _selftype = instance_t(_typeinfo.get_datatype().typenumber, _typeinfo.get_datatype().typename)
+
+        #! as param
+        _parameters.append((_node.get(2), _selftype))
+
+        #! register
+        self.symtbl.insert_var(_node.get(2), self.virtoffset, _selftype, False, False, _node.site)
+
+        self.virtoffset += 1
+        
+        #! compile parameters
+        for _each_param in _node.get(3):
+
+            #! param dtype
+            _vtype =\
+            self.visit_int(_each_param[1])
+
+            #! check if parameter is already defined.
+            if  self.symtbl.haslocal(_each_param[0]):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
+
+            #! make param list
+            _parameters.append((_each_param[0], _vtype))
+
+            #! register
+            self.symtbl.insert_var(_each_param[0], self.virtoffset, _vtype, False, False, _node.site)
+
+            self.virtoffset += 1
+            #! end
+
+        #! end func scope
+        self.symtbl.endscope()
+
+        #! restore
+        self.virtoffset = _old_offset
+
+        #! register
+        self.symtbl.insert_fun(_node.get(1), self.virtoffset, method_t(_returntype, len(_parameters), _parameters), _returntype, _node.site)
+
+        #! end
+        self.virtoffset += 1
 
     def int_function(self, _node):
         """    
@@ -1169,19 +1237,30 @@ class generator(source_to_interface):
             if  not _type.istype():
                 error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
             
-            if  not _type.hasAttribute(_node.get(1)):
+            if  not (_type.hasAttribute(_node.get(1)) or _type.hasMethod(_node.get(1))):
                 error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
 
-            _attribtype = _type.getAttribute(_node.get(1))
+            _attrib_or_method_type = _type.getAttribute(_node.get(1)) if _type.hasAttribute(_node.get(1)) else _type.getMethod(_node.get(1))
 
-            #! emit attribute type
-            push_ttable(self, _attribtype)
+            if  _attrib_or_method_type.ismethod():
+                #! emit attribute type
+                push_ttable(self, _attrib_or_method_type)
 
-            #! push attribute as string
-            emit_opcode(self, sload, _node.get(1))
+                #! pop object
+                emit_opcode(self, pop_top)
 
-            #! get
-            emit_opcode(self, get_attribute)
+                #! emit as string
+                emit_opcode(self, sload, "<method %s.%s/>" % (_dtype.qualname(), _node.get(1)))
+
+            else:
+                #! emit attribute type
+                push_ttable(self, _attribtype)
+
+                #! push attribute as string
+                emit_opcode(self, sload, _node.get(1))
+
+                #! get
+                emit_opcode(self, get_attribute)
         
         elif _dtype.ismodule():
             #! check
@@ -1198,6 +1277,50 @@ class generator(source_to_interface):
 
             #! just use get attribute because module is an object
             emit_opcode(self, get_attribute)
+        
+        elif _dtype.isarray():
+            #! pop array
+            emit_opcode(self, pop_top)
+
+            #! emit attribute type as str
+            push_ttable(self, string_t())
+
+            _vattrib = _node.get(1)
+
+            if  _vattrib == "push":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod array.push/>")
+            
+            elif _vattrib == "pop":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod array.pop/>")
+            
+            elif _vattrib == "peek":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod array.peek/>")
+            
+            else:
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _vattrib), _node.site)
+        
+        elif _dtype.ismap():
+            #! pop array
+            emit_opcode(self, pop_top)
+
+            #! emit attribute type as str
+            push_ttable(self, string_t())
+
+            _vattrib = _node.get(1)
+
+            if  _vattrib == "keys":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod map.keys/>")
+            
+            elif _vattrib == "values":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod map.values/>")
+            
+            else:
+                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _vattrib), _node.site)
 
         else:
             error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _node.get(1)), _node.site)
@@ -2182,8 +2305,40 @@ class generator(source_to_interface):
                 #! end
                 error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
+            elif _dtype.isarray():
+                #! pop array
+                emit_opcode(self, pop_top)
+
+                #! emit attribute type as str
+                push_ttable(self, string_t())
+
+                _vattrib = _node.get(0).get(1)
+
+                if  _vattrib in ("push", "pop", "peek"):
+                    #! emit error
+                    error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _vattrib), _node.site)
+                
+                else:
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute \"%s\"." % (_dtype.repr(), _vattrib), _node.site)
+            
+            elif _dtype.ismap():
+                #! pop array
+                emit_opcode(self, pop_top)
+
+                #! emit attribute type as str
+                push_ttable(self, string_t())
+
+                _vattrib = _node.get(0).get(1)
+
+                if  _vattrib in ("keys", "values"):
+                    #! emit error
+                    error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _vattrib), _node.site)
+                
+                else:
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute \"%s\"." % (_dtype.repr(), _vattrib), _node.site)
+
             else:
-                error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
+                error.raise_tracked(error_category.CompileError, "%s has no attribute \"%s\"." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
 #! TODO: simplify simple_assignment and augmented assignment.!!!!!!
 
@@ -2472,6 +2627,38 @@ class generator(source_to_interface):
                 #! end
                 error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
+            elif _dtype.isarray():
+                #! pop array
+                emit_opcode(self, pop_top)
+
+                #! emit attribute type as str
+                push_ttable(self, string_t())
+
+                _vattrib = _node.get(0).get(1)
+
+                if  _vattrib in ("push", "pop", "peek"):
+                    #! emit error
+                    error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _vattrib), _node.site)
+                
+                else:
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute \"%s\"." % (_dtype.repr(), _vattrib), _node.site)
+            
+            elif _dtype.ismap():
+                #! pop array
+                emit_opcode(self, pop_top)
+
+                #! emit attribute type as str
+                push_ttable(self, string_t())
+
+                _vattrib = _node.get(0).get(1)
+
+                if  _vattrib in ("keys", "values"):
+                    #! emit error
+                    error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _vattrib), _node.site)
+                
+                else:
+                    error.raise_tracked(error_category.CompileError, "%s has no attribute \"%s\"." % (_dtype.repr(), _vattrib), _node.site)
+            
             else:
                 error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _lhs.get(1)), _node.site)
 
@@ -2569,6 +2756,141 @@ class generator(source_to_interface):
 
         #! increment every struct dec
         self.currentstructnumber += 1
+    
+    def ast_implements(self, _node):
+        """
+              $0   $1
+            _name _body
+        """
+        _name = _node.get(0)
+
+        self.symtbl.newscope()
+        self.names.append(_name)
+
+        #! check if type exist
+        if  not self.symtbl.contains(_name):
+            error.raise_tracked(error_category.CompileError, "type %s is not defined." % _name, _node.site)
+        
+        _typeinfo = self.symtbl.lookup(_node.get(0))
+
+        if  not _typeinfo.get_datatype().istype():
+            error.raise_tracked(error_category.CompileError, "name %s is not a type." % _name, _node.site)
+        
+        #! make interface
+        for _each_method in _node.get(1):
+            self.visit_int(_each_method)
+        
+        #! save
+        for _each_symbol in self.symtbl.current().aslist():
+            _typeinfo.get_datatype().insert_method((_each_symbol[0], _each_symbol[1].get_datatype()))
+        
+        #! compile
+        for _each_method in _node.get(1):
+            self.visit(_each_method)
+
+        self.names.pop()
+        self.symtbl.endscope()
+
+    def ast_method(self, _node):
+        """    
+               $0        $1    $2      $3        $4
+            returntype  name  self  parameters  body
+        """
+        _old_offset = self.offset
+        _old_bcodes = self.bcodes
+
+        self.offset = 0
+        self.bcodes = []
+
+        #! =======================
+        _parameters = []
+
+        #! visit returntype
+        self.visit(_node.get(0))
+
+        #! set current function
+        self.currentfunctiontype =\
+        self.tstack.popp()
+
+        #! new func scope
+        self.symtbl.newscope()
+
+        #! check if function name is already defined.
+        # if  self.symtbl.contains(_node.get(1)):
+        #     error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _node.get(1), _node.site)
+
+        #! compile parameters
+        for _each_param in _node.get(3):
+
+            #! visit type
+            self.visit(_each_param[1])
+
+            #! param dtype
+            _vtype = self.tstack.popp()
+
+            #! check if parameter is already defined.
+            if  self.symtbl.haslocal(_each_param[0]):
+                error.raise_tracked(error_category.CompileError, "variable \"%s\" was already defined." %  _each_param[0], _node.site)
+
+            #! make param list
+            _parameters.append((_each_param[0], _vtype))
+
+            #! opcode
+            emit_opcode(self, store_fast, _each_param[0], self.offset)
+
+            #! register
+            self.symtbl.insert_var(_each_param[0], self.offset, _vtype, False, False, _node.site)
+
+            self.offset += 1
+            #! end
+
+        #! compile body
+        for _each_child in _node.get(4):
+
+            #! check
+            if  _each_child.type == ast_type.RETURN_STMNT:
+                self.functionhasreturntype = True
+           
+            #! visit child
+            self.visit(_each_child)
+        
+        if  not self.functionhasreturntype and not self.currentfunctiontype.matches(null_t()):
+            error.raise_tracked(error_category.CompileError, "function \"%s\" has no visible return." %  _node.get(1), _node.site)
+
+        if  self.currentfunctiontype.matches(null_t()):
+            #! emit virtual null
+            emit_opcode(self, nload, None)
+
+            #! add return
+            emit_opcode(self, return_control)
+
+        #! end func scope
+        self.symtbl.endscope()
+
+        _finalname = self.names[-2] + "." + self.names[-1]
+
+        #! store code
+        self.state.codes[self.names[-2]][_node.get(1)] = self.bcodes
+
+        #! restore
+        self.offset = _old_offset
+        self.bcodes = _old_bcodes
+
+        #! register
+        self.symtbl.insert_fun(_finalname, self.offset, method_t(self.currentfunctiontype, len(_parameters), _parameters), self.currentfunctiontype, _node.site)
+
+        #! unset current function
+        self.currentfunctiontype =\
+        None
+        
+        #! val opcode
+        emit_opcode(self, load_funpntr, self.names[-2], _finalname)
+
+        #! var opcode
+        emit_opcode(self, store_global, _finalname, self.offset)
+
+        #! end
+        self.offset += 1
 
     def ast_function(self, _node):
         """    
@@ -4297,11 +4619,6 @@ class codegen(generator):
             #! end
             self.offset     += 1
             self.virtoffset += 1
-    
-    def import_from(self, _node):
-        _import = _node.get(0)
-
-        print(self.state.codes[_import])
 
     def ast_source(self, _node):
         """ I Forgot to implement 2 pass compiler,
@@ -4415,8 +4732,12 @@ class codegen(generator):
         #! set program code
         self.state.codes["program"] = self.bcodes
 
-        for i in self.bcodes:
-            print(i)
+        # for i in self.bcodes:
+        #     print(i)
+        
+        #! clean
+        self.symtbl = None
+        self.imptbl = None
 
         #! end
         return self.bcodes

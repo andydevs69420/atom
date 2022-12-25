@@ -12,6 +12,7 @@ class keywords:
     MAP_T    = "map"
 
     #!
+    SELF     = "self"
     TRUE     = "true"
     FALSE    = "false"
     NULL     = "null"
@@ -20,6 +21,7 @@ class keywords:
     NATIVE   = "native"
     FUNCTION = "function"
     STRUCT   = "struct"
+    IMPLEMENTS = "implements"
     ENUM     = "enum"
     IF       = "if"
     SWITCH   = "switch"

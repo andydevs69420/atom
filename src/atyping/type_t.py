@@ -2,6 +2,7 @@ from . import type_names
 from . import nonprimitive_t
 from . import operation
 
+
 class type_t(nonprimitive_t):
     """ Type compiletime flag.
     """
@@ -15,6 +16,8 @@ class type_t(nonprimitive_t):
         self.paramcount = _paramcount
         #! type members becomes parameters
         self.parameters = _parameters
+        #! methods
+        self.methods = []
     
     def qualname(self):
         return self.name
@@ -63,6 +66,25 @@ class type_t(nonprimitive_t):
         for _attr in self.parameters:
             if  _attr[0] == _attrib:
                 return _attr[1]
+    
+    def insert_method(self, _method):
+        self.methods.append(_method)
+
+    def hasMethod(self, _method):
+        for _meth in self.methods:
+            if  _meth[0] == _method:
+                return True
+        
+        return False
+
+    def getMethod(self, _method):
+        """ Returns method type.
+        """
+        assert self.hasMethod(_method), "uncaught attribute error %s." % _method
+        
+        for _meth in self.methods:
+            if  _meth[0] == _method:
+                return _meth[1]
     
     #! ==== type specific op ====
 

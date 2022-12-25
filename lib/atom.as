@@ -3,27 +3,25 @@
 
 from test import [print];
 import [integerstd, stringstd];
-
 from std import [readl];
 
-import [atom];
+#! import [atom];
 
-var x   = [1,2,3];
-const y = [1,2,3, x], z = 2;
+var   x = [1, 2, 3];
+const y = [1, 2, 3, x], z = 2;
 
-enum a {
+enum a
+{
     y = 2
 }
 
 const v = test;
 
-function fact(_n:int) -> int {
+function fact(_n:int) -> int 
+{   return (_n == 1)? 1 : _n * fact(_n - 1);   }
 
-    return (_n == 1)? 1 : _n * fact(_n - 1);
-}
-
-function non_rec_fact(_n:int) -> int {
-
+function non_rec_fact(_n:int) -> int 
+{
     let _res = 1;
 
     for(; _n > 1; _n -= 1)
@@ -32,6 +30,15 @@ function non_rec_fact(_n:int) -> int {
     }
 
     return _res;
+}
+
+
+implements Person
+{
+    function eat(&self, _a:int) -> void 
+    {
+        self.eat;
+    }
 }
 
 function main(_args:array[str]) -> int
@@ -51,6 +58,11 @@ function main(_args:array[str]) -> int
     print(fact(x));
     print(non_rec_fact(x));
 
+    print([].peek);
+
+    print({}.keys);
+
+    print(Person("aadasd").eat);
 
     return 0;
 }

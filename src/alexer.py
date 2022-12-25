@@ -3,6 +3,7 @@
 from error import (error_category, error)
 from atoken import (token_type, atoken)
 
+
 class lexer(object):
     """ Lexical analysis for atom.
     """

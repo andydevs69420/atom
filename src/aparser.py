@@ -7,6 +7,7 @@ from syskey import keywords
 from atyping import type_names
 from context import context
 
+
 class parser(object):
     """ Parser for atom.
     """
@@ -1705,6 +1706,8 @@ class parser(object):
             return self.function()
         if  self.check_both(token_type.IDENTIFIER, keywords.STRUCT):
             return self.struct()
+        if  self.check_both(token_type.IDENTIFIER, keywords.IMPLEMENTS):
+            return self.implements()
         if  self.check_both(token_type.IDENTIFIER, keywords.ENUM):
             return self.enum()
         if  self.check_both(token_type.IDENTIFIER, keywords.IMPORT):
@@ -1751,7 +1754,7 @@ class parser(object):
 
             Syntax|Grammar
             --------------
-            "fun" '[' returntype ']' raw_iden '(' list_parameters ')' function_body;
+            "function" raw_iden '(' list_parameters ')' "->" returntype function_body;
 
             Returns
             -------
@@ -1880,9 +1883,116 @@ class parser(object):
 
         return (_name, _type)
     
+    def implements(self):
+        """ IMPLEMENT declairation.
+            
+            Syntax|Grammar
+            --------------
+            "implements" raw_iden '{' implements_body '}'
+        
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+
+        #! "implements"
+        self.expect_both(token_type.IDENTIFIER, keywords.IMPLEMENTS)
+
+        _name = self.raw_iden()
+
+        #! '{'
+        self.expect_both(token_type.SYMBOL, "{")
+
+        _body = self.implements_body()
+
+        self.expect_both(token_type.SYMBOL, "}")
+        #! '}'
+
+        if  not self.under(context.GLOBAL, True):
+            error.raise_tracked(error_category.SemanticError, "implements declairation should be done globally!", self.d_location(_start))
+
+        return stmnt_ast(
+            ast_type.IMPLEMENTS, self.d_location(_start), _name, _body)
+
+    def implements_body(self):
+        _methods = []
+        
+        while self.check_both(token_type.IDENTIFIER, keywords.FUNCTION):
+            #! append method
+            _methods.append(self.implements_method())
+
+        return tuple(_methods)
+    
+
+    def implements_method(self):
+        """ Method declairation.
+
+            Syntax|Grammar
+            --------------
+            "function" raw_iden '(' list_parameters ')' "->" returntype function_body;
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+
+        #! enter ctx
+        self.enter(context.FUNCTION)
+
+        #! "function"
+        self.expect_both(token_type.IDENTIFIER, keywords.FUNCTION)
+
+        _fname = self.raw_iden()
+
+        #! '('
+        self.expect_both(token_type.SYMBOL, "(")
+
+        #! "&self"
+        _self = self.self_ref()
+
+        if  self.check_both(token_type.SYMBOL, ","):
+            #! ','
+            self.expect_both(token_type.SYMBOL, ",")
+
+            if  not self.check_t(token_type.IDENTIFIER):
+                error.raise_tracked(error_category.SemanticError, "expects an identifier!", self.d_location(_start))
+
+        _parameters = self.list_parameter()
+    
+        self.expect_both(token_type.SYMBOL, ")")
+        #! ')'
+
+        #! "->"
+        self.expect_both(token_type.SYMBOL, "->")
+
+        #! return type
+        _return = self.returntype()
+
+        #! body
+        _body = self.function_body()
+
+        #! leave ctx
+        self.leave(context.FUNCTION)
+
+        #! end
+        return stmnt_ast(
+            ast_type.METHOD, self.d_location(_start), _return, _fname, _self, _parameters, _body)
+    
+    def self_ref(self):
+        #! '&'
+        self.expect_both(token_type.SYMBOL, "&")
+
+        _self = self.lookahead.value
+
+        #! "self"
+        self.expect_both(token_type.IDENTIFIER, keywords.SELF)
+
+        return _self
 
     def enum(self):
-        """ ENUM statement.
+        """ ENUM declairation.
 
             Syntax|Grammar
             --------------

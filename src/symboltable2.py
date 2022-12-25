@@ -316,6 +316,9 @@ class SymbolTable(HashTable):
         """
         return\
         self.childnodes.popp()
+    
+    def current(self):
+        return self.childnodes.peek()
 
 
 

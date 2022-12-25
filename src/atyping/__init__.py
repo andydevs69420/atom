@@ -11,6 +11,7 @@ from .string_t import string_t
 from .boolean_t import boolean_t
 from .null_t import null_t
 from .array_t import array_t
+from .method_t import method_t
 from .fn_t import fn_t
 from .nativefn_t import nativefn_t
 from .map_t import map_t
