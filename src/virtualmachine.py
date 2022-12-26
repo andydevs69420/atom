@@ -481,8 +481,8 @@ class virtualmachine(object):
         #! pushback
         for _r in range(_popsize): push_operand(self, _tmp.pop())
         
-        # for _i in self.state.codes[_funpntr.modpntr][_funpntr.funpntr]:
-        #     print(_i)
+        for _i in self.state.codes[_funpntr.modpntr][_funpntr.funpntr]:
+            print(_i)
 
         #! push program frame
         self.state.stack.push(frame(self.state.codes[_funpntr.modpntr][_funpntr.funpntr]))
@@ -1350,6 +1350,10 @@ class virtualmachine(object):
         #! debug!!
         #! print(self.state.oprnd.peek(), len(self.state.oprnd))
         assert self.state.oprnd.isempty(), "not all operand was popped out!!"
+
+        #! collect to empty mem
+        agc.collect(self.state)
+        print(self.state.memory.memory)
 
         #! end
         return 0x00

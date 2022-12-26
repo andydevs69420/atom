@@ -5042,8 +5042,8 @@ class codegen(generator):
         #! set program code
         self.state.codes["program"] = self.bcodes
 
-        # for i in self.bcodes:
-        #     print(i)
+        for i in self.bcodes:
+            print(i)
         
         #! clean
         self.symtbl = None

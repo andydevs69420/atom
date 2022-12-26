@@ -75,7 +75,7 @@ function main(_args:array[str]) -> int
     let xx = 0;
 
     for(; xx < 1000; xx += 1)
-        printf("num: {}", [xx]);
+        print(xx);
 
     print(2 != 2);
 

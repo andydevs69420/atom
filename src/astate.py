@@ -37,5 +37,3 @@ class astate(object):
         
         #! MEM
         self.memory = mem()
-        #! GC
-        self.gcroot = None

@@ -52,7 +52,6 @@ class agc:
         for _idx in range(len(_state.memory.memory)):
             _each_object = _state.memory.memory[_idx]
 
-            #! next
             if  not _each_object: continue
 
             #! check markbit
@@ -65,7 +64,40 @@ class agc:
 
     @staticmethod
     def compact(_state):
-        ...
+        _freecell:list[int] = []
+
+        #! last cell
+        _lastknowncell = 0
+
+        for _idx in range(len(_state.memory.memory)):
+            
+            if  _state.memory.memory[_idx] == None:
+                #! free cell
+                _freecell.insert(0, _idx)
+
+                #! next
+                continue
+
+            #! data??
+            if  len(_freecell) > 0:
+                #! move object
+                _lastknowncell = _newlocation = _freecell.pop()
+
+                #! copy
+                _state.memory.memory[_newlocation] = _state.memory.memory[_idx]
+
+                #! update offset|address
+                _state.memory.memory[_newlocation].offset.offset = _newlocation
+                _state.memory.memory[_newlocation]
+
+                #! nullify
+                _state.memory.memory[_idx] = None
+
+                #! add current address to free cell
+                _freecell.insert(0, _idx)
+        
+        del _state.memory.memory[_lastknowncell:]
+        print("MEMVIEW:", _state.memory.memory)
 
     @staticmethod
     def collect(_state):
