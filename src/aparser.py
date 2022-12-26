@@ -1742,8 +1742,6 @@ class parser(object):
             return self.while_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.DO):
             return self.dowhile_stmnt()
-        if  self.check_both(token_type.IDENTIFIER, keywords.TRY):
-            return self.try_except_finally_stmnt()
         if  self.check_both(token_type.SYMBOL, "{"):
             return self.block_of_stmnt()
         #! end
@@ -2263,32 +2261,6 @@ class parser(object):
 
         return stmnt_ast(
             ast_type.DOWHILE_STMNT, "...", _body, _cond)
-
-
-    def try_except_finally_stmnt(self):
-        #! "try"
-        self.expect_both(token_type.IDENTIFIER, keywords.TRY)
-
-        _try_block = self.block_of_stmnt()
-
-        #! "except"
-        self.expect_both(token_type.IDENTIFIER, keywords.EXCEPT)
-
-        _error_recv = self.raw_iden()
-
-        _except_block = self.block_of_stmnt()
-
-        if  not self.check_both(token_type.IDENTIFIER,keywords.FINALLY):
-            return stmnt_ast(
-                ast_type.TRY_EXCEPT_FINALLY, "...", _try_block, _error_recv, _except_block, None)
-
-        #! "finally"
-        self.expect_both(token_type.IDENTIFIER, keywords.FINALLY)
-
-        _finally_block = self.block_of_stmnt()
-
-        return stmnt_ast(
-            ast_type.TRY_EXCEPT_FINALLY, "...", _try_block, _error_recv, _except_block, _finally_block)
     
     def block_of_stmnt(self):
         """ BLOCK OF STATEMENT.

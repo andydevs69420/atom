@@ -30,24 +30,6 @@ def check_flt(_flt):
     return not float_t.auto(_flt).iserror()
 
 def atom_throw_error(_cls, _error_cat, _message):
-    if  len(_cls.state.exceptions) > 0:
-        _error = aerror(_error_cat.name, _message)
-
-        #! alloc
-        atom_object_New(_cls.state, _error)
-
-        #! push to stack
-        push_operand(_cls, _error)
-
-        #! pop if not main
-        if  len(_cls.state.stack) > 2: _cls.state.stack.popp()
-
-        #! jump to except
-        _cls.state.stack.peek().ipointer = (_cls.state.exceptions[-1] // 2)
-
-        #! end
-        return
-    
     #! end
     error.raise_fromstack(_error_cat, _message, _cls.state.stacktrace)
 
@@ -214,6 +196,43 @@ class virtualmachine(object):
         #! pushback
         push_operand(self, _array)
     
+    def array_pop(self, _bytecode_chunk):
+        #! pop array
+        _array = popp_operand(self)
+
+        #! get top element
+        _newelem = _array.pop()
+
+        #! FIXME: CATCH array out of bounds
+
+        #! pushback
+        push_operand(self, _newelem)
+    
+    def array_peek(self, _bytecode_chunk):
+        #! pop array
+        _array = popp_operand(self)
+
+        #! get top element
+        _newelem = _array.peek()
+
+        #! FIXME: CATCH array out of bounds
+
+        #! pushback
+        push_operand(self, _newelem)
+    
+    def array_size(self, _bytecode_chunk):
+        #! pop array
+        _array = popp_operand(self)
+
+        #! make new
+        _new = ainteger(len(_array.array))
+
+        #! alloc
+        atom_object_New(self.state, _new)
+
+        #! pushback
+        push_operand(self, _new)
+    
     def array_get(self, _bytecode_chunk):
         #! pop array
         _array = popp_operand(self)
@@ -280,6 +299,36 @@ class virtualmachine(object):
 
         #! pushback
         push_operand(self, _map)
+    
+    def map_keys(self, _bytecode_chunk):
+        #! pop map
+        _map = popp_operand(self)
+
+        #! get keys
+        _keys_arr = _map.keys()
+
+        _new_array = aarray(*_keys_arr)
+
+        #! alloc
+        atom_object_New(self.state, _new_array)
+
+        #! push to stack
+        push_operand(self, _new_array)
+    
+    def map_values(self, _bytecode_chunk):
+        #! pop map
+        _map = popp_operand(self)
+
+        #! get keys
+        _keys_arr = _map.values()
+
+        _new_array = aarray(*_keys_arr)
+
+        #! alloc
+        atom_object_New(self.state, _new_array)
+
+        #! push to stack
+        push_operand(self, _new_array)
     
     def map_get(self, _bytecode_chunk):
         #! pop map

@@ -15,7 +15,7 @@ class std:
             ("_string", any_t()), 
         ]), 
 
-        "readl" : nativefn_t(string_t(), 1, [
+        "scan": nativefn_t(string_t(), 1, [
             ("_message", string_t())
         ])
     })
@@ -38,8 +38,8 @@ class std:
             case "print":
                 return std.print
 
-            case "readl":
-                return std.readl
+            case "scan":
+                return std.scan
             
             case _:
                 raise AttributeError("No such attribute \"%s\"" % _attribute)
@@ -55,7 +55,7 @@ class std:
         return anull()
 
     @staticmethod
-    def readl(_state, _message):
+    def scan(_state, _message):
         _input = ""
         try:
             _input = input(_message.raw)

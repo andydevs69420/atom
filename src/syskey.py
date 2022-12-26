@@ -30,9 +30,9 @@ class keywords:
     FOR      = "for"
     WHILE    = "while"
     DO       = "do"
-    TRY      = "try"
-    EXCEPT   = "except"
-    FINALLY  = "finally"
+    #! TRY      = "try"     // future keyword
+    #! EXCEPT   = "except"  // future keyword
+    #! FINALLY  = "finally" // future keyword
 
     DEFINE   = "define"
     IMPORT   = "import"

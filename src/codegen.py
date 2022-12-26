@@ -867,9 +867,6 @@ class generator(source_to_interface):
         #! function call
         self.callid = 0
 
-        #! try except
-        self.finallies = []
-
     #! =========== VISITOR ===========
     
     def visit(self, _node):
@@ -1341,6 +1338,10 @@ class generator(source_to_interface):
             elif _vattrib == "peek":
                 #! emit as string
                 emit_opcode(self, sload, "<abstractmethod array.peek/>")
+
+            elif _vattrib == "size":
+                #! emit as string
+                emit_opcode(self, sload, "<abstractmethod array.size/>")
             
             else:
                 error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _vattrib), _node.site)
@@ -1514,7 +1515,7 @@ class generator(source_to_interface):
         _functype = self.tstack.popp()
 
         #! check if callable
-        if  not (_functype.isfunction() or _functype.isnativefunction() or _functype.istype()):
+        if  not (_functype.isfunction() or _functype.isnativefunction() or _functype.istype() or _functype.ismethod()):
             error.raise_tracked(error_category.CompileError, "%s is not a callable type." % _functype.repr(), _node.site)
 
         #! check parameter count
@@ -1648,48 +1649,102 @@ class generator(source_to_interface):
             self.call_part(_node)
         
         elif _dtype.isarray():
-            #! pop array
-            emit_opcode(self, pop_top)
-
-            #! emit attribute type as str
-            push_ttable(self, string_t())
-
             if  _attrib_name == "push":
-                #! emit as string
-                emit_opcode(self, sload, "<abstractmethod array.push/>")
+                #! check parameter count
+                if  len(_node.get(1)) != 1:
+                    error.raise_tracked(error_category.CompileError, "push requires 1 argument, got %d." % len(_node.get(1)), _node.site)
+                
+                #! emit null
+                push_ttable(self, null_t())
+
+                #! compile call args
+                self.call_abstract_args(_node, [("_element", _dtype.elementtype)])
+
+                #! add call
+                emit_opcode(self, array_push)
             
             elif _attrib_name == "pop":
-                #! emit as string
-                emit_opcode(self, sload, "<abstractmethod array.pop/>")
+                #! check parameter count
+                if  len(_node.get(1)) != 0:
+                    error.raise_tracked(error_category.CompileError, "pop requires 0 argument, got %d." % len(_node.get(1)), _node.site)
+                
+                #! emit elementtype
+                push_ttable(self, _dtype.elementtype)
+
+                #! emit array pop
+                emit_opcode(self, array_pop)
             
             elif _attrib_name == "peek":
-                #! emit as string
-                emit_opcode(self, sload, "<abstractmethod array.peek/>")
+                #! check parameter count
+                if  len(_node.get(1)) != 0:
+                    error.raise_tracked(error_category.CompileError, "peek requires 0 argument, got %d." % len(_node.get(1)), _node.site)
+                
+                #! emit elementtype
+                push_ttable(self, _dtype.elementtype)
+
+                #! emit array peek
+                emit_opcode(self, array_peek)
+            
+            elif _attrib_name == "size":
+                #! check parameter count
+                if  len(_node.get(1)) != 0:
+                    error.raise_tracked(error_category.CompileError, "size requires 0 argument, got %d." % len(_node.get(1)), _node.site)
+                
+                #! emit elementtype
+                push_ttable(self, integer_t())
+
+                #! emit array size
+                emit_opcode(self, array_size)
             
             else:
-                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _attrib_name), _node.site)
+                error.raise_tracked(error_category.CompileError, "%s has no method %s." % (_dtype.repr(), _attrib_name), _node.site)
         
         elif _dtype.ismap():
-            #! pop array
-            emit_opcode(self, pop_top)
-
-            #! emit attribute type as str
-            push_ttable(self, string_t())
-
             if  _attrib_name == "keys":
-                #! emit as string
-                emit_opcode(self, sload, "<abstractmethod map.keys/>")
+                #! check parameter count
+                if  len(_node.get(1)) != 0:
+                    error.raise_tracked(error_category.CompileError, "keys requires 0 argument, got %d." % len(_node.get(1)), _node.site)
+                
+                #! emit elementtype
+                push_ttable(self, array_t(_dtype.keytype))
+
+                #! emit map keys
+                emit_opcode(self, map_keys)
             
             elif _attrib_name == "values":
-                #! emit as string
-                emit_opcode(self, sload, "<abstractmethod map.values/>")
+                #! check parameter count
+                if  len(_node.get(1)) != 0:
+                    error.raise_tracked(error_category.CompileError, "values requires 0 argument, got %d." % len(_node.get(1)), _node.site)
+                
+                #! emit elementtype
+                push_ttable(self, array_t(_dtype.valtype))
+
+                #! emit map values
+                emit_opcode(self, map_values)
             
             else:
-                error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _attrib_name), _node.site)
+                error.raise_tracked(error_category.CompileError, "%s has no method %s." % (_dtype.repr(), _attrib_name), _node.site)
 
         else:
             error.raise_tracked(error_category.CompileError, "%s has no attribute %s." % (_dtype.repr(), _attrib_name), _node.site)
 
+    def call_abstract_args(self, _node, _paramstype=[]):
+        _index = 0
+
+        #! check every arguments
+        for _each_param in _node.get(1)[::-1]:
+
+            #! visit param
+            self.visit(_each_param)
+
+            _typeN = self.tstack.popp()
+
+            #! match type
+            if  not _paramstype[::-1][_index][1].matches(_typeN):
+                error.raise_tracked(error_category.CompileError, "parameter \"%s\" expects argument datatype %s, got %s." % (_paramstype[::-1][_index][0], _paramstype[::-1][_index][1].repr(), _typeN.repr()), _node.site)
+
+            _index += 1
+    
     def call_method_part(self, _node):
         #! datatype
         _functype = self.tstack.popp()
@@ -2585,7 +2640,7 @@ class generator(source_to_interface):
 
                 _vattrib = _node.get(0).get(1)
 
-                if  _vattrib in ("push", "pop", "peek"):
+                if  _vattrib in ("push", "pop", "peek", "size"):
                     #! emit error
                     error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _vattrib), _node.site)
                 
@@ -2912,7 +2967,7 @@ class generator(source_to_interface):
 
                 _vattrib = _node.get(0).get(1)
 
-                if  _vattrib in ("push", "pop", "peek"):
+                if  _vattrib in ("push", "pop", "peek", "size"):
                     #! emit error
                     error.raise_tracked(error_category.CompileError, "%s attribute \"%s\" can't be re-assigned." % (_dtype.repr(), _vattrib), _node.site)
                 
@@ -4233,62 +4288,6 @@ class generator(source_to_interface):
 
         #! remove local break
         self.breaks.pop()
-    
-    def ast_try_except_finally(self, _node):
-        """ 
-               $0        $1          $2            $3
-            try_block error_recv except_block finally_block??
-        """
-        if  _node.get(3):
-            self.finallies.append(True)
-
-        #! setup try
-        _try_jump =\
-        emit_opcode(self, setup_try, TARGET)
-
-        #! compile try
-        self.visit(_node.get(0))
-
-        #! unsetup try
-        emit_opcode(self, unsetup_try)
-
-        #! jump to end try
-        _to_end_try =\
-        emit_opcode(self, jump_to, TARGET)
-
-        _try_jump[2] = get_byteoff(self)
-
-        #! unsetup try again
-        emit_opcode(self, unsetup_try)
-
-        #! newscope
-        self.symtbl.newscope()
-
-        #! store error as local
-        emit_opcode(self, store_local, _node.get(1), self.offset)
-
-        #! register
-        self.symtbl.insert_var( _node.get(1), self.offset, error_t(), False, True, "eat bulaga!!!!")
-
-        #! increment
-        self.offset += 1
-
-        #! compile except
-        self.visit(_node.get(2))
-
-        #! endscope
-        self.symtbl.newscope()
-
-        #! jump here
-        _to_end_try[2] = get_byteoff(self)
-
-        if  _node.get(3):
-            #! allow return here
-            assert self.finallies.pop() == True, "invalid pop!!!"
-        
-            #! compile finally
-            self.visit(_node.get(3))
-
 
     def ast_block_stmnt(self, _node):
         """   $0
@@ -4596,12 +4595,6 @@ class generator(source_to_interface):
         """   $0
             return
         """
-        #! do not compile return if
-        #! it is in try/except/block.
-        if  len(self.finallies) > 0:
-            #! end
-            return
-
         if  not _node.get(0):
             #! emit nulltype
             push_ttable(self, null_t())

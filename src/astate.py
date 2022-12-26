@@ -30,7 +30,6 @@ class astate(object):
         self.codes = ({})
         self.calls = ({})
         self.stacktrace = ([])
-        self.exceptions = ([])
 
         #! VM
         self.stack = stack( frame   )

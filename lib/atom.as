@@ -3,8 +3,7 @@
 
 from test import [print];
 import [integerstd, stringstd];
-from std import [readl];
-
+from std import [scan];
 
 function fact(_n:int) -> int 
 {   return (_n == 1)? 1 : _n * fact(_n - 1);   }
@@ -13,10 +12,7 @@ function non_rec_fact(_n:int) -> int
 {
     let _res = 1;
 
-    for(; _n > 1; _n -= 1)
-    {
-        _res *= _n;
-    }
+    for(; _n > 1; _n -= 1) _res *= _n;
 
     return _res;
 }
@@ -30,9 +26,6 @@ function sequence(_a:int, _b:int) -> void {
     print(_a);
     print(_b);
 }
-
-
-
 
 function main(_args:array[str]) -> int
 {   
@@ -51,10 +44,27 @@ function main(_args:array[str]) -> int
     print({}.keys);
     
     sequence(100,200);
+
     let vv = Person("Andy");
         vv.eat("Diaper");
         vv.lobbster();
     
+    let b = [1, 2];
+
+    b.push(3);
+
+    print(b);
+
+    print(b.peek());
+    print(b);
+
+        b.pop();
+
+    print(b.size());
+    print(b.size);
+    print({"Hello": "World"}.keys());
+    let hola = {"world": "Hello"};
+    print(hola.values()[0] + " " + "World");
     return 0;
 }
 
@@ -63,14 +73,14 @@ implements Person
     function lobbster(&self) -> void 
     {
         print("LOBBSTER");
+        
     }
 
     function eat(&self, _food:str) -> void 
     {
-        print("eating " + _food);
+        print("Eating " + _food);
     }
 }
-
 
 function tests() -> int
 {
@@ -79,9 +89,11 @@ function tests() -> int
     return v;
 }
 
-struct Dog {
+struct Dog
+{
     name:str;
+    dob:int;
 }
 
-define function _int:int add(_rhs:int) -> int _int * _rhs; 
+define function _int:int add(_rhs:int) -> int _int * _rhs;
 

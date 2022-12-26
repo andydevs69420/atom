@@ -13,6 +13,12 @@ class aarray(aobject):
     def pushall(self, _array):
         self.array.extend(_array.array)
     
+    def pop(self):
+        return self.array.pop()
+    
+    def peek(self):
+        return self.array[-1]
+    
     def subscript(self, _int_index):
         return self.array[_int_index.raw]
 

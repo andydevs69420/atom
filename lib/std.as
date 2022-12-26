@@ -17,9 +17,9 @@ native::std
 function print(_str:any) -> void;
 
 #! readline function.
-#! syntax: const input = readl("input:>>");
+#! syntax: const input = scan("input:>>");
 native::std 
-function readl(_message:str) -> str;
+function scan(_message:str) -> str;
 
 #! var x = test_import("asdasd");
 
