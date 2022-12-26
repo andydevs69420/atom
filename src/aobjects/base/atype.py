@@ -9,6 +9,9 @@ class atype(aobject):
         self.modpntr  = _modpntr
         self.typepntr = _typename
     
+    def all(self):
+        return self.keys() + self.values()
+    
     def objecthash(self):
         return self.hash(self.typepntr)
 

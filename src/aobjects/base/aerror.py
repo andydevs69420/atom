@@ -10,6 +10,9 @@ class aerror(aobject):
         self.error_cat = _error_category_string
         self.message   = _message
     
+    def all(self):
+        return self.keys() + self.values()
+    
     def objecthash(self):
         return self.hash("%s -> %s" % (self.error_cat, self.message))
     

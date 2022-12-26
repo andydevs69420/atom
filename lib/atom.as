@@ -1,9 +1,8 @@
 #! comment
 #! another comment!
 
-from test import [print];
-import [integerstd, stringstd];
-from std import [scan];
+import [integerstd, stringstd, floatstd];
+from std import [scan, readFile, writeFile, printf, print];
 
 function fact(_n:int) -> int 
 {   return (_n == 1)? 1 : _n * fact(_n - 1);   }
@@ -25,7 +24,11 @@ struct Person, Employee
 function sequence(_a:int, _b:int) -> void {
     print(_a);
     print(_b);
+    print(_a != _b);
+   
 }
+
+
 
 function main(_args:array[str]) -> int
 {   
@@ -35,7 +38,7 @@ function main(_args:array[str]) -> int
     print(integerstd);
     print("age: " + integerstd.itoa(100));
     print(stringstd.atof("125") * 2);
-
+    
     let x = 5;
 
     print(fact(x));
@@ -49,7 +52,7 @@ function main(_args:array[str]) -> int
         vv.eat("Diaper");
         vv.lobbster();
     
-    let b = [1, 2];
+    let b = [1, 2, 3];
 
     b.push(3);
 
@@ -65,6 +68,25 @@ function main(_args:array[str]) -> int
     print({"Hello": "World"}.keys());
     let hola = {"world": "Hello"};
     print(hola.values()[0] + " " + "World");
+
+    printf("adsasd {} {} {} {} {} {}", [1, 2, 3, b, {"Hello": 69420}, vv]);
+    print(stringstd.strformat("Hello {} {}!", ["World", 69420]) + "hola");
+
+    let xx = 0;
+
+    for(; xx < 1000; xx += 1)
+        printf("num: {}", [xx]);
+
+    print(2 != 2);
+
+    "Hello"[3];
+
+    [2][0] = 2;
+
+    let v = {"hola": 2};
+
+    print(typeof main);
+
     return 0;
 }
 
@@ -72,8 +94,7 @@ implements Person
 {
     function lobbster(&self) -> void 
     {
-        print("LOBBSTER");
-        
+        "" + "adsasd";
     }
 
     function eat(&self, _food:str) -> void 
@@ -84,7 +105,7 @@ implements Person
 
 function tests() -> int
 {
-    let v = 123213232323323232322332323;
+    let v = 1232132323233232323223323235;
     v + v;
     return v;
 }

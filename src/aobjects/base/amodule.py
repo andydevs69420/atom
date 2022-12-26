@@ -8,6 +8,9 @@ class amodule(aobject):
         super().__init__()
         self.module = _modname
     
+    def all(self):
+        return self.keys() + self.values()
+    
     def __str__(self):
         return "<module %s at atom memory index %s/>" % (self.module, hex(self.offset.offset))
     

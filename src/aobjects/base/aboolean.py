@@ -8,6 +8,9 @@ class aboolean(aobject):
         super().__init__()
         self.raw = _rawbool
     
+    def all(self):
+        return self.keys() + self.values()
+    
     def objecthash(self):
         return self.hash(int(self.raw))
     

@@ -6,6 +6,7 @@ from astate import astate
 from codegen import codegen
 from virtualmachine import virtualmachine
 from readf import read_file
+from error import error_category, error
 
 def main():
     _state = astate()
@@ -15,8 +16,11 @@ def main():
     _state.aargv.extend(argv[1:])
 
     #! compile
+    #! try:
     _cgen = codegen(_state)
     _cgen.generate()
+    #! except:
+    #! error.raise_untracked(error_category.CompileError, "Could not compile file dut to unhandled exception.")
 
     print("Compile finished...")
     gc.collect()

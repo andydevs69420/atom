@@ -147,209 +147,223 @@ class constantevaluator(object):
 
         _result = ...
 
-        if  _op == "^^":
-            _result = _lhs[0].pow(_rhs[0])
+        try:
 
-            if  not _result.iserror():
-                _data = _lhs[1] ** _rhs[1]
+            if  _op == "^^":
+                _result = _lhs[0].pow(_rhs[0])
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
-                else:
-                    #! get size
-                    if  float_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+                if  not _result.iserror():
+                    _data = _lhs[1] ** _rhs[1]
 
-                return (_result, _data)
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                    else:
+                        #! get size
+                        if  float_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
 
-        if  _op == "*":
-            _result = _lhs[0].mul(_rhs[0])
+                    return (_result, _data)
 
-            if  not _result.iserror():
-                _data = _lhs[1] * _rhs[1]
+            if  _op == "*":
+                _result = _lhs[0].mul(_rhs[0])
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
-                else:
-                    #! get size
-                    if  float_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+                if  not _result.iserror():
+                    _data = _lhs[1] * _rhs[1]
 
-                return (_result, _data)
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                    else:
+                        #! get size
+                        if  float_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
 
-        if  _op == "/":
-            _result = _lhs[0].div(_rhs[0])
+                    return (_result, _data)
+
+            if  _op == "/":
+                _result = _lhs[0].div(_rhs[0])
+                
+                if  not _result.iserror():
+                    if  _rhs[1] == 0:
+                        error.raise_tracked(error_category.CompileError, "zero division error.", _node.site)
+
+                    _data = _lhs[1] / _rhs[1]
+
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                    else:
+                        #! get size
+                        if  float_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+
+                    return (_result, _data)
             
-            if  not _result.iserror():
-                _data = _lhs[1] / _rhs[1]
+            if  _op == "%":
+                _result = _lhs[0].mod(_rhs[0])
+                
+                if  not _result.iserror():
+                    if  _rhs[1] == 0:
+                        error.raise_tracked(error_category.CompileError, "zero division error.", _node.site)
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
-                else:
-                    #! get size
-                    if  float_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+                    _data = _lhs[1] % _rhs[1]
 
-                return (_result, _data)
-        
-        if  _op == "%":
-            _result = _lhs[0].mod(_rhs[0])
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                    else:
+                        #! get size
+                        if  float_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+
+                    return (_result, _data)
             
-            if  not _result.iserror():
-                _data = _lhs[1] % _rhs[1]
+            if  _op == "+":
+                _result = _lhs[0].add(_rhs[0])
+                
+                if  not _result.iserror():
+                    _data = _lhs[1] + _rhs[1]
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
-                else:
-                    #! get size
-                    if  float_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                    elif _result.isfloat():
+                        #! get size
+                        if  float_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
 
-                return (_result, _data)
-        
-        if  _op == "+":
-            _result = _lhs[0].add(_rhs[0])
+                    return (_result, _data)
             
-            if  not _result.iserror():
-                _data = _lhs[1] + _rhs[1]
+            if  _op == "-":
+                _result = _lhs[0].sub(_rhs[0])
+                
+                if  not _result.iserror():
+                    _data = _lhs[1] - _rhs[1]
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
-                else:
-                    #! get size
-                    if  float_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                    else:
+                        #! get size
+                        if  float_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
 
-                return (_result, _data)
-        
-        if  _op == "-":
-            _result = _lhs[0].sub(_rhs[0])
+                    return (_result, _data)
             
-            if  not _result.iserror():
-                _data = _lhs[1] - _rhs[1]
+            if  _op == "<<":
+                _result = _lhs[0].shift(_rhs[0])
+                
+                if  not _result.iserror():
+                    _data = _lhs[1] << _rhs[1]
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
-                else:
-                    #! get size
-                    if  float_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "float underflowed or overflowed.", _node.site)
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
 
-                return (_result, _data)
-        
-        if  _op == "<<":
-            _result = _lhs[0].shift(_rhs[0])
+                    return (_result, _data)
             
-            if  not _result.iserror():
-                _data = _lhs[1] << _rhs[1]
+            if  _op == ">>":
+                _result = _lhs[0].shift(_rhs[0])
+                
+                if  not _result.iserror():
+                    _data = _lhs[1] >> _rhs[1]
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
 
-                return (_result, _data)
-        
-        if  _op == ">>":
-            _result = _lhs[0].shift(_rhs[0])
+                    return (_result, _data)
             
-            if  not _result.iserror():
-                _data = _lhs[1] >> _rhs[1]
+            if  _op == "<":
+                _result = _lhs[0].relational(_rhs[0])
+                
+                if  not _result.iserror():
+                    return (_result, _lhs[1] < _rhs[1])
+            
+            if  _op == "<=":
+                _result = _lhs[0].relational(_rhs[0])
+                
+                if  not _result.iserror():
+                    return (_result, _lhs[1] <= _rhs[1])
+            
+            if  _op == ">":
+                _result = _lhs[0].relational(_rhs[0])
+                
+                if  not _result.iserror():
+                    return (_result, _lhs[1] > _rhs[1])
+            
+            if  _op == ">=":
+                _result = _lhs[0].relational(_rhs[0])
+                
+                if  not _result.iserror():
+                    return (_result, _lhs[1] >= _rhs[1])
+            
+            if  _op == "==":
+                _result = _lhs[0].equality(_rhs[0])
+                
+                if  not _result.iserror():
+                    return (_result, _lhs[1] == _rhs[1])
+            
+            if  _op == "!=":
+                _result = _lhs[0].equality(_rhs[0])
+                
+                if  not _result.iserror():
+                    return (_result, _lhs[1] != _rhs[1])
+            
+            if  _op == "&":
+                _result = _lhs[0].bitwise(_rhs[0])
+                
+                if  not _result.iserror():
+                    _data = _lhs[1] & _rhs[1]
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
 
-                return (_result, _data)
-        
-        if  _op == "<":
-            _result = _lhs[0].relational(_rhs[0])
+                    return (_result, _data)
             
-            if  not _result.iserror():
-                return (_result, _lhs[1] < _rhs[1])
-        
-        if  _op == "<=":
-            _result = _lhs[0].relational(_rhs[0])
-            
-            if  not _result.iserror():
-                return (_result, _lhs[1] <= _rhs[1])
-        
-        if  _op == ">":
-            _result = _lhs[0].relational(_rhs[0])
-            
-            if  not _result.iserror():
-                return (_result, _lhs[1] > _rhs[1])
-        
-        if  _op == ">=":
-            _result = _lhs[0].relational(_rhs[0])
-            
-            if  not _result.iserror():
-                return (_result, _lhs[1] >= _rhs[1])
-        
-        if  _op == "==":
-            _result = _lhs[0].equality(_rhs[0])
-            
-            if  not _result.iserror():
-                return (_result, _lhs[1] == _rhs[1])
-        
-        if  _op == "!=":
-            _result = _lhs[0].equality(_rhs[0])
-            
-            if  not _result.iserror():
-                return (_result, _lhs[1] != _rhs[1])
-        
-        if  _op == "&":
-            _result = _lhs[0].bitwise(_rhs[0])
-            
-            if  not _result.iserror():
-                _data = _lhs[1] & _rhs[1]
+            if  _op == "^":
+                _result = _lhs[0].bitwise(_rhs[0])
+                
+                if  not _result.iserror():
+                    _data = _lhs[1] ^ _rhs[1]
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
 
-                return (_result, _data)
-        
-        if  _op == "^":
-            _result = _lhs[0].bitwise(_rhs[0])
+                    return (_result, _data)
             
-            if  not _result.iserror():
-                _data = _lhs[1] ^ _rhs[1]
+            if  _op == "|":
+                _result = _lhs[0].bitwise(_rhs[0])
+                
+                if  not _result.iserror():
+                    _data = _lhs[1] | _rhs[1]
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+                    if  _result.isint():
+                        #! get size
+                        if  integer_t.auto(_data).iserror():
+                            error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
 
-                return (_result, _data)
-        
-        if  _op == "|":
-            _result = _lhs[0].bitwise(_rhs[0])
-            
-            if  not _result.iserror():
-                _data = _lhs[1] | _rhs[1]
+                    return (_result, _data)
 
-                if  _result.isint():
-                    #! get size
-                    if  integer_t.auto(_data).iserror():
-                        error.raise_tracked(error_category.CompileError, "integer underflowed or overflowed.", _node.site)
+        except OverflowError:
+            error.raise_tracked(error_category.CompileError, "expression (%s %s %s) causes overflow." % (_lhs[1], _op, _rhs[1]), _node.site)
 
-                return (_result, _data)
-        
+        except ArithmeticError:
+            error.raise_tracked(error_category.CompileError, "expression (%s %s %s) causes arithmetic error." % (_lhs[1], _op, _rhs[1]), _node.site)
+
         #! end
         error.raise_tracked(error_category.CompileError, "invalid operation %s %s %s." % (_lhs[0].repr(), _op, _rhs[0].repr()), _node.site)
 

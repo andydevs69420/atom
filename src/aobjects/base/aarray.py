@@ -7,6 +7,9 @@ class aarray(aobject):
         super().__init__()
         self.array = list(_array_of_aobject)
     
+    def all(self):
+        return self.array
+    
     def push(self, _aobject):
         self.array.append(_aobject)
 

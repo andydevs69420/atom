@@ -8,6 +8,9 @@ class ainstance(aobject):
         super().__init__()
         self.instance = _instance
     
+    def all(self):
+        return self.keys() + self.values()
+    
     def __str__(self):
         _fmt = ""
         _key = self.keys()

@@ -8,6 +8,9 @@ class amap(aobject):
     def __init__(self):
         super().__init__()
     
+    def all(self):
+        return self.keys() + self.values()
+    
     def merge(self, _amap):
         for _k, _v in zip(_amap.keys(), _amap.values()):
             self.put(_k, _v)

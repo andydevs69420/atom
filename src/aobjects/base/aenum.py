@@ -6,6 +6,9 @@ class aenum(aobject):
     def __init__(self, _enumname):
         super().__init__()
         self.enumname = _enumname
+    
+    def all(self):
+        return self.keys() + self.values()
 
     def __str__(self):
         _fmt  = ""

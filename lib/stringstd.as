@@ -35,3 +35,5 @@ function atoi(__string__:str) -> int;
 native::stringstd
 function atof(__string__:str) -> float;
 
+native::stringstd
+function strformat(__format:str, _format_list:array[any]) -> str;

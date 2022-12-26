@@ -262,6 +262,11 @@ class stringstd:
             ("__string__", string_t()), 
         ]), 
 
+        "strformat": nativefn_t(string_t(), 2, [
+            ("_format", string_t()), 
+            ("_format_list", array_t(any_t()))
+        ]), 
+
     })
 
     @staticmethod
@@ -308,6 +313,9 @@ class stringstd:
             
             case "atof":
                 return stringstd.atof
+
+            case "strformat":
+                return stringstd.strformat
 
             case _:
                 raise AttributeError("No such attribute \"%s\"" % _attribute)
@@ -459,9 +467,45 @@ class stringstd:
         
         return afloat(_string)
 
-def is_float(_flt):
-    try:
-        float(_flt)
-        return True
-    except:
-        return False
+    @staticmethod
+    def strformat(_state, _format, _format_list):
+        _fmt = ""
+        _tofmt = _format.raw
+
+        _idx = 0
+        _slots = 0
+
+        _bracket_stack = []
+
+        while _idx < len(_tofmt):
+
+            _char = _tofmt[_idx]
+            
+            if  _char == "{":
+                _bracket_stack.append(_char)
+                _slots += 1
+
+                if _slots > len(_format_list.array): break
+
+                _fmt += _format_list.array[_slots - 1].__str__()
+               
+            elif _char == "}":
+                if  len(_bracket_stack) > 0:
+                    _bracket_stack.pop()
+
+                    _idx += 1
+                    #! next
+                    continue
+
+                #! regular char
+                _fmt += _char
+
+            else:
+                _fmt += _char
+            
+            _idx += 1
+        
+        if  _slots != len(_format_list.array):
+            error.raise_fromstack(error_category.StringFormatError, "Not all slots has been formatted, required %d, got %d." % (_slots, len(_format_list.array)), _state.stacktrace)
+        
+        return astring(_fmt)

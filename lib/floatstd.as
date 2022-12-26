@@ -6,6 +6,6 @@
 const MAX_FLOAT = 1.7976931348623157e+308;
 
 native::floatstd
-fun[str] ftoa(__float__:float);
+function ftoa(__float__:float) -> str;
 
 

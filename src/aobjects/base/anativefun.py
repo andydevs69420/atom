@@ -9,6 +9,9 @@ class anativefun(aobject):
         self.modpntr = _modname
         self.funpntr = _funname
     
+    def all(self):
+        return self.keys() + self.values()
+    
     def objecthash(self):
         return (self.hash(self.modpntr) + self.hash(self.funpntr))
     

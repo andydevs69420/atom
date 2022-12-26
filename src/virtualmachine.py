@@ -22,7 +22,6 @@ def inrange(_n, _min=0, _max=69420):
     """
     return _n >= _min and _n <= _max
 
-
 def check_int(_int):
     return not integer_t.auto(_int).iserror()
 
@@ -79,7 +78,8 @@ class virtualmachine(object):
         _idx =\
         popp_operand(self)
 
-        if  not inrange(_idx.raw, 0, (len(_str.raw) - 1)):...
+        #! check range
+        if not inrange(_idx.raw, 0, (len(_str.raw) - 1)): error.raise_fromstack(error_category.RuntimeError, "string index out of bounds, %d > strlen(%s)." % (_idx.raw, _str.__repr__()), self.state.stacktrace)
 
         _newstr = astring(_str.raw[_idx.raw])
 
@@ -200,11 +200,12 @@ class virtualmachine(object):
         #! pop array
         _array = popp_operand(self)
 
+        #! check range
+        if len(_array.array) <= 0: error.raise_fromstack(error_category.RuntimeError, "array.pop on empty array.", self.state.stacktrace)
+
         #! get top element
         _newelem = _array.pop()
-
-        #! FIXME: CATCH array out of bounds
-
+        
         #! pushback
         push_operand(self, _newelem)
     
@@ -212,10 +213,11 @@ class virtualmachine(object):
         #! pop array
         _array = popp_operand(self)
 
+        #! check range
+        if len(_array.array) <= 0: error.raise_fromstack(error_category.RuntimeError, "array.peek on empty array.", self.state.stacktrace)
+
         #! get top element
         _newelem = _array.peek()
-
-        #! FIXME: CATCH array out of bounds
 
         #! pushback
         push_operand(self, _newelem)
@@ -240,7 +242,8 @@ class virtualmachine(object):
         #! pop element
         _element = popp_operand(self)
 
-        #! FIXME: CATCH array out of bounds
+        #! check range
+        if not inrange(_element.raw, 0, (len(_array.array) - 1)): error.raise_fromstack(error_category.RuntimeError, "array index out of bounds, %d > %s.size()." % (_element.raw, _array.__repr__()), self.state.stacktrace)
 
         push_operand(self, _array.subscript(_element))
     
@@ -251,10 +254,11 @@ class virtualmachine(object):
         #! pop element
         _element = popp_operand(self)
 
+        #! check range
+        if not inrange(_element.raw, 0, (len(_array.array) - 1)): error.raise_fromstack(error_category.RuntimeError, "array index out of bounds, %d > %s.size()." % (_element.raw, _array.__repr__()), self.state.stacktrace)
+
         #! new value
         _value = popp_operand(self)
-
-        #! FIXME: CATCH array out of bounds
 
         #! set index
         _array.set_index(_element, _value)
@@ -337,7 +341,8 @@ class virtualmachine(object):
         #! pop element
         _key = popp_operand(self)
 
-        #! FIXME: CATCH key error
+        #! check range
+        if not _map.haskey(_key): error.raise_fromstack(error_category.RuntimeError, "map key error, key \"%s\" not found in %s." % (_key.__str__(), _map.__str__()), self.state.stacktrace)
 
         push_operand(self, _map.get(_key))
     
@@ -484,6 +489,9 @@ class virtualmachine(object):
         
     def call_type(self, _bytecode_chunk):
         _popsize = _bytecode_chunk[2]
+
+        #! append
+        self.state.stacktrace.append(self.state.calls[_bytecode_chunk[3]])
 
         #! params
         _tmp = []
@@ -1341,7 +1349,7 @@ class virtualmachine(object):
 
         #! debug!!
         #! print(self.state.oprnd.peek(), len(self.state.oprnd))
-        assert self.state.oprnd.isempty(), "not all operand is popped out!!"
+        assert self.state.oprnd.isempty(), "not all operand was popped out!!"
 
         #! end
         return 0x00

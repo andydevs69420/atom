@@ -7,7 +7,7 @@ const STDERRID = 0x01;
 const STDINID  = 0x02;
 
 #! printf function.
-#! syntax: printf("Hello {0}, I'm {0}", ["World", "andydevs69420"]);
+#! syntax: printf("Hello {}, I'm {}", ["World", "andydevs69420"]);
 native::std
 function printf(_string:str, _fmt_args:array[any]) -> void;
 
@@ -16,10 +16,18 @@ function printf(_string:str, _fmt_args:array[any]) -> void;
 native::std
 function print(_str:any) -> void;
 
-#! readline function.
+#! scan function.
 #! syntax: const input = scan("input:>>");
 native::std 
 function scan(_message:str) -> str;
 
-#! var x = test_import("asdasd");
+#! readFile function.
+#! syntax: const content = readFile("path/to/file.extension");
+native::std 
+function readFile(_path:str) -> str;
+
+#! writeFile function.
+#! syntax: const content = writeFile("path/to/file.extension", "somedata to write", false);
+native::std 
+function writeFile(_path:str, _data:str, _append:bool) -> void;
 

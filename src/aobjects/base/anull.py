@@ -6,6 +6,9 @@ class anull(aobject):
         super().__init__()
         self.raw = None
     
+    def all(self):
+        return self.keys() + self.values()
+    
     def __new__(_cls):
         if  not hasattr(_cls, "instance"):
             _cls.instance = super(anull, _cls).__new__(_cls)

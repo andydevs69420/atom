@@ -1,0 +1,1 @@
+from std import [print, printf, scan, readFile, writeFile];

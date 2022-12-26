@@ -165,8 +165,10 @@ class aobject(HashMap):
 
     def __init__(self):
         super().__init__()
-        self.offset = None
-        self.gcnext = None
+        self.offset  = None
+        self.markbit = 0
+    
+    def all(self): raise NotImplementedError("needs to be implemented!!!")
 
     def objecthash(self):
         _hash = 0
