@@ -595,11 +595,13 @@ class source_to_interface(constantevaluator):
         
         #! make interface
         for _each_method in _node.get(1):
+            assert _each_method.type == ast_type.METHOD, "not a method!!!"
             self.visit_int(_each_method)
         
         #! save
         for _each_symbol in self.symtbl.current().aslist():
-            _typeinfo.get_datatype().insert_method((_each_symbol[0], _each_symbol[1].get_datatype()))
+            _name = _each_symbol[0].split(".")[1]
+            _typeinfo.get_datatype().insert_method((_each_symbol[0].split(".")[1], _each_symbol[1].get_datatype()))
 
         self.names.pop()
         _symbols =\
@@ -607,8 +609,7 @@ class source_to_interface(constantevaluator):
 
         #! unpack content globally
         for _each_symbol in _symbols.aslist():
-            _finalname = _name + "." + _each_symbol[0]
-            self.symtbl.insert_fun(_finalname, _each_symbol[1].get_offset(), _each_symbol[1].get_datatype(), _each_symbol[1].get_returntype(), _each_symbol[1].get_site())
+            self.symtbl.insert_fun(_each_symbol[0], _each_symbol[1].get_offset(), _each_symbol[1].get_datatype(), _each_symbol[1].get_returntype(), _each_symbol[1].get_site())
     
 
     def int_method(self, _node):
@@ -674,8 +675,11 @@ class source_to_interface(constantevaluator):
         #! restore
         self.virtoffset = _old_offset
 
+        #! final: Type.function
+        _finalname = self.names[-1] + "." + _node.get(1)
+
         #! register
-        self.symtbl.insert_fun(_node.get(1), self.virtoffset, method_t(_returntype, len(_parameters), _parameters), _returntype, _node.site)
+        self.symtbl.insert_fun(_finalname, self.virtoffset, method_t(_returntype, len(_parameters), _parameters), _returntype, _node.site)
 
         #! end
         self.virtoffset += 1
@@ -1076,7 +1080,6 @@ class generator(source_to_interface):
             if  _current.isbyte():
                 _type = _current
             
-        print()
         return _type
 
     def ast_array(self, _node):
@@ -3122,17 +3125,6 @@ class generator(source_to_interface):
         if  not _typeinfo.get_datatype().istype():
             error.raise_tracked(error_category.CompileError, "name %s is not a type." % _name, _node.site)
         
-        #! make interface
-        for _each_method in _node.get(1):
-            self.visit_int(_each_method)
-        
-        #! clear saved
-        _typeinfo.get_datatype().clear()
-
-        #! save
-        for _each_symbol in self.symtbl.current().aslist():
-            _typeinfo.get_datatype().insert_method((_each_symbol[0], _each_symbol[1].get_datatype()))
-        
         #! compile
         for _each_method in _node.get(1):
             self.visit(_each_method)
@@ -3143,8 +3135,7 @@ class generator(source_to_interface):
 
         #! unpack content globally
         for _each_symbol in _symbols.aslist():
-            _finalname = _name + "." + _each_symbol[0]
-            self.symtbl.insert_fun(_finalname, _each_symbol[1].get_offset(), _each_symbol[1].get_datatype(), _each_symbol[1].get_returntype(), _each_symbol[1].get_site())
+            self.symtbl.insert_fun(_each_symbol[0], _each_symbol[1].get_offset(), _each_symbol[1].get_datatype(), _each_symbol[1].get_returntype(), _each_symbol[1].get_site())
 
     def ast_method(self, _node):
         """    
@@ -3245,8 +3236,11 @@ class generator(source_to_interface):
         self.offset = _old_offset
         self.bcodes = _old_bcodes
 
+        #! final: Type.function
+        _finalname = self.names[-1] + "." + _node.get(1)
+
         #! register
-        self.symtbl.insert_fun(_node.get(1), self.offset, method_t(self.currentfunctiontype, len(_parameters), _parameters), self.currentfunctiontype, _node.site)
+        self.symtbl.insert_fun(_finalname, self.offset, method_t(self.currentfunctiontype, len(_parameters), _parameters), self.currentfunctiontype, _node.site)
 
         #! unset current function
         self.currentfunctiontype =\
@@ -4596,6 +4590,38 @@ class generator(source_to_interface):
 
             #! end
     
+    def ast_assert_stmnt(self, _node):
+        if  _node.get(0).type == ast_type.SHORTC_OP:
+            self.assert_using_short_circuiting(_node)
+        
+        else:
+            self.assert_using_normal_condition(_node)
+
+
+    def assert_using_normal_condition(self, _node):
+        #! compile condition
+        self.visit(_node.get(0))
+
+        #! pop type
+        self.tstack.popp()
+        
+        #! add jump
+        _jump_to_end =\
+        emit_opcode(self, pop_jump_if_true, TARGET)
+
+        #! compile error
+        self.visit(_node.get(1))
+
+        #! pop type
+        self.tstack.popp()
+
+        #! assert
+        emit_opcode(self, assert_error)
+
+        #! end assert
+        _jump_to_end[2] = get_byteoff(self)
+
+    
     def ast_break_stmnt(self, _node):
         self.breaks[-1].append(
             emit_opcode(self, jump_to, TARGET))
@@ -5042,8 +5068,8 @@ class codegen(generator):
         #! set program code
         self.state.codes["program"] = self.bcodes
 
-        for i in self.bcodes:
-            print(i)
+        # for i in self.bcodes:
+        #     print(i)
         
         #! clean
         self.symtbl = None

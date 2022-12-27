@@ -67,7 +67,7 @@ class agc:
         _freecell:list[int] = []
 
         #! last cell
-        _lastknowncell = 0
+        _lastknowncell = -1
 
         for _idx in range(len(_state.memory.memory)):
             
@@ -88,7 +88,6 @@ class agc:
 
                 #! update offset|address
                 _state.memory.memory[_newlocation].offset.offset = _newlocation
-                _state.memory.memory[_newlocation]
 
                 #! nullify
                 _state.memory.memory[_idx] = None
@@ -96,8 +95,8 @@ class agc:
                 #! add current address to free cell
                 _freecell.insert(0, _idx)
         
-        del _state.memory.memory[_lastknowncell:]
-        print("MEMVIEW:", _state.memory.memory)
+        #! NOTE: becomes stable on next compaction!
+        if _lastknowncell >= 0: del _state.memory.memory[_lastknowncell + 1:]
 
     @staticmethod
     def collect(_state):
@@ -132,6 +131,9 @@ def atom_object_New(_state, _aobject):
     agc.markobject(_state, _aobject)
 
     _aobject.offset = offset(len(_state.memory.memory))
+    
+    #! append
+    _state.memory.memory.append(_aobject)
 
     #! collect if limit reached
     if  agc.CURRENT_ALLOCATION >= agc.ALLOCATION_LIMIT:
@@ -139,12 +141,10 @@ def atom_object_New(_state, _aobject):
 
         #! reset count
         agc.CURRENT_ALLOCATION = 0
+        return
 
     #! increment alloc count
     agc.CURRENT_ALLOCATION += 1
-    
-    #! append
-    _state.memory.memory.append(_aobject)
 
 
 def atom_object_Get(_state, _offset):

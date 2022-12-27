@@ -481,8 +481,8 @@ class virtualmachine(object):
         #! pushback
         for _r in range(_popsize): push_operand(self, _tmp.pop())
         
-        for _i in self.state.codes[_funpntr.modpntr][_funpntr.funpntr]:
-            print(_i)
+        #! for _i in self.state.codes[_funpntr.modpntr][_funpntr.funpntr]:
+        #!    print(_i)
 
         #! push program frame
         self.state.stack.push(frame(self.state.codes[_funpntr.modpntr][_funpntr.funpntr]))
@@ -505,7 +505,10 @@ class virtualmachine(object):
         #! pushback
         for _r in range(_popsize): push_operand(self, _tmp.pop())
 
-        #! push program frame
+        #! for _i in self.state.codes[_typepntr.modpntr][_typepntr.typepntr]:
+        #!    print(_i)
+
+        #! push type frame
         self.state.stack.push(frame(self.state.codes[_typepntr.modpntr][_typepntr.typepntr]))
 
     def return_control(self, _bytecode_chunk):
@@ -1311,7 +1314,14 @@ class virtualmachine(object):
 
     def unsetup_try(self, _bytecode_chunk):
         self.state.exceptions.pop()
+    
+    def assert_error(self, _bytecode_chunk):
+        #! pop message
+        _obj =\
+        popp_operand(self)
 
+        #! throw
+        atom_throw_error(self, error_category.RuntimeError, "assert error: %s." % _obj.__str__())
     
     #! =========== visitor ===========
     
@@ -1331,21 +1341,22 @@ class virtualmachine(object):
         #! push program frame
         self.state.stack.push(frame(self.state.codes["program"]))
 
-        # try:
-        while not self.state.stack.isempty():
-            _top = self.state.stack.peek()
+        try:
+            while not self.state.stack.isempty():
+                _top = self.state.stack.peek()
 
-            #! visit opcode
-            self.visit(_top.instructions[_top.ipointer])
+                #! visit opcode
+                self.visit(_top.instructions[_top.ipointer])
 
-            #! next
-            _top.ipointer += 1
+                #! next
+                _top.ipointer += 1
 
-        # except:
-        #     error.raise_untracked(error_category.RuntimeError, "internal virtualmachine error...")
+        except:
+            error.raise_untracked(error_category.RuntimeError, "internal virtualmachine error...")
 
         #! program ok!!!
-        print("Program finished with exit code %s..." % popp_operand(self).__repr__())
+        _return = popp_operand(self)
+        print("Program finished with exit code %s..." % _return.__repr__())
 
         #! debug!!
         #! print(self.state.oprnd.peek(), len(self.state.oprnd))
@@ -1353,7 +1364,6 @@ class virtualmachine(object):
 
         #! collect to empty mem
         agc.collect(self.state)
-        print(self.state.memory.memory)
 
-        #! end
-        return 0x00
+        #! end|return int
+        return _return.raw

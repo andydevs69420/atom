@@ -7,8 +7,7 @@ from mem import mem
 from aobjects import aobject
 
 BASE_PATH = ospath.abspath(ospath.dirname(argv[0]))
-
-
+LIBS_PATH = ospath.abspath(ospath.join(BASE_PATH[: len(ospath.dirname(BASE_PATH))], "lib"))
 
 CODE   = "code"
 MEMORY = "memory"
@@ -20,7 +19,7 @@ class astate(object):
     def __init__(self):
         self.paths = [
             BASE_PATH, 
-            ospath.join(BASE_PATH    , "lib"), 
+            LIBS_PATH,
             ospath.join(ospath.curdir, "lib"),
             ospath.join(ospath.curdir, "bin"),
         ]

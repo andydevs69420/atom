@@ -106,7 +106,7 @@ class std:
         if  _slots != len(_format_list.array):
             error.raise_fromstack(error_category.StringFormatError, "Not all slots has been formatted, required %d, got %d." % (_slots, len(_format_list.array)), _state.stacktrace)
         
-        print("%s%s%s" % (Fore.YELLOW, _fmt, Fore.RESET))
+        print("%s%s%s" % (Fore.YELLOW, _fmt, Fore.RESET), end="")
         return anull()
 
 

@@ -53,11 +53,12 @@ class ast_type(Enum):
     VAR_STMNT     = 103
     LET_STMNT     = 104
     CONST_STMNT   = 105
-    BREAK_STMNT   = 106
-    CONTINUE_STMNT= 107
-    RETURN_STMNT  = 108
-    EXPR_STMNT    = 109
-    SOURCE        = 110
+    ASSERT_STMNT  = 106
+    BREAK_STMNT   = 107
+    CONTINUE_STMNT= 108
+    RETURN_STMNT  = 109
+    EXPR_STMNT    = 110
+    SOURCE        = 111
 
 
 

@@ -40,6 +40,7 @@ class keywords:
     CONST    = "const"
     VAR      = "var"
     LET      = "let"
+    ASSERT   = "assert"
     BREAK    = "break"
     CONTINUE = "continue"
     RETURN   = "return"

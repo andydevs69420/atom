@@ -139,3 +139,6 @@ jump_to = "jump_to"
 #! try
 setup_try = "setup_try"
 unsetup_try = "unsetup_try"
+
+
+assert_error = "assert_error"

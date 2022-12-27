@@ -946,6 +946,7 @@ class parser(object):
                     | <terminal: str>
                     | <terminal: bool>
                     | <terminal: null>
+                    | <terminal: self>
                     | <terminal: ref>
                     | array_expr
                     | map_expr
@@ -964,6 +965,8 @@ class parser(object):
             return self.boolean()
         if  self.check_both(token_type.IDENTIFIER, keywords.NULL ):
             return self.null()
+        if  self.check_both(token_type.IDENTIFIER, keywords.SELF):
+            return self.self_ref_ref()
         if  self.check_t(token_type.IDENTIFIER):
             return self.ref()
         if  self.check_both(token_type.SYMBOL, "["):
@@ -1065,6 +1068,26 @@ class parser(object):
         return expr_ast(
             ast_type.NULL, self.d_location(_null), _null.value)
     
+    def self_ref_ref(self):
+        """ REFERENCE expr.
+
+            Returns
+            -------
+            ast
+        """
+        _start = self.lookahead
+        _ref   = _start.value
+
+        #! "self"
+        self.expect_both(token_type.IDENTIFIER, keywords.SELF)
+
+        if  not self.under(context.METHOD, False):
+            error.raise_tracked(error_category.SemanticError, "can't use self outside method.", self.d_location(_start))
+
+        #! end
+        return expr_ast(
+            ast_type.REF, self.d_location(_start), _ref)
+
     def ref(self):
         """ REFERENCE expr.
 
@@ -1937,7 +1960,7 @@ class parser(object):
         _start = self.lookahead
 
         #! enter ctx
-        self.enter(context.FUNCTION)
+        self.enter(context.METHOD)
 
         #! "function"
         self.expect_both(token_type.IDENTIFIER, keywords.FUNCTION)
@@ -1972,7 +1995,7 @@ class parser(object):
         _body = self.function_body()
 
         #! leave ctx
-        self.leave(context.FUNCTION)
+        self.leave(context.METHOD)
 
         #! end
         return stmnt_ast(
@@ -2306,6 +2329,8 @@ class parser(object):
             return self.let_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.CONST):
             return self.const_stmnt()
+        if  self.check_both(token_type.IDENTIFIER, keywords.ASSERT):
+            return self.assert_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.BREAK):
             return self.break_stmnt()
         if  self.check_both(token_type.IDENTIFIER, keywords.CONTINUE):
@@ -2555,6 +2580,27 @@ class parser(object):
         #! end
         return stmnt_ast(
             ast_type.CONST_STMNT, _ended, _declaire)
+    
+    def assert_stmnt(self):
+        #! "assert"
+        _start = self.lookahead
+        self.expect_both(token_type.IDENTIFIER, keywords.ASSERT)
+
+        _cond = self.non_nullable_expr()
+
+        #! "->"
+        self.expect_both(token_type.SYMBOL, "->")
+
+        _message = self.non_nullable_expr()
+
+        _ended = self.d_location(_start)
+
+        self.expect_both(token_type.SYMBOL, ";")
+        #! ';'
+
+        #! end
+        return stmnt_ast(
+            ast_type.ASSERT_STMNT, _ended, _cond, _message)
     
     def break_stmnt(self):
         """ BREAK statement.

@@ -14,7 +14,7 @@ def file_isfile(_state, _path_to_file):
     
     for _dir in _state.paths:
         _loc = ospath.abspath(ospath.join(_dir, _path_to_file))
-
+        
         if  ospath.exists(_loc) and ospath.isfile(_loc):
             return True
 

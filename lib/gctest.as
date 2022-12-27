@@ -1,27 +1,36 @@
 
 from std import [print];
+from releasetest import [run];
 
-function main(_args:array[str]) -> int {
+struct Person
+{
+    _name:str;
+}
 
-    let xx = 0;
-    while(xx < 500)
+implements Person
+{
+    function speak(&self, _msg:str) -> void
     {
-       
-       print(xx);
 
-       xx+=1;
     }
-    
-    xx = 1;
-   while(xx < 500)
-    {
-       
-       print(xx);
-
-       xx+=1;
-    }
+}
 
 
+
+function main(_args:array[str]) -> int 
+{
+    const _res = run();
+
+    if (_res) print("All test passed!!!");
+
+    let LOCK = 3;
+
+    let KEY = 3;
+
+    assert KEY == LOCK -> "Oppps! invalid house key :(";
+
+    print("Welcome!!");
+    print(_args.size());
     return 0;
 }
 
