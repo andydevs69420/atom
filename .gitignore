@@ -16,9 +16,11 @@ src/aobjects/base/__pycache__/**
 src/abuiltins/__pycache__/
 src/abuiltins/__pycache__/**
 
-
+bin
+bin/**
 atom-env
 atom-env/**
+atom.ico
 build
 dist
 atom.spec
