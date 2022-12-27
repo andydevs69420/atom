@@ -33,8 +33,6 @@ def infomode():
 def main():
     #! make state
     _state = astate()
-    
-    print("STATE CREATED!")
 
     #! do info mode
     if len(argv) <= 1: return infomode()

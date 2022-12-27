@@ -20,7 +20,6 @@ bin
 bin/**
 atom-env
 atom-env/**
-atom.ico
 build
 dist
 atom.spec
