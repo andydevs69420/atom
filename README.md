@@ -1,6 +1,6 @@
 
 <p align="center">
-    <img src="https://icons.iconarchive.com/icons/papirus-team/papirus-apps/512/atom-beta-icon.png"/>
+    <img src="https://icons.iconarchive.com/icons/papirus-team/papirus-apps/128/atom-beta-icon.png"/>
 </p>
 
 # ATOM-PROTOTYPE-V1 ⚡
