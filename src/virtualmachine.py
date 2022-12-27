@@ -36,6 +36,8 @@ class virtualmachine(object):
     """ Virtual machine for atom.
     """
 
+    MAX_STACK = 1500
+
     def __init__(self, _state):
 
         #! global state
@@ -436,6 +438,9 @@ class virtualmachine(object):
     #! ======== call =========
     
     def call_native(self, _bytecode_chunk):
+        #! check stack
+        if (len(self.state.stack) + 1) >= virtualmachine.MAX_STACK: return atom_throw_error(self, error_category.RuntimeError, "maximum recursion reached!!!!")
+
         _popsize = _bytecode_chunk[2]
 
         #! append
@@ -464,6 +469,9 @@ class virtualmachine(object):
         self.state.stacktrace.pop()
 
     def call_function(self, _bytecode_chunk):
+        #! check stack
+        if (len(self.state.stack) + 1) >= virtualmachine.MAX_STACK: return atom_throw_error(self, error_category.RuntimeError, "maximum recursion reached!!!!")
+
         _popsize = _bytecode_chunk[2]
         
         #! append
@@ -488,6 +496,9 @@ class virtualmachine(object):
         self.state.stack.push(frame(self.state.codes[_funpntr.modpntr][_funpntr.funpntr]))
         
     def call_type(self, _bytecode_chunk):
+        #! check stack
+        if (len(self.state.stack) + 1) >= virtualmachine.MAX_STACK: return atom_throw_error(self, error_category.RuntimeError, "maximum recursion reached!!!!")
+
         _popsize = _bytecode_chunk[2]
 
         #! append
@@ -1352,7 +1363,7 @@ class virtualmachine(object):
                 _top.ipointer += 1
 
         except:
-            error.raise_untracked(error_category.RuntimeError, "internal virtualmachine error...")
+            error.raise_untracked(error_category.RuntimeError, "internal virtualmachine error!!!")
 
         #! program ok!!!
         _return = popp_operand(self)

@@ -1,6 +1,38 @@
 from std import [print, printf, scan, readFile, writeFile];
 import [stringstd];
 
+
+function main(_args:array[str]) -> int {
+
+    print("Hola!");
+    print(fact(5));
+    print(non_recursive_fact(5));
+    return 0;
+}
+
+function rec() -> void {
+    rec();
+}
+
+#! factorial
+
+function fact(_n:int) -> int {
+    #! uses recursion
+    return (_n <= 1)? 1 : _n * fact(_n - 1);
+}
+
+
+function non_recursive_fact(_n:int) -> int {
+    #! non recursive factorial
+    let _res = 1;
+    
+    for (; _n >=1; _n -= 1) {
+        _res *= _n;
+    }
+
+    return _res;
+}
+
 function run() -> bool
 {
     test_import();
