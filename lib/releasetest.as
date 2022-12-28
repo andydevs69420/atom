@@ -7,6 +7,7 @@ function main(_args:array[str]) -> int {
     print("Hola!");
     print(fact(5));
     print(non_recursive_fact(5));
+    run()? print("All test passed!") : "Failed!";
     return 0;
 }
 
