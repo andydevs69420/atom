@@ -20,7 +20,7 @@ _3BYTE_FOLLOW = 0b00001111
 _4BYTE_FOLLOW = 0b00000111
 
 _VALID_TRAIL_BYTE   = 0b10000000
-_MAXIMUM_TRAIL_BIT = 0b00111111
+_MAXIMUM_TRAIL_BYTE = 0b00111111
 
 
 def get_head_size(_codepoint_part:int):
@@ -60,7 +60,7 @@ def split_code_points(_codepoint:int):
         )
         #! 2nd byte
         _sequence.append(
-            (_codepoint & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
+            (_codepoint & _MAXIMUM_TRAIL_BYTE) | _VALID_TRAIL_BYTE
         )
 
     elif _size == 3:
@@ -70,11 +70,11 @@ def split_code_points(_codepoint:int):
         )
         #! 2nd byte
         _sequence.append(
-            ((_codepoint >> 6) & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
+            ((_codepoint >> 6) & _MAXIMUM_TRAIL_BYTE) | _VALID_TRAIL_BYTE
         )
         #! 3rd byte
         _sequence.append(
-            (_codepoint & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
+            (_codepoint & _MAXIMUM_TRAIL_BYTE) | _VALID_TRAIL_BYTE
         )
     
     elif _size == 4:
@@ -84,15 +84,15 @@ def split_code_points(_codepoint:int):
         )
         #! 2nd byte
         _sequence.append(
-            ((_codepoint >> 12) & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
+            ((_codepoint >> 12) & _MAXIMUM_TRAIL_BYTE) | _VALID_TRAIL_BYTE
         )
         #! 3rd byte
         _sequence.append(
-            ((_codepoint >> 6) & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
+            ((_codepoint >> 6) & _MAXIMUM_TRAIL_BYTE) | _VALID_TRAIL_BYTE
         )
         #! 4th byte
         _sequence.append(
-            (_codepoint & _MAXIMUM_TRAIL_BIT) | _VALID_TRAIL_BYTE
+            (_codepoint & _MAXIMUM_TRAIL_BYTE) | _VALID_TRAIL_BYTE
         )
 
     return _sequence
@@ -114,20 +114,20 @@ def build_from_code_points(_code_points_array:list[int]):
         
         elif _size == 2:
             _ord  = (_code_points_array[_index] & _2BYTE_FOLLOW) << 6
-            _ord |= (_code_points_array[_index + 1] & _MAXIMUM_TRAIL_BIT)
+            _ord |= (_code_points_array[_index + 1] & _MAXIMUM_TRAIL_BYTE)
             _index += 2
         
         elif _size == 3:
             _ord  = (_code_points_array[_index] & _3BYTE_FOLLOW) << 12
-            _ord |= ((_code_points_array[_index + 1] & _MAXIMUM_TRAIL_BIT) << 6)
-            _ord |= (_code_points_array[_index + 2] & _MAXIMUM_TRAIL_BIT)
+            _ord |= ((_code_points_array[_index + 1] & _MAXIMUM_TRAIL_BYTE) << 6)
+            _ord |= (_code_points_array[_index + 2] & _MAXIMUM_TRAIL_BYTE)
             _index += 3
         
         elif _size == 4:
             _ord  = (_code_points_array[_index] & _4BYTE_FOLLOW) << 18
-            _ord |= ((_code_points_array[_index + 1] & _MAXIMUM_TRAIL_BIT) << 12)
-            _ord |= ((_code_points_array[_index + 2] & _MAXIMUM_TRAIL_BIT) << 6)
-            _ord |= (_code_points_array[_index + 3] & _MAXIMUM_TRAIL_BIT)
+            _ord |= ((_code_points_array[_index + 1] & _MAXIMUM_TRAIL_BYTE) << 12)
+            _ord |= ((_code_points_array[_index + 2] & _MAXIMUM_TRAIL_BYTE) << 6)
+            _ord |= (_code_points_array[_index + 3] & _MAXIMUM_TRAIL_BYTE)
             _index += 4
     
         _str += chr(_ord)
