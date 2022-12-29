@@ -130,7 +130,7 @@ class std:
     def readFile(_state, _path):
         _input = ""
         try:
-            _fobj  = open(_path.raw, "r")
+            _fobj  = open(_path.raw, "r", encoding="utf-8")
             _input = _fobj.read()
             _fobj.close()
         except:
@@ -144,7 +144,7 @@ class std:
     def writeFile(_state, _path, _data, _append):
         try:    
             _mode = "a+" if _append.raw else "w"
-            _fobj = open(_path.raw, _mode)
+            _fobj = open(_path.raw, _mode, encoding="utf-8")
             _fobj.write(_data.raw)
             _fobj.close()
         except:
