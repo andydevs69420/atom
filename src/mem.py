@@ -146,6 +146,12 @@ def atom_object_New(_state, _aobject):
     #! increment alloc count
     agc.CURRENT_ALLOCATION += 1
 
+def atom_object_new_with_return(_state, _aobject):
+    #! alloc
+    atom_object_New(_state, _aobject)
+
+    return _aobject
+
 
 def atom_object_Get(_state, _offset):
     return _state.memory.memory[_offset.offset]

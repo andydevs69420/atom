@@ -32,7 +32,7 @@ def read_file(_state, _file_path):
         if  ospath.exists(_loc) and ospath.isfile(_loc):
             try:
                 #! read
-                _file = open(_loc, "r")
+                _file = open(_loc, "r", encoding="utf-8")
                 _state.files.append(afile(_loc, _file.read()))
 
                 #! close stream

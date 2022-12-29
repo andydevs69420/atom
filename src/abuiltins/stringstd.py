@@ -5,6 +5,8 @@ from error import (error_category, error)
 from inlineparser.intparser import parseInt
 from inlineparser.floatparser import floatParse
 
+from mem import atom_object_new_with_return
+
 #! ========================== utf
 """ USES Binary to easily understand.
 """
@@ -337,7 +339,7 @@ class stringstd:
         _string = __string__.raw
 
         #! end
-        return aarray(*[astring(_str) for _str in _string.split(__delimeter__.raw)])
+        return aarray(*[atom_object_new_with_return(_state, astring(_str)) for _str in _string.split(__delimeter__.raw)])
 
     @staticmethod
     def strreverse(_state, __string__):
@@ -359,12 +361,12 @@ class stringstd:
 
             if  _utf_size == 1:
                 _codepoints.append(ord(_each_char))
-            elif _utf_size > 1:
+            elif _utf_size > 1 and _utf_size <= 4:
                 _codepoints.extend(split_code_points(ord(_each_char)))
             else:
                 error.raise_fromstack(error_category.UtfError, "invalid utf %s." % _string, _state.stacktace)
-
-        return aarray(*_codepoints)
+        
+        return aarray(*[atom_object_new_with_return(_state, ainteger(_int)) for _int in _codepoints])
 
     @staticmethod
     def fromcharcodepoints(_state, __codepoints__):

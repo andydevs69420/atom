@@ -4,6 +4,7 @@ from abuiltins.getter import getbuiltin
 from mem import *
 from error import (error_category, error)
 from atyping import integer_t, float_t
+import logging
 
 TOP    = -1
 BOTTOM = 00
@@ -1362,7 +1363,9 @@ class virtualmachine(object):
                 #! next
                 _top.ipointer += 1
 
-        except:
+        except Exception as e:
+            print(e)
+            logging.debug(e)
             error.raise_untracked(error_category.RuntimeError, "internal virtualmachine error!!!")
 
         #! program ok!!!
