@@ -251,6 +251,21 @@ function main(_args:array[str]) -> int
     #! returns number of items inside array
     [1,2,3].peek();
 
+    #! array subscript
+    let _arr = [1,2,3]; #! <array[T]> where T is int
+        std.print(_arr[1]);
+        _arr[1] += 2;
+    
+    #! array unpack
+    let _unpack = [*[1,2,3], 4,5,6]; #! -> let _unpack = [1,2,3,4,5,6];
+
+    #! map merge -> map
+    {"pork": "hub"} + {"hub": "pork"};
+    
+    #! map keys -> <array[K]> where K is key type
+    
+    
+
     return 0;
 }
 ```
