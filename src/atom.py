@@ -25,7 +25,7 @@ def infomode():
 
     How to run?
         ex:
-            atom.exe file.as arg1 arg2         
+            atom.exe file.as arg1 arg2
 """ 
     print("%s%s%s" % (Fore.GREEN, _banner, Fore.RESET))
 

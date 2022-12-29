@@ -190,3 +190,68 @@ do {
 
 } while(_i < 5)
 ```
+
+```python
+#! operation
+
+function main(_args:array[str]) -> int
+{
+
+    #! int
+    2 + 2 * (5 + 1 * 2.0);
+
+    #! float
+    4 / 2;
+
+    #! int
+    4 % 2;
+
+    #! float
+    4 % 2.0;
+
+    #! compile time zero division
+    100 / 0;
+
+    #! runtime zero division
+    let _divisor = 0;
+    100 / _divisor;
+
+    #! str
+    "Hello" + " " + "World!";
+
+    #! bool
+    !false == true;
+
+    #! null
+    null;
+
+    #! int array append -> arary
+    [1, 2] + 3;
+
+    #! str array append -> arary
+    ["a", "b"] + "c";
+
+    #! array extend -> arary
+    [1,2,3] + [4,5,6];
+
+    #! array push: <T>[1,2,3].push(4) -> where T is the element type
+    #! returns top element type T
+    [1,2,3].push(4);
+
+    #! array pop: <array[T]>[1,2,3].pop() -> where T is the element type
+    #! removes top element and return|throws index error if array is empty
+    #! returns top element where type is T
+    [1,2,3].pop();
+
+    #! array peek: <array[T]>[1,2,3].peek() -> where T is the element type
+    #! look-up top element and return|throws index error if array is empty
+    #! returns top element where type is T
+    [1,2,3].peek();
+
+    #! array size: [1,2,3].size()
+    #! returns number of items inside array
+    [1,2,3].peek();
+
+    return 0;
+}
+```
