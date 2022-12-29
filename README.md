@@ -113,6 +113,27 @@ define function _param0:int plus(_param1:int) -> int _param0 + _param1 ;
 ```
 
 ```python
+#! variable declairation
+
+#! global variable
+var _x = 2;
+
+#! global constant
+const _y = 3;
+
+function main(_args:array[str]) -> int {
+    
+    #! local variable
+    let _x = 2;
+
+    #! local constant
+    const _y = 3;
+
+    return 0;
+}
+```
+
+```python
 #! if statement
 
 if (0xc0ffee == 12648430)
