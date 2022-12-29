@@ -285,7 +285,7 @@ function main(_args:array[str]) -> int
 
     #! array size: [1,2,3].size()
     #! returns number of items inside array
-    [1,2,3].peek();
+    [1,2,3].size();
 
     #! array subscript
     let _arr = [1,2,3]; #! <array[T]> where T is int
