@@ -9,12 +9,6 @@ class anull(aobject):
     def all(self):
         return self.keys() + self.values()
     
-    def __new__(_cls):
-        if  not hasattr(_cls, "instance"):
-            _cls.instance = super(anull, _cls).__new__(_cls)
-    
-        return _cls.instance
-    
     def __str__(self):
         return "null"
     
