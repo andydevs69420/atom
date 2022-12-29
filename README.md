@@ -196,9 +196,8 @@ do {
 
 function main(_args:array[str]) -> int
 {
-
     #! int
-    2 + 2 * (5 + 1 * 2.0);
+    2 + 2 * (5 + 1 * 2);
 
     #! float
     4 / 2;
@@ -220,7 +219,7 @@ function main(_args:array[str]) -> int
     "Hello" + " " + "World!";
 
     #! bool
-    !false == true;
+    !false == !("fooc" == "yeah!");
 
     #! null
     null;
@@ -234,8 +233,8 @@ function main(_args:array[str]) -> int
     #! array extend -> arary
     [1,2,3] + [4,5,6];
 
-    #! array push: <T>[1,2,3].push(4) -> where T is the element type
-    #! returns top element type T
+    #! array push: <array[T]>[1,2,3].push(4) -> where T is the element type
+    #! returns null
     [1,2,3].push(4);
 
     #! array pop: <array[T]>[1,2,3].pop() -> where T is the element type
