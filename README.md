@@ -192,6 +192,38 @@ do {
 ```
 
 ```python
+#! continue statement
+
+let _i;
+do {
+
+    if (_i == 3)
+    {
+        _i += 1;
+        continue;
+    }
+
+    std.printf("{}, ", [_i]); 
+    _i += 1;
+
+} while(_i < 5)
+```
+
+```python
+#! break statement
+
+let _i;
+do {
+
+    if (_i == 3) break;
+
+    std.printf("{}, ", [_i]);
+    _i += 1;
+
+} while(_i < 5)
+```
+
+```python
 #! operation
 
 function main(_args:array[str]) -> int
@@ -217,6 +249,10 @@ function main(_args:array[str]) -> int
 
     #! str
     "Hello" + " " + "World!";
+
+    #! str subscript
+    #! produces runtyime error: index error if element out of range
+    "Hello"[1];
 
     #! bool
     !false == !("fooc" == "yeah!");
@@ -260,11 +296,35 @@ function main(_args:array[str]) -> int
     let _unpack = [*[1,2,3], 4,5,6]; #! -> let _unpack = [1,2,3,4,5,6];
 
     #! map merge -> map
+    #! produces map
     {"pork": "hub"} + {"hub": "pork"};
     
+    let _map = {"pork": "hub", "hub": "pork"};
+
     #! map keys -> <array[K]> where K is key type
-    
-    
+    std.printf("keys: {}", [_map.keys()]); #! -> keys: ["pork", "hub"]
+
+    #! map values -> <array[V]> where V is value type
+    std.printf("values: {}", [_map.values()]); #! -> values: ["hub", "pork"]
+
+    #! map subcsript -> <map[K:V]>{"pork": "hub", "hub": "pork"} where K and V is the key and value type
+    #! if key does not exist produces runtime error: key not found
+    std.printf("value of key \"{}\" is {}", ["pork", _map["pork"]]);
+
+    #! if key does not exist, it creates  key
+    _map["hub"] = "por*";
+
+    #! map unpack
+    let _emptymap = {**_map}; #! let _emptymap = {"pork": "hub", "hub": "por*"};
+
+    #! ternary operator
+    ("World"[1] == "o")? "index 1 is \"o\"": "Nah!";
+
+    #! typeof unary
+    typeof ["1", "2", "3"] #! -> "array_of_str"
+
+    #! assert 
+    assert false -> "Nah! condition unsatisfiable!!!";
 
     return 0;
 }
