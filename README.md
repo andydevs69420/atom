@@ -251,7 +251,7 @@ function main(_args:array[str]) -> int
     "Hello" + " " + "World!";
 
     #! str subscript
-    #! produces runtyime error: index error if element out of range
+    #! produces runtyime error: index error if index out of range
     "Hello"[1];
 
     #! bool
