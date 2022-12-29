@@ -15,7 +15,7 @@ from error import error_category, error
 
 
 
-def infomode():
+def infomode(_state):
     _banner =\
 """  
        /A     | GITHUB : https://github.com/andydevs69420/atom.git
@@ -26,7 +26,10 @@ def infomode():
     How to run?
         ex:
             atom.exe file.as arg1 arg2
-""" 
+    
+    paths:
+        %s
+""" % _state.paths.__str__()
     print("%s%s%s" % (Fore.GREEN, _banner, Fore.RESET))
 
 
@@ -35,7 +38,7 @@ def main():
     _state = astate()
 
     #! do info mode
-    if len(argv) <= 1: return infomode()
+    if len(argv) <= 1: return infomode(_state)
 
     #! read file
     read_file(_state, argv[1])
