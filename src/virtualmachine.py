@@ -1364,7 +1364,6 @@ class virtualmachine(object):
                 _top.ipointer += 1
 
         except Exception as e:
-            print(e)
             logging.debug(e)
             error.raise_untracked(error_category.RuntimeError, "internal virtualmachine error!!!")
 
